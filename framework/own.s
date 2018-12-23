@@ -9,6 +9,8 @@
 
 	XDEF	own_machine
 	XDEF	disown_machine
+	XDEF	_own_supervisor
+	XDEF	_disown_supervisor
 	XDEF	gfxbase
 
 COP1LCH	EQU	$dff080
@@ -205,6 +207,42 @@ l$:	move.l	(a0)+,(a1)+
 	move.l	(a0)+,intena(a6)
 	rts
 
+;;; This function will set the CPU into supervisor mode and it will
+;	store the current stack frame. A function pointer has to be
+;	pushed onto the stack (void *(void) function). This function
+;	is called and must return via RTS.
+;;; Input: function pointer on stack
+;;; Output: -
+;;; Destroys: D0-D1/A0-A1
+_own_supervisor:
+	move.l	4(a7),a0		;Move function pointer into A0
+	link	a1,#-4			;Get space on stack
+	move.l	$20.w,(a7)		;Store old exception vector (privilege escalation)
+	move.l	#exception$,$20.w	;Set new exception vector
+	stop	#0			;Privilege escalation
+	;illegal				;Never reached
+return$:
+	move.l	(a7),$20.w
+	unlk	a1
+	rts
+exception$:
+	movem.l	d0-d7/a0-a6,-(sp) ;Store registers
+	move.l	#return$,15*4+2(a7) ;Adjust return address
+	move.l	a7,own_supervisor_excp_frame
+	jsr	(a0)		    ;Call function pointer
+	movem.l	(sp)+,d0-d7/a0-a6 ;Restore registers
+	rte
+
+;;; Return from supervisor mode at exactly the same position we
+;	entered it. See _own_supervisor subroutine.
+;;; WARNING! This function does not return to the calling function
+_disown_supervisor:
+	move.l	own_supervisor_excp_frame,a7
+	movem.l	(sp)+,d0-d7/a0-a6 ;Restore registers
+	rte
+
+
+
 	section framework_data,data
 jump_table:
 	dc.l	init_libraries, shutdown_libraries ; OWN_libraries
@@ -240,3 +278,5 @@ autovector_pointers:	ds.l	8
 	;; Interrupt custom chip storage.
 interrupt_custom:	ds.w	4
 initialisation_bits:	ds.l	1
+	;; Here we store the exception stack frame for easy return into user mode.
+own_supervisor_excp_frame:	ds.l	1

@@ -17,6 +17,16 @@ prvesc:	dc.l	0
 main:
 	move	#OWN_libraries|OWN_trap|OWN_interrupt,d0
 	jsr	own_machine
+	nop
+;	clr.l	d0
+;l3$:	tst.l	d0
+;	beq.s	l3$
+	nop
+	pea	mycode(pc)	;Push code to run on stack
+	jsr	_own_supervisor	;Own supervisor mode
+	addq.l	#4,a7		;Remove address on stack
+	nop
+	nop
 	move.l	$20,prvesc
 	move.l	#exception,$20
 	lea.l	pcode,a0
@@ -27,6 +37,17 @@ l2$:	tst.l	debug
 	jsr	disown_machine
 	clr.l	d0
 	rts
+
+mycode:	move.l	#$30000,d0
+	move.w	#$00ff,d1
+l1$:	move.w	d1,$dff180
+	eor.w	#$0008,d1
+	subq.l	#1,d0
+	bne.s	l1$
+	link	a6,#-$1000	;Fill stack up
+	pea	ill$
+	jsr	_disown_supervisor
+ill$:	illegal
 
 exception:
 	movem.l	d0-d7/a0-a6,-(sp)
