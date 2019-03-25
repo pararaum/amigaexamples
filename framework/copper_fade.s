@@ -1,4 +1,24 @@
 
+	XDEF	fade_out_copper_list
+	XDEF	make_copper_list
+
+;;; Produce a simple copper list for the colours. It will generate the number of colours colour-entries for a copper list. Make sure that there is enough space available.
+	;; A0: pointer to where the copper list is do be stored
+	;; D0: Number of colours
+	;; D1: initial colour
+	;; Destroys: A0-A1/D0-D1
+	;; Output: A0 pointer after the end of the copper list.
+make_copper_list:
+	;; D2: colour register number
+	subq	#1,d0		;Reduce by one for the dbf below.
+	move.l	d2,-(sp)
+	move.w	#$0180,d2	;First colour registers
+l1$:	move.w	d2,(a0)+	;Writer copper MOVE
+	addq	#2,d2		;Increment colour register for next MOVE
+	move.w	d1,(a0)+	;Write default colour
+	dbf	d0,l1$		;Branch as long as d0 is not equal to zero.
+	move.l	(sp)+,d2
+	rts
 
 ;;; Fade a copper colour list out. This function will iterate through a copper list and subtract from the red, green, and blue components until the colour black is reached. It will return the number of non-black colours left.
 	;; a0: pointer to colour copper list begin

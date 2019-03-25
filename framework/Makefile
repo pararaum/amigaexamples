@@ -1,7 +1,7 @@
 #! /usr/bin/make -f
 
 AS=vasmm68k_mot -Fhunk -I$$HOME/include/
-ASFLAGS=-m68000
+ASFLAGS=-m68000 -L /dev/stdout -Lnf
 LD=vlink
 VLINKFLAGS=-s
 #TARGET=sprite_example

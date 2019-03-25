@@ -2,13 +2,18 @@
 	include	"copper_fade.i"
 
 picheight = 240
-
+IMAGE_COLOURS = 32
 VPOSR = $4
 	
 	section	text,code
 
 main:
-	move.l	4.w,a6		; Get base of exec lib
+	bra	main$
+	dc.b	"Scroller and image demostration code by Pararaum / T7D."
+	even
+	cmp.l	#"COPC",copcol
+	illegal
+main$:	move.l	4.w,a6		; Get base of exec lib
 	lea	gfxlib,a1	; Adress of gfxlib string to a1
 	moveq	#0,d0		; any version is ok
 	jsr	-408(a6)	; Call OpenLibrary()
@@ -31,12 +36,19 @@ setbpls:move.l	a0,d0		; Picture-Rawdata address to d0
 	addq.l	#8,a1		; Next Bitplaneptr in copperlist
 	dbf	d1,setbpls
 
+	nop
+	lea	copcol,a0
+	moveq	#IMAGE_COLOURS,d0		;32 colours
+	moveq	#$0,d1
+	jsr	make_copper_list
+	nop
+
 	jsr	-132(a6)	; Forbid task switching
 	;; see: http://amiga.sourceforge.net/amidevhelp/phpwebdev.php?keyword=Forbid&funcgroup=AmigaOS&action=Search
 	move.l #cop,$dff080	; Set new copperlist
 	bsr	do_the_scroll
 	lea.l	copcol,a0
-	moveq	#32,d0
+	moveq	#IMAGE_COLOURS,d0
 	bsr	fade_color
 	move.l gfxbase,a1	; Base of graphics.library to a1
 	move.l 38(a1),$dff080	; Restore old copperlist
@@ -82,7 +94,7 @@ copend$ SET 4
 	lea.l	$DFF000,a4
 l1$	move.l	copbeg$(A7),a0
 	move.l	copend$(A7),a1
-	bsr	fade_out_copper_list
+	jsr	fade_out_copper_list
 	tst.l	d0
 	beq	out$
 	bsr	wait_4_vblank
@@ -144,6 +156,18 @@ l1$:	lea	-2(a0),a0
 	btst	#6,$bfe001	; Left mouse clicked?
 	bne.b	mouse$		; No, continue loop!
 	rts
+
+	even
+image_colour_list:
+	;; These are the 32 colours of the image.
+	dc.w	$0a78,$0a78,$0978,$0a9a
+	dc.w	$0c9a,$0ecc,$0cbc,$0bad
+	dc.w	$0a9c,$098a,$0979,$087a
+	dc.w	$0769,$0868,$0d88,$0867
+	dc.w	$0b88,$0658,$0fb9,$0fea
+	dc.w	$0547,$0534,$0843,$0e97
+	dc.w	$0224,$0112,$0211,$0422
+	dc.w	$0322,$0001,$0000,$0110
 
 
 	section vars,data
