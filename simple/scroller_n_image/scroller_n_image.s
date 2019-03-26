@@ -1,6 +1,8 @@
 ;;; This code was partly ripped from alpha one's http://www.flashtro.com/index.php?e=page&c=crack8&id=606.
+	;; 	include	"exec/exec_lib.i"
 	include	"copper_fade.i"
 
+_LVOCopyMem EQU -624
 picheight = 240
 IMAGE_COLOURS = 32
 VPOSR = $4
@@ -8,11 +10,13 @@ VPOSR = $4
 	section	text,code
 
 main:	bra	main$
-	dc.b	"Scroller and image demostration code by Pararaum / T7D."
+	dc.b	"Scroller and image demonstration code by Pararaum / T7D."
 	even
 	cmp.l	#"COPC",copcol
 	cmp.l	#"fade",fade_in_copper_list
 	cmp.l	#"dofa",do_fade_in
+	reset
+	cmp.l	#"DBG ",debug_data
 	illegal
 main$:	move.l	4.w,a6		; Get base of exec lib
 	lea	gfxlib,a1	; Adress of gfxlib string to a1
@@ -44,22 +48,24 @@ setbpls:move.l	a0,d0		; Picture-Rawdata address to d0
 	jsr	-132(a6)	; Forbid task switching
 
 	;; see: http://amiga.sourceforge.net/amidevhelp/phpwebdev.php?keyword=Forbid&funcgroup=AmigaOS&action=Search
-	move.l #cop,$dff080	; Set new copperlist
+	move.l	#cop,$dff080	; Set new copperlist
 	bsr	do_fade_in
 	bsr	do_the_scroll
 	lea.l	copcol,a0
 	moveq	#IMAGE_COLOURS,d0
 	bsr	fade_color
-	move.l gfxbase,a1	; Base of graphics.library to a1
-	move.l 38(a1),$dff080	; Restore old copperlist
+	move.l	gfxbase,a1	; Base of graphics.library to a1
+	move.l	38(a1),$dff080	; Restore old copperlist
 	jsr	-138(a6)	; Permit task switching
 	;; http://amiga.sourceforge.net/amidevhelp/phpwebdev.php?keyword=Permit&funcgroup=AmigaOS&action=Search
-	jsr -414(a6)		; Call CloseLibrary()
-	moveq #0,d0		; Status = OK
+	jsr	-414(a6)	; Call CloseLibrary()
+	moveq	#0,d0		; Status = OK
 	rts			; Bye, Bye!
 
 do_fade_in:
 	movem.l	d0-d7/a0-a5,-(sp) ;save registers
+	move.l	$4.w,a6		  ;Load execbase
+	lea.l	debug_data,a5
 	link	a6,#-IMAGE_COLOURS*4*2 ;three words per colour
 	movem.l	d0-d1/a0,-(sp)	       ;save registers, again
 	moveq	#0,d0		       ;clear
@@ -74,6 +80,10 @@ l1$:	move.l	d0,(a0)+	       ;clear
 l49$:	moveq	#IMAGE_COLOURS,d0 ;number of colours
 	lea.l	image_colour_list,a0 ;pointer to colour list
 	jsr	fade_in_copper_list ;do one fade
+	move.l	a7,a0		;Source
+	move.l	a5,a1		;Destination
+	moveq	#64,d0		;Size
+	jsr	_LVOCopyMem(a6)
 	bsr	wait_4_vblank	    ;wait
 	bsr	wait_4_vblank
 	bsr	wait_4_vblank
@@ -244,6 +254,8 @@ image_colour_list:
 	section vars,data
 gfxlib:		dc.b	"graphics.library",0
 
+	section	bss,bss
+debug_data:	ds.l	$4000
 
 	section data,data_c
 	;; Copper List
