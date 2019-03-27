@@ -80,10 +80,6 @@ l1$:	move.l	d0,(a0)+	       ;clear
 l49$:	moveq	#IMAGE_COLOURS,d0 ;number of colours
 	lea.l	image_colour_list,a0 ;pointer to colour list
 	jsr	fade_in_copper_list ;do one fade
-	move.l	a7,a0		;Source
-	move.l	a5,a1		;Destination
-	moveq	#64,d0		;Size
-	jsr	_LVOCopyMem(a6)
 	bsr	wait_4_vblank	    ;wait
 	bsr	wait_4_vblank
 	bsr	wait_4_vblank
@@ -238,6 +234,9 @@ l1$:	lea	-2(a0),a0
 	bne.b	mouse$		; No, continue loop!
 	rts
 
+
+	section vars,data
+gfxlib:	dc.b	"graphics.library",0
 	even
 image_colour_list:
 	;; These are the 32 colours of the image.
@@ -250,9 +249,6 @@ image_colour_list:
 	dc.w	$0224,$0112,$0211,$0422
 	dc.w	$0322,$0001,$0000,$0110
 
-
-	section vars,data
-gfxlib:		dc.b	"graphics.library",0
 
 	section	bss,bss
 debug_data:	ds.l	$4000
