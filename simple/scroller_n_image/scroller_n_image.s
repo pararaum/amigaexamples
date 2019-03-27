@@ -16,7 +16,6 @@ main:	bra	main$
 	cmp.l	#"fade",fade_in_copper_list
 	cmp.l	#"dofa",do_fade_in
 	reset
-	cmp.l	#"DBG ",debug_data
 	illegal
 main$:	move.l	4.w,a6		; Get base of exec lib
 	lea	gfxlib,a1	; Adress of gfxlib string to a1
@@ -60,12 +59,11 @@ setbpls:move.l	a0,d0		; Picture-Rawdata address to d0
 	;; http://amiga.sourceforge.net/amidevhelp/phpwebdev.php?keyword=Permit&funcgroup=AmigaOS&action=Search
 	jsr	-414(a6)	; Call CloseLibrary()
 	moveq	#0,d0		; Status = OK
+	reset
 	rts			; Bye, Bye!
 
 do_fade_in:
 	movem.l	d0-d7/a0-a5,-(sp) ;save registers
-	move.l	$4.w,a6		  ;Load execbase
-	lea.l	debug_data,a5
 	link	a6,#-IMAGE_COLOURS*4*2 ;three words per colour
 	movem.l	d0-d1/a0,-(sp)	       ;save registers, again
 	moveq	#0,d0		       ;clear
@@ -250,8 +248,7 @@ image_colour_list:
 	dc.w	$0322,$0001,$0000,$0110
 
 
-	section	bss,bss
-debug_data:	ds.l	$4000
+;;; 	section	bss,bss
 
 	section data,data_c
 	;; Copper List
