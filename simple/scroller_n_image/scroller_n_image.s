@@ -31,14 +31,9 @@ libok$:	move.l	d0,gfxbase	; Save base of graphics.library
 	bsr	setup_diw
 	lea	picture,a0	; Address of picture-rawdata
 	lea	bplptr,a1	; Address of bitplaneptrs in copperlist
-	moveq	#5-1,d1		; 5 bitplanes to set in copperlist
-setbpls:move.l	a0,d0		; Picture-Rawdata address to d0
-	move.w	d0,6(a1)	; Insert bitplaneptr into copperlist
-	swap	d0		; 
-	move.w	d0,2(a1)	;
-	add.l	#(320/8)*picheight,a0	; Pointer to next bitplane in picture-rawdata
-	addq.l	#8,a1		; Next Bitplaneptr in copperlist
-	dbf	d1,setbpls
+	moveq	#5-1,d0		; 5 bitplanes to set in copperlist
+	move.l	#(320/8)*picheight,d1
+	bsr	setup_bitplanepointers
 	lea	copcol,a0
 	moveq	#IMAGE_COLOURS,d0		;32 colours
 	moveq	#$0,d1
@@ -61,6 +56,27 @@ setbpls:move.l	a0,d0		; Picture-Rawdata address to d0
 	moveq	#0,d0		; Status = OK
 	reset
 	rts			; Bye, Bye!
+
+;;; Setup the bitplanepointer in the copper list.
+	;; a0: pointer to the image data
+	;; a1: address of the copper list bitplane MOVE commands
+	;; d0: number of bitplanes
+	;; d1: size of single bitplane in bytes
+setup_bitplanepointers:
+	movem.l	d0-d7/a0-a6,-(sp)
+	;; d2: number of bitplanes from d0
+	;; d3: size of a bitplane from d1
+	move.w	d0,d2		; number of bitplanes
+	move.l	d1,d3		; size of the bitplanes
+set$:	move.l	a0,d0		; Picture-Rawdata address to d0
+	move.w	d0,6(a1)	; Insert bitplaneptr into copperlist
+	swap	d0		; Swap pointer words
+	move.w	d0,2(a1)	; Insert low word into copperlist
+	addq.l	#8,a1		; Next Bitplaneptr in copperlist
+	add.l	d3,a0		; Pointer to next bitplane in picture-rawdata
+	dbf	d2,set$
+	movem.l	(sp)+,d0-d7/a0-a6
+	rts
 
 do_fade_in:
 	movem.l	d0-d7/a0-a5,-(sp) ;save registers
