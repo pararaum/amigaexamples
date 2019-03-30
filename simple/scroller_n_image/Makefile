@@ -8,7 +8,7 @@ OOBJS=../../framework/copper_fade.o
 
 all:	$(TARGET)
 
-$(TARGET):	$(TARGET).o
+$(TARGET):	$(TARGET).o fader.code.o
 	$(LD) $(VLINKFLAGS) -o $@ $+ $(OOBJS)
 
 %.o:	%.s
