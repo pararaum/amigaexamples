@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <hardware/custom.h>
+#include <hardware/dmabits.h>
 
 #define IMAGE_WIDTH 320
 #define IMAGE_HEIGHT 200
@@ -7,9 +8,13 @@
 
 extern unsigned long own_machine();
 extern void disown_machine();
-extern unsigned long some_var;
+extern void set_interrupt();
 
-static UWORD __chip copper_list[0x30];
+extern struct Custom custom;
+extern unsigned long framecounter;
+extern unsigned short volatile mousebutton;
+
+static UWORD __chip copper_list[0xA0];
 static UBYTE __chip bitplane_data[IMAGE_WIDTH * IMAGE_HEIGHT * IMAGE_BITPLANES / 8];
 
 /*! \brief setup the copper
@@ -36,6 +41,11 @@ int setup() {
     *cptr++ = reg + 2;
     *cptr++ = bitplptr & 0xFFFF;
   }
+  /* Write colour copper list. */
+  for(reg = 0x180; reg < 0x180 + 32 * 2; ++reg) {
+    *cptr++ = reg;
+    *cptr++ = 0;
+  }
 #ifndef NDEBUG
   if(cptr >= cend) {
     fprintf(stderr, "%08lX %08lX\n", (ULONG)cptr, (ULONG)cend);
@@ -44,18 +54,41 @@ int setup() {
   return cptr >= cend;
 }
 
+
+/*! \brief setup all black screen
+ *
+ * This will set the custom registers and the first default copperlist
+ * up.
+ */
+void all_black() {
+  /* Set up copper list */
+  custom.cop1lc = (ULONG)copper_list;
+  custom.dmacon = DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER;
+  custom.diwstrt = 0x2c81;
+  custom.diwstop = 0x2cc1;
+  custom.ddfstrt = 0x0038;
+  custom.ddfstop = 0x00d0;
+  custom.bplcon0 = 0x1200;
+  custom.bplcon1 = 0;
+  custom.bplcon2 = 0x0024;
+  custom.bplcon3 = 0;
+  custom.fmode = 0;
+  set_interrupt();
+}
+
 int main(int argc, char **argv) {
   unsigned long ul;
 
-  printf("%08lX\n", some_var);
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);
   if(setup() != 0) {
     puts("ERROR! Not enough space in copper list!");
   }
   ul = own_machine();
-  /* all_black(); */
+  all_black();
   /* fadeloop(); */
+  while(mousebutton == 0) {}
   disown_machine();
   printf("gfxbase=$%lx\n", ul);
+  printf("framecounter=%08lX\n", framecounter);
   return 0;
 }

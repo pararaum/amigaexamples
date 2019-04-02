@@ -1,9 +1,13 @@
 ;;; ASM function for setup and configuration of machine.
+	INCLUDE	"hardware/custom.i"
+	INCLUDE	"hardware/intbits.i"
 	INCLUDE	"own.i"
 	XDEF	_own_machine
 	XDEF	_disown_machine
+	XDEF	_set_interrupt
 
-	XDEF	_some_var
+	XDEF	_framecounter
+	XDEF	_mousebutton
 
 ;;; Set up everything to control the machine fully.
 ;;; O: D0: pointer to gfx library
@@ -18,5 +22,25 @@ _disown_machine:
 	jsr	disown_machine
 	rts
 
+;;; Set the interrupt for vertical blanking. (Level 3)
+_set_interrupt:
+	lea.l	irq_routine(pc),a0
+	move.l	a0,$6c.w	;Lvl 3 autovector
+	move.w  #INTF_SETCLR|INTF_INTEN|INTF_VERTB,$DFF000+intena
+	rts
+
+;;; ---------------------------------------------------------------------------
+
+irq_routine:
+	addq.l	#1,_framecounter
+	btst	#6,$BFE001
+	bne.s	nom$		;No mouse
+	move.w	#1,_mousebutton
+nom$:	move.w  #INTF_VERTB,$DFF000+intreq
+	rte
+
 	SECTION	DATA,data
-_some_var:	dc.l	$DEADBEA1
+	;; Number of vertical blanks
+_framecounter:	dc.l	-1
+	;; This will have a non-zero value until a mouse button is pressed.
+_mousebutton:	dc.w	0
