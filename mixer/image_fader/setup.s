@@ -8,6 +8,7 @@
 
 	XDEF	_framecounter
 	XDEF	_mousebutton
+	XDEF	_vertical_blank_irqfun
 
 ;;; Set up everything to control the machine fully.
 ;;; O: D0: pointer to gfx library
@@ -33,12 +34,22 @@ _set_interrupt:
 
 ;;; ---------------------------------------------------------------------------
 
+;;; This routine is called on every (VBLANK) interrupt.
 irq_routine:
+	movem.l	d0-d7/a0-a6,-(sp)
+	;; Incremtent framecounter
 	addq.l	#1,_framecounter
+	move.l	_vertical_blank_irqfun,d0
+	beq.s	nocall$
+	move.l	d0,a0
+	jsr	(a0)
+nocall$:
+	;; Test mouse
 	btst	#6,$BFE001
 	bne.s	nom$		;No mouse
 	move.w	#1,_mousebutton
 nom$:	move.w  #INTF_VERTB,$DFF000+intreq
+	movem.l	(sp)+,d0-d7/a0-a6
 	rte
 
 	SECTION	DATA,data
@@ -46,3 +57,5 @@ nom$:	move.w  #INTF_VERTB,$DFF000+intreq
 _framecounter:	dc.l	-1
 	;; This will have a non-zero value until a mouse button is pressed.
 _mousebutton:	dc.w	0
+	;; This is a function pointer to a function called at every vertical blank.
+_vertical_blank_irqfun:	dc.l	0

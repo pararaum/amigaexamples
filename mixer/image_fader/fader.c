@@ -13,6 +13,7 @@ extern unsigned long set_interrupt();
 extern struct Custom custom;
 extern unsigned long framecounter;
 extern unsigned short volatile mousebutton;
+extern void (*vertical_blank_irqfun)();
 
 static UWORD __chip copper_list[0xA0];
 static UBYTE __chip bitplane_data[IMAGE_WIDTH * IMAGE_HEIGHT * IMAGE_BITPLANES / 8];
@@ -76,6 +77,11 @@ unsigned long all_black() {
   return set_interrupt();
 }
 
+void funnyirqfun(void) {
+  static UWORD value = 0;
+  custom.color[0] = value++;
+}
+
 int main(int argc, char **argv) {
   unsigned long ul;
 
@@ -85,6 +91,7 @@ int main(int argc, char **argv) {
   }
   ul = own_machine();
   ul = all_black();
+  vertical_blank_irqfun = &funnyirqfun;
   /* fadeloop(); */
   while(mousebutton == 0) {}
   disown_machine();
