@@ -48,9 +48,7 @@ int setup() {
     *cptr++ = 0;
   }
 #ifndef NDEBUG
-  if(cptr >= cend) {
-    fprintf(stderr, "%08lX %08lX\n", (ULONG)cptr, (ULONG)cend);
-  }
+  fprintf(stderr, "Copper: %08lX %08lX\n", (ULONG)cptr, (ULONG)cend);
 #endif
   return cptr >= cend;
 }
