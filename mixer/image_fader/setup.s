@@ -23,10 +23,12 @@ _disown_machine:
 	rts
 
 ;;; Set the interrupt for vertical blanking. (Level 3)
+	;; Output: D0: interrupt routine address
 _set_interrupt:
 	lea.l	irq_routine(pc),a0
 	move.l	a0,$6c.w	;Lvl 3 autovector
 	move.w  #INTF_SETCLR|INTF_INTEN|INTF_VERTB,$DFF000+intena
+	move.l	a0,d0
 	rts
 
 ;;; ---------------------------------------------------------------------------

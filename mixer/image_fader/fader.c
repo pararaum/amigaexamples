@@ -8,7 +8,7 @@
 
 extern unsigned long own_machine();
 extern void disown_machine();
-extern void set_interrupt();
+extern unsigned long set_interrupt();
 
 extern struct Custom custom;
 extern unsigned long framecounter;
@@ -60,7 +60,7 @@ int setup() {
  * This will set the custom registers and the first default copperlist
  * up.
  */
-void all_black() {
+unsigned long all_black() {
   /* Set up copper list */
   custom.cop1lc = (ULONG)copper_list;
   custom.dmacon = DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER;
@@ -73,7 +73,7 @@ void all_black() {
   custom.bplcon2 = 0x0024;
   custom.bplcon3 = 0;
   custom.fmode = 0;
-  set_interrupt();
+  return set_interrupt();
 }
 
 int main(int argc, char **argv) {
@@ -84,11 +84,11 @@ int main(int argc, char **argv) {
     puts("ERROR! Not enough space in copper list!");
   }
   ul = own_machine();
-  all_black();
+  ul = all_black();
   /* fadeloop(); */
   while(mousebutton == 0) {}
   disown_machine();
-  printf("gfxbase=$%lx\n", ul);
+  printf("irq routine=$%lx\n", ul);
   printf("framecounter=%08lX\n", framecounter);
   return 0;
 }
