@@ -3,7 +3,7 @@
 CFLAGS=-speed
 AS=vasmm68k_mot -Fhunk -I$$HOME/include/ -I../../framework/
 VLINKFLAGS=-s
-LIBS=-lamiga -lm13
+LIBS=-lamiga
 OOBJS=../../framework/own.o
 CC=vc
 ALL=fader

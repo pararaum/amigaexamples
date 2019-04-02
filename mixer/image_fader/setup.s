@@ -3,6 +3,8 @@
 	XDEF	_own_machine
 	XDEF	_disown_machine
 
+	XDEF	_some_var
+
 ;;; Set up everything to control the machine fully.
 ;;; O: D0: pointer to gfx library
 _own_machine:
@@ -16,3 +18,5 @@ _disown_machine:
 	jsr	disown_machine
 	rts
 
+	SECTION	DATA,data
+_some_var:	dc.l	$DEADBEA1
