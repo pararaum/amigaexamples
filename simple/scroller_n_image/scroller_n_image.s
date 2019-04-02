@@ -302,7 +302,7 @@ bplptr:		dc.w	$00e0,$0000,$00e2,$0000		; Bitplaneptrs
 	;; Wait for line 250
 	dc.w	$fa01,$ff00
 	;; COLOR00
-	dc.w	$0180,$0fff
+	dc.w	$0180,$00ff
 	dc.w	$ffff,$fffe
 
 	align	0,4
