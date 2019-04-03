@@ -28,7 +28,7 @@ l36$:	move.b	d1,(a1)+	;Put byte into target
 lit$:	move.b	(a0)+,(a1)+	;Copy a byte from source to target
 	dbf	d0,lit$
 end$:	cmp.l	a0,a2		;End reached?
-	ble.s	l1$
+	bcc.s	l1$		;BCC?
 	move.l	(sp)+,a2
 	rts
 

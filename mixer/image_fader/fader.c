@@ -88,6 +88,7 @@ int main(int argc, char **argv) {
 
 #ifndef NDEBUG
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);
+  printf("uncompress_next_image=$%08lX\n", (ULONG)uncompress_next_image);
 #endif
   uncompress_next_image(bitplane_data);
   if(setup() != 0) {
