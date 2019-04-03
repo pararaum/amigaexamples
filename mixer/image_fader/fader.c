@@ -14,6 +14,7 @@ extern struct Custom custom;
 extern unsigned long framecounter;
 extern unsigned short volatile mousebutton;
 extern void (*vertical_blank_irqfun)();
+extern void uncompress_next_image(__reg("a0") UBYTE *target);
 /* These are pointers to the image data */
 extern unsigned long image_pointers[];
 
@@ -85,7 +86,10 @@ void funnyirqfun(void) {
 int main(int argc, char **argv) {
   unsigned long ul;
 
+#ifndef NDEBUG
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);
+#endif
+  uncompress_next_image(bitplane_data);
   if(setup() != 0) {
     puts("ERROR! Not enough space in copper list!");
   }

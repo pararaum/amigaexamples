@@ -1,7 +1,20 @@
 ;;; Image data
+	include	"iff.i"
 
+	XDEF	_uncompress_next_image
 	XDEF	_image_pointers
-	
+
+	;; A0: pointer to target area
+_uncompress_next_image:
+	movem.l	d2-d7/a0-a6,-(sp)
+	move.l	a0,a1
+	lea.l	image1,a0
+	move.l	#"BODY",d0
+	jsr	find_iff_chunk
+	jsr	uncompress_body_interleaved
+	movem.l	(sp)+,d2-d7/a0-a6
+	rts
+
 	SECTION	DATA,data
 
 _image_pointers:
