@@ -14,6 +14,8 @@ extern struct Custom custom;
 extern unsigned long framecounter;
 extern unsigned short volatile mousebutton;
 extern void (*vertical_blank_irqfun)();
+/* These are pointers to the image data */
+extern unsigned long image_pointers[];
 
 static UWORD __chip copper_list[0xA0];
 static UBYTE __chip bitplane_data[IMAGE_WIDTH * IMAGE_HEIGHT * IMAGE_BITPLANES / 8];

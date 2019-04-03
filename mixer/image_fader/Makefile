@@ -7,7 +7,7 @@ LIBS=-lamiga
 OOBJS=../../framework/own.o
 CC=vc
 ALL=fader
-OBJS=setup.o
+OBJS=setup.o image.o
 
 all:	$(ALL)
 
