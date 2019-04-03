@@ -1,10 +1,36 @@
 ;;; IFF tools to make it easier to include images in this format. 
 ;;; See here, too? http://wiki.amigaos.net/wiki/IFF_Source_Code
 
-	XDEF	uncompress_body
+	XDEF	uncompress_body_interleaved
 	XDEF	find_iff_chunk
 	XDEF	copy_cmap_chunk
 	XDEF	interpret_bmhd
+
+;;; Uncompress a body chunk into an interleaved bitmap data-array.
+	;; Input:
+	;; A0: pointer to compressed image data
+	;; A1: pointer to the area where the data is uncompressed into
+	;; D0: number of compressed bytes
+uncompress_body_interleaved:
+	;; A2: pointer the end of the compressed data
+	move.l	a2,-(sp)
+	move.l	a0,a2		;Copy compressed data pointer to a2
+	add.l	d0,a2		;a2 now contains end of compressed data
+l1$:	moveq	#0,d0
+	move.b	(a0)+,d0	;Get next byte
+	ext.w	d0		;Extend to word
+	bpl.s	lit$		;It is a literal
+	neg.w	d0
+	move.b	(a0)+,d1	;Get the byte to repeat
+l36$:	move.b	d1,(a1)+	;Put byte into target
+	dbf	d0,l36$
+	bra.s	end$
+lit$:	move.b	(a0)+,(a1)+	;Copy a byte from source to target
+	dbf	d0,lit$
+end$:	cmp.l	a0,a2		;End reached?
+	ble.s	l1$
+	move.l	(sp)+,a2
+	rts
 
 ;;; This will uncompress a body chunk (make sure it is really compressed).
 ;;; The decompression will create *continous* bitplanes!
