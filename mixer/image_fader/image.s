@@ -12,6 +12,10 @@ _uncompress_next_image:
 	move.l	#"BODY",d0
 	jsr	find_iff_chunk
 	jsr	uncompress_body_interleaved
+	lea.l	image1,a0
+	lea.l	$dff180,a1
+	moveq	#0,d0
+	jsr	copy_cmap_chunk
 	movem.l	(sp)+,d2-d7/a0-a6
 	rts
 

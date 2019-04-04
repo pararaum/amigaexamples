@@ -36,20 +36,21 @@ int setup() {
   UWORD *cend = copper_list + sizeof(copper_list)/sizeof(UWORD);
 
   /* Setup the bitplane pointers. */
+  bitplptr = (unsigned long)(bitplane_data);
   for(plane = 0; plane <= IMAGE_BITPLANES; plane++) {
     reg = 0x00E0 + plane * 4;
-    bitplptr = (unsigned long)(&bitplane_data[IMAGE_WIDTH * IMAGE_HEIGHT / 8 * plane]);
     /* Select bitplane pointer registers. */
     *cptr++ = reg;
     *cptr++ = bitplptr >> 16;
     *cptr++ = reg + 2;
     *cptr++ = bitplptr & 0xFFFF;
+    bitplptr += IMAGE_WIDTH / 8;
   }
-  /* Write colour copper list. */
-  for(reg = 0x180; reg < 0x180 + 32 * 2; ++reg) {
-    *cptr++ = reg;
-    *cptr++ = 0;
-  }
+  /* /\* Write colour copper list. *\/ */
+  /* for(reg = 0x180; reg < 0x180 + 32 * 2; ++reg) { */
+  /*   *cptr++ = reg; */
+  /*   *cptr++ = 0; */
+  /* } */
 #ifndef NDEBUG
   fprintf(stderr, "Copper: %08lX %08lX\n", (ULONG)cptr, (ULONG)cend);
 #endif
@@ -65,15 +66,19 @@ int setup() {
 unsigned long all_black() {
   /* Set up copper list */
   custom.cop1lc = (ULONG)copper_list;
-  custom.dmacon = DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER;
+  custom.dmacon = DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER;
   custom.diwstrt = 0x2c81;
   custom.diwstop = 0x2cc1;
   custom.ddfstrt = 0x0038;
   custom.ddfstop = 0x00d0;
-  custom.bplcon0 = 0x1200;
+  custom.bplcon0 = 0x3200; /* 3 bitplanes, colour burst */
   custom.bplcon1 = 0;
   custom.bplcon2 = 0x0024;
   custom.bplcon3 = 0;
+  /* custom.bpl1mod = IMAGE_WIDTH * IMAGE_BITPLANES / 8; */
+  /* custom.bpl2mod = IMAGE_WIDTH * IMAGE_BITPLANES / 8; */
+  custom.bpl1mod = IMAGE_WIDTH * (3 - 1) / 8;
+  custom.bpl2mod = IMAGE_WIDTH * (3 - 1) / 8;
   custom.fmode = 0;
   return set_interrupt();
 }
