@@ -73,14 +73,13 @@ unsigned long all_black() {
   custom.diwstop = 0x2cc1;
   custom.ddfstrt = 0x0038;
   custom.ddfstop = 0x00d0;
-  custom.bplcon0 = 0x3200; /* 3 bitplanes, colour burst */
+  custom.bplcon0 = 0x5200; /* 5 bitplanes, colour burst */
   custom.bplcon1 = 0;
   custom.bplcon2 = 0x0024;
   custom.bplcon3 = 0;
-  /* custom.bpl1mod = IMAGE_WIDTH * IMAGE_BITPLANES / 8; */
-  /* custom.bpl2mod = IMAGE_WIDTH * IMAGE_BITPLANES / 8; */
-  custom.bpl1mod = IMAGE_WIDTH * (3 - 1) / 8;
-  custom.bpl2mod = IMAGE_WIDTH * (3 - 1) / 8;
+  /* The default is *planar* images. */
+  custom.bpl1mod = IMAGE_WIDTH * IMAGE_BITPLANES / 8;
+  custom.bpl2mod = IMAGE_WIDTH * IMAGE_BITPLANES / 8;
   custom.fmode = 0;
   for(i = 0; i < 32; ++i) {
     custom.color[i] = 0;

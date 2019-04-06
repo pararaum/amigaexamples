@@ -83,7 +83,7 @@ end$:	cmp.l	a3,a2
 
 ;;; Fast method to find a chunk in an iff file.
 	;; Input
-	;; A0: Pointer of IFF data.
+	;; A0: Pointer to IFF data.
 	;; D0.l: Chunk to find.
 	;; Output:
 	;; A0: Pointer to chunk data
