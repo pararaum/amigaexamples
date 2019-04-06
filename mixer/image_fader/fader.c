@@ -14,7 +14,7 @@ extern struct Custom custom;
 extern unsigned long volatile framecounter;
 extern unsigned short volatile mousebutton;
 extern volatile void (*vertical_blank_irqfun)(void);
-extern void uncompress_next_image(__reg("a0") UBYTE *target);
+extern int uncompress_next_image(__reg("a0") UBYTE *target);
 extern int fade_in_copper_list(__reg("d0") int colours, __reg("d1") modulo, __reg("a0") UWORD *colourdata, __reg("a1") UWORD *targetptr, __reg("a2") void *spare_area);
 extern int fade_out_colour_table(__reg("d0") int number_of_colours, __reg("a0") UWORD *colourdata);
 
@@ -136,6 +136,7 @@ void fadeloop(void) {
 
 int main(int argc, char **argv) {
   unsigned long ul;
+  int cols;
 
 #ifndef NDEBUG
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);
@@ -148,12 +149,13 @@ int main(int argc, char **argv) {
   }
   ul = own_machine();
   ul = all_black();
-  uncompress_next_image(bitplane_data);
+  cols = uncompress_next_image(bitplane_data);
   fadeloop();
   disown_machine();
 #ifndef NDEBUG
   printf("irq routine=$%lx\n", ul);
   printf("framecounter=%08lX\n", framecounter);
+  printf("colours=%d\n", cols);
 #endif
   return 0;
 }
