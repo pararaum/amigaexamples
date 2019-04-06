@@ -13,7 +13,7 @@ extern unsigned long set_interrupt();
 extern struct Custom custom;
 extern unsigned long volatile framecounter;
 extern unsigned short volatile mousebutton;
-extern void (*vertical_blank_irqfun)(void);
+extern volatile void (*vertical_blank_irqfun)(void);
 extern void uncompress_next_image(__reg("a0") UBYTE *target);
 extern int fade_in_copper_list(__reg("d0") int colours, __reg("d1") modulo, __reg("a0") UWORD *colourdata, __reg("a1") UWORD *targetptr, __reg("a2") void *spare_area);
 /* These are pointers to the image data */
@@ -98,13 +98,20 @@ void funnyirqfun(void) {
 void fadeinfunction(void) {
   static UWORD spare[32*3+1];
   if(fade_in_copper_list(8, 0, image_colour_data, (void*)(0xDFF180UL), spare) != 0) {
-    vertical_blank_irqfun = &funnyirqfun;
+    vertical_blank_irqfun = NULL;
   }
+}
+
+
+void wait4end(void) {
+  while(vertical_blank_irqfun != NULL) ;
 }
 
 
 void fadeloop(void) {
   vertical_blank_irqfun = &fadeinfunction;
+  wait4end();
+  vertical_blank_irqfun = &funnyirqfun;
   while(mousebutton == 0) ;
 }
 
@@ -125,7 +132,9 @@ int main(int argc, char **argv) {
   uncompress_next_image(bitplane_data);
   fadeloop();
   disown_machine();
+#ifndef NDEBUG
   printf("irq routine=$%lx\n", ul);
   printf("framecounter=%08lX\n", framecounter);
+#endif
   return 0;
 }
