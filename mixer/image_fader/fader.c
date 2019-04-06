@@ -11,7 +11,7 @@ extern void disown_machine();
 extern unsigned long set_interrupt();
 
 extern struct Custom custom;
-extern unsigned long framecounter;
+extern unsigned long volatile framecounter;
 extern unsigned short volatile mousebutton;
 extern void (*vertical_blank_irqfun)();
 extern void uncompress_next_image(__reg("a0") UBYTE *target);
@@ -92,6 +92,12 @@ void funnyirqfun(void) {
   custom.color[0] = value++;
 }
 
+
+void fadeloop(void) {
+  while(mousebutton == 0) ;
+}
+
+
 int main(int argc, char **argv) {
   unsigned long ul;
 
@@ -106,8 +112,7 @@ int main(int argc, char **argv) {
   ul = all_black();
   uncompress_next_image(bitplane_data);
   vertical_blank_irqfun = &funnyirqfun;
-  /* fadeloop(); */
-  while(mousebutton == 0) {}
+  fadeloop();
   disown_machine();
   printf("irq routine=$%lx\n", ul);
   printf("framecounter=%08lX\n", framecounter);
