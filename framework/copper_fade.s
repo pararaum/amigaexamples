@@ -2,6 +2,7 @@
 	XDEF	fade_out_copper_list
 	XDEF	make_copper_list
 	XDEF	_fade_in_copper_list
+	XDEF	_fade_out_colour_table
 
 ;;; Fade in (and generate the copperlist).
 	;; Input
@@ -110,3 +111,38 @@ azero$:	addq	#4,a0		; Go to the next colour code
 	move.l	(sp)+,d2
 	rts
 
+;;; This function will fade out a colour table by reducing the RGB values until they are all zero.
+	;; Input
+	;; A0: pointer to the colour list
+	;; D0: Number of colours
+	;; Output:
+	;; D0: Number of non-black colours
+	;; Destroys: D0/D1,A0
+_fade_out_colour_table:
+	;; D2: Number of non-zero values.
+	;; D3=D0: Number of colours
+	movem.l	d2/d3,-(sp)
+	moveq	#0,d2		; number of non-zero values
+	move.l	d0,d3		; Store number of colours in D3
+	bra.s	azero$		; Trick to jump into loop with D3-1
+l1$:	move.w	(a0),d0		; Colour value into d0
+	beq.s	azero$		; Is it zero? Then skip!
+	addq	#1,d2		; If we are here a non-zero colour was found.
+	move.w	d0,d1		; Copy current colour into d1
+	and.w	#$0f00,d1	; And red component.
+	beq.s	noR$		; No red component left.
+	sub.w	#$0100,d0	; Subtract red
+noR$:	move.w	d0,d1		; Again copy colour into d1
+	and.w	#$00f0,d1	; Check for green
+	beq.s	noG$		; No green left.
+	sub.w	#$0010,d0	; Subtract one from green.
+noG$:	move.w	d0,d1		; Again copy colour into d1
+	and.w	#$000f,d1	; Blue component left?
+	beq.s	noB$		; No blue.
+	sub.w	#$0001,d0	; Subtract from blue
+noB$:	move.w	d0,(a0)		; Write colour back.
+azero$:	addq	#2,a0		; Next colour
+	dbf	d3,l1$
+	move.l	d2,d0		; Return number of non-black colours
+	movem.l	(sp)+,d2/d3
+	rts

@@ -16,6 +16,9 @@ extern unsigned short volatile mousebutton;
 extern volatile void (*vertical_blank_irqfun)(void);
 extern void uncompress_next_image(__reg("a0") UBYTE *target);
 extern int fade_in_copper_list(__reg("d0") int colours, __reg("d1") modulo, __reg("a0") UWORD *colourdata, __reg("a1") UWORD *targetptr, __reg("a2") void *spare_area);
+extern int fade_out_colour_table(__reg("d0") int number_of_colours, __reg("a0") UWORD *colourdata);
+
+
 /* These are pointers to the image data */
 extern unsigned long image_pointers[];
 extern UWORD image_colour_data[];
@@ -54,7 +57,7 @@ int setup() {
   /*   *cptr++ = 0; */
   /* } */
 #ifndef NDEBUG
-  fprintf(stderr, "Copper: %08lX %08lX\n", (ULONG)cptr, (ULONG)cend);
+  fprintf(stderr, "Copper: %08lX < %08lX\n", (ULONG)cptr, (ULONG)cend);
 #endif
   return cptr >= cend;
 }
@@ -103,6 +106,19 @@ void fadeinfunction(void) {
 }
 
 
+void fadeoutfunction(void) {
+  int i;
+
+  i = fade_out_colour_table(8, image_colour_data);
+  if(i == 0) {
+    /* Now finished! */
+    vertical_blank_irqfun = NULL;
+  }
+  for(i = 0; i < 8; ++i) {
+    custom.color[i] = image_colour_data[i];
+  }
+}
+
 void wait4end(void) {
   while(vertical_blank_irqfun != NULL) ;
 }
@@ -110,6 +126,8 @@ void wait4end(void) {
 
 void fadeloop(void) {
   vertical_blank_irqfun = &fadeinfunction;
+  wait4end();
+  vertical_blank_irqfun = &fadeoutfunction;
   wait4end();
   vertical_blank_irqfun = &funnyirqfun;
   while(mousebutton == 0) ;
@@ -123,6 +141,7 @@ int main(int argc, char **argv) {
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);
   printf("uncompress_next_image=$%08lX\n", (ULONG)uncompress_next_image);
   printf("fadeinfunction=$%08lX\n", (ULONG)fadeinfunction);
+  printf("fadeoutfunction=$%08lX\n", (ULONG)fadeoutfunction);
 #endif
   if(setup() != 0) {
     puts("ERROR! Not enough space in copper list!");
