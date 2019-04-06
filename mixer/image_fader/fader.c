@@ -64,6 +64,8 @@ int setup() {
  * up.
  */
 unsigned long all_black() {
+  int i;
+
   /* Set up copper list */
   custom.cop1lc = (ULONG)copper_list;
   custom.dmacon = DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER;
@@ -80,6 +82,9 @@ unsigned long all_black() {
   custom.bpl1mod = IMAGE_WIDTH * (3 - 1) / 8;
   custom.bpl2mod = IMAGE_WIDTH * (3 - 1) / 8;
   custom.fmode = 0;
+  for(i = 0; i < 32; ++i) {
+    custom.color[i] = 0;
+  }
   return set_interrupt();
 }
 
@@ -95,12 +100,12 @@ int main(int argc, char **argv) {
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);
   printf("uncompress_next_image=$%08lX\n", (ULONG)uncompress_next_image);
 #endif
-  uncompress_next_image(bitplane_data);
   if(setup() != 0) {
     puts("ERROR! Not enough space in copper list!");
   }
   ul = own_machine();
   ul = all_black();
+  uncompress_next_image(bitplane_data);
   vertical_blank_irqfun = &funnyirqfun;
   /* fadeloop(); */
   while(mousebutton == 0) {}
