@@ -1,6 +1,62 @@
 
 	XDEF	fade_out_copper_list
 	XDEF	make_copper_list
+	XDEF	_fade_in_copper_list
+
+;;; Fade in (and generate the copperlist).
+	;; Input
+	;; A0: colour list of target colours
+	;; A1: pointer to where the colour-data list should be generated
+	;; A2: spare area (Must be initialised with zeros on first call), size is number of (3*colours)+1 WORDS!
+	;; D0: number of colours
+	;; D1: modulo to be added to A1 after each colour
+	;; Output:
+	;; D0: 0=still fading, 1=finished
+	;; Destroys: D0-D1
+_fade_in_copper_list:
+	;; Spare area is:
+	;;  - Counter (WORD)
+	;;  - n colours (WORD)
+	;; D2: Number of colours (copied from D0) - 1
+	;; D3: = D1
+	movem.l	a0-a2/d2-d3,-(sp)
+	move.w	d0,d2		;Safe no. of colours
+	move.l	d1,d3		;Safe modulo for generation
+	cmp.w	#16,(a2)	;Maximum reached?
+	bne.s	l2$		;Continue
+	moveq	#1,d0
+	bra.s	out$
+l2$:	addq.w	#1,(a2)+	;Increment counter
+	bra.s	in$		;Jump into loop -- this work even if d0==0
+l1$:	move.w	(a0)+,d1	;Get next colour (source)
+	move.w	d1,d0		;Only blue
+	and.w	#$000f,d0
+	add.w	d0,(A2)+
+	lsr.w	#4,d1
+	move.w	d1,d0		;Only green
+	and.w	#$000f,d0
+	add.w	d0,(A2)+
+	lsr.w	#4,d1
+	and.w	#$000f,d0
+	move.w	d1,d0		;Only red
+	add.w	d0,(A2)+
+	move.w	-2(a2),d0	;Get red
+	lsr.w	#4,d0		;divide by 16
+	lsl.w	#8,d0		;move to position $0x00
+	move.w	d0,d1
+	move.w	-4(a2),d0	;Get green
+	lsr.w	#4,d0		;divide by 16
+	lsl.w	#4,d0		;move to position $00x0
+	or.w	d0,d1
+	move.w	-6(a2),d0	;Get blue
+	lsr.w	#4,d0		;divide by 16
+	or.w	d0,d1
+	move.w	d1,(a1)+	;Store new colour (target)
+	add.w	d3,a1		;Add modulo
+in$:	dbf	d2,l1$
+	moveq	#0,d0		;Fading not finished
+out$:	movem.l	(sp)+,a0-a2/d2-d3
+	rts
 
 ;;; Produce a simple copper list for the colours. It will generate the number of colours colour-entries for a copper list. Make sure that there is enough space available.
 	;; A0: pointer to where the copper list is do be stored

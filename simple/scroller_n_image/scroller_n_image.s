@@ -14,7 +14,7 @@ main:	bra	main$
 	dc.b	"Scroller and image demonstration code by Pararaum / T7D."
 	even
 	cmp.l	#"COPC",copcol
-	cmp.l	#"fade",fade_in_copper_list
+	cmp.l	#"fade",_fade_in_copper_list
 	cmp.l	#"dofa",do_fade_in
 	reset
 	illegal

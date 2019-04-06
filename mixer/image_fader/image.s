@@ -3,6 +3,7 @@
 	include	"iff.i"
 
 	XDEF	_uncompress_next_image
+	XDEF	_image_colour_data
 	XDEF	_image_pointers
 
 	;; A0: pointer to target area
@@ -19,7 +20,8 @@ _uncompress_next_image:
 	jsr	find_iff_chunk
 	jsr	uncompress_body_interleaved
 	move.l	a2,a0
-	lea.l	$180(a6),a1	;Target is $DFF180
+	;; 	lea.l	$180(a6),a1	;Target is $DFF180
+	lea.l	_image_colour_data,a1
 	moveq	#0,d0
 	jsr	copy_cmap_chunk
 	move.l	a2,a0		;current image
@@ -55,3 +57,6 @@ _image_pointers:
 	EVEN
 image1:	INCBIN	"static_image.ilbm"
 
+	SECTION BSS,bss
+_image_colour_data:
+	ds.w	32

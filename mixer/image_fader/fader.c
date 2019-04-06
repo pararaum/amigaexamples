@@ -13,10 +13,12 @@ extern unsigned long set_interrupt();
 extern struct Custom custom;
 extern unsigned long volatile framecounter;
 extern unsigned short volatile mousebutton;
-extern void (*vertical_blank_irqfun)();
+extern void (*vertical_blank_irqfun)(void);
 extern void uncompress_next_image(__reg("a0") UBYTE *target);
+extern int fade_in_copper_list(__reg("d0") int colours, __reg("d1") modulo, __reg("a0") UWORD *colourdata, __reg("a1") UWORD *targetptr, __reg("a2") void *spare_area);
 /* These are pointers to the image data */
 extern unsigned long image_pointers[];
+extern UWORD image_colour_data[];
 
 static UWORD __chip copper_list[0xA0];
 static UBYTE __chip bitplane_data[IMAGE_WIDTH * IMAGE_HEIGHT * IMAGE_BITPLANES / 8];
@@ -81,6 +83,7 @@ unsigned long all_black() {
   custom.bpl1mod = IMAGE_WIDTH * IMAGE_BITPLANES / 8;
   custom.bpl2mod = IMAGE_WIDTH * IMAGE_BITPLANES / 8;
   custom.fmode = 0;
+  /* Clear colours (set to black). */
   for(i = 0; i < 32; ++i) {
     custom.color[i] = 0;
   }
@@ -92,8 +95,16 @@ void funnyirqfun(void) {
   custom.color[0] = value++;
 }
 
+void fadeinfunction(void) {
+  static UWORD spare[32*3+1];
+  if(fade_in_copper_list(8, 0, image_colour_data, (void*)(0xDFF180UL), spare) != 0) {
+    vertical_blank_irqfun = &funnyirqfun;
+  }
+}
+
 
 void fadeloop(void) {
+  vertical_blank_irqfun = &fadeinfunction;
   while(mousebutton == 0) ;
 }
 
@@ -104,6 +115,7 @@ int main(int argc, char **argv) {
 #ifndef NDEBUG
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);
   printf("uncompress_next_image=$%08lX\n", (ULONG)uncompress_next_image);
+  printf("fadeinfunction=$%08lX\n", (ULONG)fadeinfunction);
 #endif
   if(setup() != 0) {
     puts("ERROR! Not enough space in copper list!");
@@ -111,7 +123,6 @@ int main(int argc, char **argv) {
   ul = own_machine();
   ul = all_black();
   uncompress_next_image(bitplane_data);
-  vertical_blank_irqfun = &funnyirqfun;
   fadeloop();
   disown_machine();
   printf("irq routine=$%lx\n", ul);

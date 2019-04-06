@@ -1,7 +1,6 @@
 ;;; Functions regarding the fading of the image.
 	include	"image.defs.i"
 	XDEF	do_fade_in
-	XDEF	fade_in_copper_list
 	XDEF	fade_color
 
 	section	text,code
@@ -10,8 +9,10 @@
 	;; A0: pointer to colour list of the image
 	;; A1: pointer to copper colour area
 do_fade_in:
+	;; A5=A1 colour list
 	movem.l	d0-d7/a0-a5,-(sp) ;save registers
 	move.l	a0,a5
+	addq.l	#2,a1		       ;Points now to the first colour value, not copper MOVE
 	link	a6,#-IMAGE_COLOURS*4*2 ;three words per colour
 	movem.l	d0-d1/a0,-(sp)	       ;save registers, again
 	moveq	#0,d0		       ;clear
@@ -23,8 +24,9 @@ l1$:	move.l	d0,(a0)+	       ;clear
 	moveq	#16-1,d2	;16 steps
 	move.l	a7,a2		;spare address
 l49$:	moveq	#IMAGE_COLOURS,d0 ;number of colours
+	moveq	#2,d1		  ;Modulo
 	move.l	a5,a0		;pointer to colour list
-	jsr	fade_in_copper_list ;do one fade
+	jsr	_fade_in_copper_list ;do one fade
 	bsr	wait_4_vblank	    ;wait
 	bsr	wait_4_vblank
 	bsr	wait_4_vblank
@@ -34,49 +36,6 @@ l49$:	moveq	#IMAGE_COLOURS,d0 ;number of colours
 	dbf	d2,l49$		;16 times
 	unlk	a6		;free spare area
 	movem.l	(sp)+,d0-d7/a0-a5 ;restore registers
-	rts
-
-;;; Fade in (and generate the copperlist).
-	;; A0: colour list of target colours
-	;; A1: pointer to where the copper list should be generated
-	;; A2: spare area
-	;; D0: number of colours
-	;; Destroys: D0-D1
-fade_in_copper_list:
-	;; D2: Number of colours (copied from D0) - 1
-	;; D3: colour register number
-	movem.l	a0-a2/d2-d3,-(sp)
-	move.w	#$180,d3
-	move.w	d0,d2
-	bra.s	in$		;Jump into loop -- this work even if d0==0
-l1$:	move.w	(a0)+,d1	;Get next colour
-	move.w	d1,d0		;Only blue
-	and.w	#$000f,d0
-	add.w	d0,(A2)+
-	lsr.w	#4,d1
-	move.w	d1,d0		;Only green
-	and.w	#$000f,d0
-	add.w	d0,(A2)+
-	lsr.w	#4,d1
-	and.w	#$000f,d0
-	move.w	d1,d0		;Only red
-	add.w	d0,(A2)+
-	move.w	-2(a2),d0	;Get red
-	lsr.w	#4,d0		;divide by 16
-	lsl.w	#8,d0		;move to position $0x00
-	move.w	d0,d1
-	move.w	-4(a2),d0	;Get green
-	lsr.w	#4,d0		;divide by 16
-	lsl.w	#4,d0		;move to position $00x0
-	or.w	d0,d1
-	move.w	-6(a2),d0	;Get blue
-	lsr.w	#4,d0		;divide by 16
-	or.w	d0,d1
-	move.w	d3,(a1)+	;Colour register (copper MOVE)
-	addq	#2,d3		;Next register
-	move.w	d1,(a1)+
-in$:	dbf	d2,l1$
-	movem.l	(sp)+,a0-a2/d2-d3
 	rts
 
 
