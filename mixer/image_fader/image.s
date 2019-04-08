@@ -62,12 +62,14 @@ image_pointers_ptr:
 	dc.l	_image_pointers
 _image_pointers:
 	dc.l	image2
+	dc.l	image3
 	dc.l	image1
 	dc.l	0
 
 	EVEN
 image1:	INCBIN	"static_image.ilbm"
 image2:	INCBIN	"t7d.ilbm"
+image3:	INCBIN	"presents.ilbm"
 
 	SECTION BSS,bss
 _image_colour_data:
