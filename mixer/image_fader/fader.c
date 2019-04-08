@@ -124,7 +124,11 @@ void fadeoutfunction(void) {
 }
 
 void wait4end(void) {
-  while(vertical_blank_irqfun != NULL) ;
+  while(vertical_blank_irqfun != NULL) {
+    if(mousebutton != 0) {
+      break;
+    }
+  }
 }
 
 
@@ -136,18 +140,56 @@ void waitframes(int secs) {
 }
 
 
+/*! Stop sample playback.
+ *
+ * We do not want the sample to loop all the time. Therefore we stop
+ * it again by setting the length to 1 and pointing to a sample
+ * consisting of zeros.
+ *
+ * Links:
+ *  * http://eab.abime.net/showthread.php?t=59756
+ *  * http://cyberpingui.free.fr/tuto_paula.htm
+ */
+void stop_sample(void) {
+  int i;
+  unsigned short rastpos;
+  static __chip UWORD empty = 0;
+
+  /* Read V0 to V7 */
+  rastpos = custom.vhposr & 0xff00;
+  rastpos += 0x0100; /* Next rasterline. */
+  while(custom.vhposr < rastpos);
+  for(i = 0; i < 4; ++i) {
+    custom.aud[i].ac_len = 1;
+    custom.aud[i].ac_ptr = & empty;
+  }
+}
+
+
 void fadeloop(void) {
   int i;
   int counter = 0;
 
   while((current_number_img_cols = uncompress_next_image(bitplane_data)) != 0) {
-    for(i = 0; i < sizeof(spare_area_for_fader)/sizeof(UWORD); ++i) spare_area_for_fader[i] = 0;
+    for(i = 0; i < sizeof(spare_area_for_fader)/sizeof(UWORD); ++i) {
+      spare_area_for_fader[i] = 0;
+    }
     vertical_blank_irqfun = &fadeinfunction;
     play_sample(counter);
+    stop_sample();
     wait4end();
-    waitframes(5);
+    if(mousebutton != 0) {
+      break;
+    }
+    waitframes(3);
+    if(mousebutton != 0) {
+      break;
+    }
     vertical_blank_irqfun = &fadeoutfunction;
     wait4end();
+    if(mousebutton != 0) {
+      break;
+    }
     ++counter;
   }
   vertical_blank_irqfun = &funnyirqfun;
@@ -159,22 +201,29 @@ int main(int argc, char **argv) {
   unsigned long ul;
 
 #ifndef NDEBUG
+  printf("fadeloop=$%08lX\n", (ULONG)fadeloop);
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);
   printf("uncompress_next_image=$%08lX\n", (ULONG)uncompress_next_image);
   printf("fadeinfunction=$%08lX\n", (ULONG)fadeinfunction);
   printf("fadeoutfunction=$%08lX\n", (ULONG)fadeoutfunction);
   printf("image_colour_data=$%08lX\n", (ULONG)image_colour_data);
   printf("play_sample=$%08lX\n", (ULONG)play_sample);
-  for(ul = 0; ul < 150000; ul++) ;
 #endif
   if(setup() != 0) {
     puts("ERROR! Not enough space in copper list!");
   }
+#ifndef NDEBUG
+  for(ul = 0; ul < 150000; ul++) ;
+#endif
   ul = own_machine();
   ul = all_black();
   fadeloop();
+  /* Disable DMA and interrupts before(!) quitting. */
+  /* custom.dmacon = 0x7fff; */
+  /* custom.intena = 0x7fff; */
+  /* custom.intreq = 0x7fff; */
   disown_machine();
-#ifndef NDEBUG
+#if 0
   printf("irq routine=$%lx\n", ul);
   printf("framecounter=%08lX\n", framecounter);
 #endif
