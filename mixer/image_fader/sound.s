@@ -6,7 +6,7 @@
 	XDEF	_sound_samples
 	XDEF	_play_sample
 
-	SECTION TEXT,code
+	SECTION CODE,code
 
 	;; Play a sample from the sample list
 	;; Input

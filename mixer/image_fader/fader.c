@@ -161,8 +161,12 @@ void stop_sample(void) {
 
   /* Read V0 to V7 */
   rastpos = custom.vhposr & 0xff00;
-  rastpos += 0x0100; /* Next rasterline. */
+  rastpos += 0x0200; /* Next rasterline. */
   while(custom.vhposr < rastpos);
+  /* This should have wasted enough time that Paula had time to start
+   * the DMA fetch.  Now we can change the registers safely and it
+   * will fetch the new values after the sample had been played.
+   */
   for(i = 0; i < 4; ++i) {
     custom.aud[i].ac_len = 1;
     custom.aud[i].ac_ptr = &empty;
