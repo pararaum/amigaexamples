@@ -3,7 +3,7 @@
 #include <hardware/dmabits.h>
 
 #define IMAGE_WIDTH 320
-#define IMAGE_HEIGHT 200
+#define IMAGE_HEIGHT 256
 #define IMAGE_BITPLANES 5
 
 extern unsigned long own_machine();
@@ -136,7 +136,11 @@ void waitframes(int secs) {
   unsigned long tframe;
 
   tframe = framecounter + 50 * secs;
-  while(framecounter < tframe);
+  while(framecounter < tframe) {
+        if(mousebutton != 0) {
+      break;
+    }
+  }
 }
 
 
@@ -161,7 +165,7 @@ void stop_sample(void) {
   while(custom.vhposr < rastpos);
   for(i = 0; i < 4; ++i) {
     custom.aud[i].ac_len = 1;
-    custom.aud[i].ac_ptr = & empty;
+    custom.aud[i].ac_ptr = &empty;
   }
 }
 
@@ -201,6 +205,7 @@ int main(int argc, char **argv) {
   unsigned long ul;
 
 #ifndef NDEBUG
+  printf("main=$%08lX\n", (ULONG)&main);
   printf("fadeloop=$%08lX\n", (ULONG)fadeloop);
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);
   printf("uncompress_next_image=$%08lX\n", (ULONG)uncompress_next_image);
