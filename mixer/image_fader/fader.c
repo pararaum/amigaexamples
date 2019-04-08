@@ -23,7 +23,7 @@ extern void *play_sample(__reg("d0") int sample_no);
 extern unsigned long image_pointers[];
 extern UWORD image_colour_data[];
 
-static UWORD spare_area_for_fader[32*3+1]; /*!< Here the fader stores it temporary data. */
+static UWORD spare_area_for_fader[32*4+1]; /*!< Here the fader stores it temporary data. */
 
 static UWORD __chip copper_list[0xA0];
 static UBYTE __chip bitplane_data[IMAGE_WIDTH * IMAGE_HEIGHT * IMAGE_BITPLANES / 8];
@@ -209,6 +209,7 @@ int main(int argc, char **argv) {
   unsigned long ul;
 
 #ifndef NDEBUG
+  printf("spare_area_for_fader=$%08lX\n", (ULONG)&spare_area_for_fader);
   printf("main=$%08lX\n", (ULONG)&main);
   printf("fadeloop=$%08lX\n", (ULONG)fadeloop);
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);
