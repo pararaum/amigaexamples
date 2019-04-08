@@ -143,7 +143,7 @@ void fadeloop(void) {
     for(i = 0; i < sizeof(spare_area_for_fader)/sizeof(UWORD); ++i) spare_area_for_fader[i] = 0;
     vertical_blank_irqfun = &fadeinfunction;
     wait4end();
-    waitframes(8);
+    waitframes(5);
     vertical_blank_irqfun = &fadeoutfunction;
     wait4end();
   }

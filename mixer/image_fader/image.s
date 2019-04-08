@@ -61,15 +61,17 @@ end$:	movem.l	(sp)+,d2-d7/a0-a6
 image_pointers_ptr:
 	dc.l	_image_pointers
 _image_pointers:
-	dc.l	image2
-	dc.l	image3
+	dc.l	image0
 	dc.l	image1
+	dc.l	image2
+	dc.l	imageS
 	dc.l	0
 
 	EVEN
-image1:	INCBIN	"static_image.ilbm"
-image2:	INCBIN	"t7d.ilbm"
-image3:	INCBIN	"presents.ilbm"
+imageS:	INCBIN	"static_image.ilbm"
+image0:	INCBIN	"t7d.ilbm"
+image1:	INCBIN	"presents.ilbm"
+image2:	INCBIN	"atari.ilbm"
 
 	SECTION BSS,bss
 _image_colour_data:
