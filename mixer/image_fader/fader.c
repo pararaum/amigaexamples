@@ -23,8 +23,13 @@ extern int fade_out_colour_table(__reg("d0") int number_of_colours, __reg("a0") 
 extern unsigned long image_pointers[];
 extern UWORD image_colour_data[];
 
+static UWORD spare_area_for_fader[32*3+1]; /*!< Here the fader stores it temporary data. */
+
 static UWORD __chip copper_list[0xA0];
 static UBYTE __chip bitplane_data[IMAGE_WIDTH * IMAGE_HEIGHT * IMAGE_BITPLANES / 8];
+
+/*! This is the current number of image colours. It is accessed by multiple functions. */
+int current_number_img_cols;
 
 /*! \brief setup the copper
  *
@@ -99,8 +104,7 @@ void funnyirqfun(void) {
 }
 
 void fadeinfunction(void) {
-  static UWORD spare[32*3+1];
-  if(fade_in_copper_list(8, 0, image_colour_data, (void*)(0xDFF180UL), spare) != 0) {
+  if(fade_in_copper_list(current_number_img_cols, 0, image_colour_data, (void*)(0xDFF180UL), spare_area_for_fader) != 0) {
     vertical_blank_irqfun = NULL;
   }
 }
@@ -109,12 +113,12 @@ void fadeinfunction(void) {
 void fadeoutfunction(void) {
   int i;
 
-  i = fade_out_colour_table(8, image_colour_data);
+  i = fade_out_colour_table(current_number_img_cols, image_colour_data);
   if(i == 0) {
     /* Now finished! */
     vertical_blank_irqfun = NULL;
   }
-  for(i = 0; i < 8; ++i) {
+  for(i = 0; i < current_number_img_cols; ++i) {
     custom.color[i] = image_colour_data[i];
   }
 }
@@ -124,11 +128,25 @@ void wait4end(void) {
 }
 
 
+void waitframes(int secs) {
+  unsigned long tframe;
+
+  tframe = framecounter + 50 * secs;
+  while(framecounter < tframe);
+}
+
+
 void fadeloop(void) {
-  vertical_blank_irqfun = &fadeinfunction;
-  wait4end();
-  vertical_blank_irqfun = &fadeoutfunction;
-  wait4end();
+  int i;
+
+  while((current_number_img_cols = uncompress_next_image(bitplane_data)) != 0) {
+    for(i = 0; i < sizeof(spare_area_for_fader)/sizeof(UWORD); ++i) spare_area_for_fader[i] = 0;
+    vertical_blank_irqfun = &fadeinfunction;
+    wait4end();
+    waitframes(8);
+    vertical_blank_irqfun = &fadeoutfunction;
+    wait4end();
+  }
   vertical_blank_irqfun = &funnyirqfun;
   while(mousebutton == 0) ;
 }
@@ -136,26 +154,25 @@ void fadeloop(void) {
 
 int main(int argc, char **argv) {
   unsigned long ul;
-  int cols;
 
 #ifndef NDEBUG
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);
   printf("uncompress_next_image=$%08lX\n", (ULONG)uncompress_next_image);
   printf("fadeinfunction=$%08lX\n", (ULONG)fadeinfunction);
   printf("fadeoutfunction=$%08lX\n", (ULONG)fadeoutfunction);
+  printf("image_colour_data=$%08lX\n", (ULONG)image_colour_data);
+  for(ul = 0; ul < 150000; ul++) ;
 #endif
   if(setup() != 0) {
     puts("ERROR! Not enough space in copper list!");
   }
   ul = own_machine();
   ul = all_black();
-  cols = uncompress_next_image(bitplane_data);
   fadeloop();
   disown_machine();
 #ifndef NDEBUG
   printf("irq routine=$%lx\n", ul);
   printf("framecounter=%08lX\n", framecounter);
-  printf("colours=%d\n", cols);
 #endif
   return 0;
 }

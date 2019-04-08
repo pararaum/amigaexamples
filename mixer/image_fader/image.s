@@ -9,7 +9,7 @@
 	;; Input
 	;; A0: pointer to target area
 	;; Output
-	;; D0: Number of colours
+	;; D0: Number of colours, 0 if no more images
 _uncompress_next_image:
 	;; A2: current image pointer
 	;; A6: $DFF000
@@ -18,7 +18,10 @@ _uncompress_next_image:
 	move.l	a0,a1
 	move.l	image_pointers_ptr,a2 ;A2 points now to the next image ptr
 	move.l	(a2),a2		      ;Get the pointer (image)
+	move.l	a2,d0		      ;Check if pointer is zero, we return also a zero if no more images.
+	beq.s	end$
 	move.l	a2,a0		      ;Copy it to A0
+	addq.l	#4,image_pointers_ptr ;Advance image pointer
 	move.l	#"BODY",d0
 	jsr	find_iff_chunk
 	jsr	uncompress_body_interleaved
@@ -50,7 +53,7 @@ _uncompress_next_image:
 	move.w	d0,bpl1mod(a6)
 	move.w	d0,bpl2mod(a6)
 	move.l	d4,d0		; Return number of colours
-	movem.l	(sp)+,d2-d7/a0-a6
+end$:	movem.l	(sp)+,d2-d7/a0-a6
 	rts
 
 	SECTION	DATA,data
@@ -58,11 +61,13 @@ _uncompress_next_image:
 image_pointers_ptr:
 	dc.l	_image_pointers
 _image_pointers:
+	dc.l	image2
 	dc.l	image1
 	dc.l	0
 
 	EVEN
 image1:	INCBIN	"static_image.ilbm"
+image2:	INCBIN	"t7d.ilbm"
 
 	SECTION BSS,bss
 _image_colour_data:
