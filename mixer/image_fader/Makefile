@@ -7,7 +7,7 @@ LIBS=-lamiga
 OOBJS=../../framework/own.o ../../framework/iff.o ../../framework/copper_fade.o
 CC=vc
 ALL=fader
-OBJS=setup.o image.o
+OBJS=setup.o image.o sound.o
 
 all:	$(ALL)
 

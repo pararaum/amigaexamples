@@ -17,7 +17,7 @@ extern volatile void (*vertical_blank_irqfun)(void);
 extern int uncompress_next_image(__reg("a0") UBYTE *target);
 extern int fade_in_copper_list(__reg("d0") int colours, __reg("d1") modulo, __reg("a0") UWORD *colourdata, __reg("a1") UWORD *targetptr, __reg("a2") void *spare_area);
 extern int fade_out_colour_table(__reg("d0") int number_of_colours, __reg("a0") UWORD *colourdata);
-
+extern void *play_sample(__reg("d0") int sample_no);
 
 /* These are pointers to the image data */
 extern unsigned long image_pointers[];
@@ -138,14 +138,17 @@ void waitframes(int secs) {
 
 void fadeloop(void) {
   int i;
+  int counter = 0;
 
   while((current_number_img_cols = uncompress_next_image(bitplane_data)) != 0) {
     for(i = 0; i < sizeof(spare_area_for_fader)/sizeof(UWORD); ++i) spare_area_for_fader[i] = 0;
     vertical_blank_irqfun = &fadeinfunction;
+    play_sample(counter);
     wait4end();
     waitframes(5);
     vertical_blank_irqfun = &fadeoutfunction;
     wait4end();
+    ++counter;
   }
   vertical_blank_irqfun = &funnyirqfun;
   while(mousebutton == 0) ;
@@ -161,6 +164,7 @@ int main(int argc, char **argv) {
   printf("fadeinfunction=$%08lX\n", (ULONG)fadeinfunction);
   printf("fadeoutfunction=$%08lX\n", (ULONG)fadeoutfunction);
   printf("image_colour_data=$%08lX\n", (ULONG)image_colour_data);
+  printf("play_sample=$%08lX\n", (ULONG)play_sample);
   for(ul = 0; ul < 150000; ul++) ;
 #endif
   if(setup() != 0) {
