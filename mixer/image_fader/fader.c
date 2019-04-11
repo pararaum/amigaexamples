@@ -14,7 +14,7 @@ extern struct Custom custom;
 extern unsigned long volatile framecounter;
 extern unsigned short volatile mousebutton;
 extern volatile void (*vertical_blank_irqfun)(void);
-extern int uncompress_next_image(__reg("a0") UBYTE *target);
+extern int uncompress_next_image(__reg("a0") UBYTE *target, __reg("a1") UWORD *bplcon0store);
 extern int fade_in_copper_list(__reg("d0") int colours, __reg("d1") modulo, __reg("a0") UWORD *colourdata, __reg("a1") UWORD *targetptr, __reg("a2") void *spare_area);
 extern int fade_out_colour_table(__reg("d0") int number_of_colours, __reg("a0") UWORD *colourdata);
 extern void *play_sample(__reg("d0") int sample_no);
@@ -23,6 +23,7 @@ extern void *play_sample(__reg("d0") int sample_no);
 extern unsigned long image_pointers[];
 extern UWORD image_colour_data[];
 
+static UWORD *pointer_to_copper_bplcon0;
 static UWORD spare_area_for_fader[32*4+1]; /*!< Here the fader stores it temporary data. */
 
 static UWORD __chip copper_list[0xA0];
@@ -45,6 +46,10 @@ int setup() {
   /*Pointer to the end of the copper list.*/
   UWORD *cend = copper_list + sizeof(copper_list)/sizeof(UWORD);
 
+  /* $dff100	BPLCON0	Bitplane depth and screen mode */
+  *cptr++ = 0x0100;
+  pointer_to_copper_bplcon0 = cptr;
+  *cptr++ = 0; /* All off! */
   /* Setup the bitplane pointers. */
   bitplptr = (unsigned long)(bitplane_data);
   for(plane = 0; plane <= IMAGE_BITPLANES; plane++) {
@@ -61,6 +66,15 @@ int setup() {
   /*   *cptr++ = reg; */
   /*   *cptr++ = 0; */
   /* } */
+  /* WAIT: Display window start is at Y=$2c and we have only 200 lines which is $2c+200=$f4 */
+  *cptr++ = 0xf401;
+  *cptr++ = 0xFFFE;
+  /* BPLCON0 */
+  *cptr++ = 0x0100;
+  *cptr++ = 0;
+  /* END */
+  *cptr++ = 0xFFFF;
+  *cptr++ = 0xFFFE;
 #ifndef NDEBUG
   fprintf(stderr, "Copper: %08lX < %08lX\n", (ULONG)cptr, (ULONG)cend);
 #endif
@@ -88,8 +102,8 @@ unsigned long all_black() {
   custom.bplcon2 = 0x0024;
   custom.bplcon3 = 0;
   /* The default is *planar* images. */
-  custom.bpl1mod = IMAGE_WIDTH * IMAGE_BITPLANES / 8;
-  custom.bpl2mod = IMAGE_WIDTH * IMAGE_BITPLANES / 8;
+  custom.bpl1mod = 0;
+  custom.bpl2mod = 0;
   custom.fmode = 0;
   /* Clear colours (set to black). */
   for(i = 0; i < 32; ++i) {
@@ -178,7 +192,7 @@ void fadeloop(void) {
   int i;
   int counter = 0;
 
-  while((current_number_img_cols = uncompress_next_image(bitplane_data)) != 0) {
+  while((current_number_img_cols = uncompress_next_image(bitplane_data, pointer_to_copper_bplcon0)) != 0) {
     for(i = 0; i < sizeof(spare_area_for_fader)/sizeof(UWORD); ++i) {
       spare_area_for_fader[i] = 0;
     }
@@ -200,6 +214,12 @@ void fadeloop(void) {
     }
     ++counter;
   }
+  for(i = 1; i < 16; ++i) {
+    custom.color[i] = i << 8 | i << 4 | i;
+  }
+  /* The default is *planar* images. */
+  custom.bpl1mod = 0;
+  custom.bpl2mod = 0;
   vertical_blank_irqfun = &funnyirqfun;
   while(mousebutton == 0) ;
 }
@@ -210,6 +230,7 @@ int main(int argc, char **argv) {
 
 #ifndef NDEBUG
   printf("spare_area_for_fader=$%08lX\n", (ULONG)&spare_area_for_fader);
+  printf("copper_list=$%08lX\n", (ULONG)copper_list);
   printf("main=$%08lX\n", (ULONG)&main);
   printf("fadeloop=$%08lX\n", (ULONG)fadeloop);
   printf("bitplane_data=$%08lX\n", (ULONG)bitplane_data);

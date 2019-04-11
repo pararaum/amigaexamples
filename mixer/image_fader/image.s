@@ -8,14 +8,17 @@
 
 	;; Input
 	;; A0: pointer to target area
+	;; A1: pointer to where the new bplcon0 has to be stored
 	;; Output
 	;; D0: Number of colours, 0 if no more images
 _uncompress_next_image:
 	;; A2: current image pointer
+	;; A3: =A1 store bplcon0 here
 	;; A6: $DFF000
 	movem.l	d2-d7/a0-a6,-(sp)
 	lea.l	$DFF000,a6
-	move.l	a0,a1
+	move.l	a1,a3		      ; Safe bplcon0 storage pointer
+	move.l	a0,a1		      ; Copy target pointer to A1 for find_iff_chunk
 	move.l	image_pointers_ptr,a2 ;A2 points now to the next image ptr
 	move.l	(a2),a2		      ;Get the pointer (image)
 	move.l	a2,d0		      ;Check if pointer is zero, we return also a zero if no more images.
@@ -45,7 +48,8 @@ _uncompress_next_image:
 	lsl.w	#8,d0		; Move to position of x: $x000
 	lsl.w	#4,d0
 	or.w	#$0200,d0	; Colour burst, zero bitplanes
-	move.w	d0,bplcon0(a6)	; BPLCON0
+	;; 	move.w	d0,bplcon0(a6)	; BPLCON0
+	move.w	d0,(a3)		; Store bplcon0
 	move.w	d1,d0		; Number of bitplanes in D0
 	subq.w	#1,d0
 	mulu	d2,d0		; Multiply with bitplanes-1
