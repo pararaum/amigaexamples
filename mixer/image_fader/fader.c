@@ -229,16 +229,11 @@ void run_demo(void) {
     printf("irq routine=$%lx\n", ul);
     printf("framecounter=%08lX\n", framecounter);
 #endif
-  } else {
-    /* Disable DMA and interrupts before(!) quitting. */
-    custom.dmacon = 0x7fff;
-    custom.intena = 0x7fff;
-    custom.intreq = 0x7fff;
-    for(ul = 0; ul < 150000; ul++) {
-      custom.color[0] = ul;
-      custom.color[1] = ~ul;
-    }
   }
+  /* Disable DMA and interrupts before(!) quitting. */
+  custom.dmacon = 0x7fff;
+  custom.intena = 0x7fff;
+  custom.intreq = 0x7fff;
 }
 
 int main(int argc, char **argv) {
