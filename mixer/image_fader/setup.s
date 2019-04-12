@@ -10,9 +10,11 @@
 	XDEF	_mousebutton
 	XDEF	_vertical_blank_irqfun
 
-;;; Set up everything to control the machine fully.
-;;; O: D0: pointer to gfx library
+;;; Set up everything to control the machine fully. And store the current stack pointer for the stack trick.
+;;; O: D0: pointer to gfx library or zero if in finished mode
 _own_machine:
+	;; Now store the current stack pointer for later use.
+	move.l	a7,stack_on_own_machine
 	moveq	#OWN_libraries|OWN_view|OWN_trap|OWN_interrupt,d0
 	jsr	own_machine
 	move.l	a0,d0
@@ -48,9 +50,23 @@ nocall$:
 	btst	#6,$BFE001
 	bne.s	nom$		;No mouse
 	move.w	#1,_mousebutton
+	nop
+	;; Modify return address, see "own" call.
+	lea.l	stack_trick$(pc),a0
+	;; Overwrite return address on stack.
+	move.l	a0,15*4+2(a7)
 nom$:	move.w  #INTF_VERTB,$DFF000+intreq
 	movem.l	(sp)+,d0-d7/a0-a6
 	rte
+stack_trick$:
+	;; We will return from the interrupt here instead of the original position.
+	move.l	stack_on_own_machine(pc),a7
+	;; Zero means: finish program.
+	moveq	#0,d0
+	rts
+stack_on_own_machine:
+	dc.l	0
+
 
 	SECTION	DATA,data
 	;; Number of vertical blanks

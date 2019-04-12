@@ -200,18 +200,9 @@ void fadeloop(void) {
     play_sample(counter);
     stop_sample();
     wait4end();
-    if(mousebutton != 0) {
-      break;
-    }
     waitframes(3);
-    if(mousebutton != 0) {
-      break;
-    }
     vertical_blank_irqfun = &fadeoutfunction;
     wait4end();
-    if(mousebutton != 0) {
-      break;
-    }
     ++counter;
   }
   for(i = 1; i < 16; ++i) {
@@ -225,10 +216,34 @@ void fadeloop(void) {
 }
 
 
-int main(int argc, char **argv) {
+void run_demo(void) {
   unsigned long ul;
 
 #ifndef NDEBUG
+  for(ul = 0; ul < 150000; ul++) ;
+#endif
+  if(own_machine() != 0) {
+    ul = all_black();
+    fadeloop();
+#if 0
+    printf("irq routine=$%lx\n", ul);
+    printf("framecounter=%08lX\n", framecounter);
+#endif
+  } else {
+    /* Disable DMA and interrupts before(!) quitting. */
+    custom.dmacon = 0x7fff;
+    custom.intena = 0x7fff;
+    custom.intreq = 0x7fff;
+    for(ul = 0; ul < 150000; ul++) {
+      custom.color[0] = ul;
+      custom.color[1] = ~ul;
+    }
+  }
+}
+
+int main(int argc, char **argv) {
+#ifndef NDEBUG
+  printf("run_demo=$%08lX\n", (ULONG)&run_demo);
   printf("spare_area_for_fader=$%08lX\n", (ULONG)&spare_area_for_fader);
   printf("copper_list=$%08lX\n", (ULONG)copper_list);
   printf("main=$%08lX\n", (ULONG)&main);
@@ -243,20 +258,7 @@ int main(int argc, char **argv) {
   if(setup() != 0) {
     puts("ERROR! Not enough space in copper list!");
   }
-#ifndef NDEBUG
-  for(ul = 0; ul < 150000; ul++) ;
-#endif
-  ul = own_machine();
-  ul = all_black();
-  fadeloop();
-  /* Disable DMA and interrupts before(!) quitting. */
-  /* custom.dmacon = 0x7fff; */
-  /* custom.intena = 0x7fff; */
-  /* custom.intreq = 0x7fff; */
+  run_demo();
   disown_machine();
-#if 0
-  printf("irq routine=$%lx\n", ul);
-  printf("framecounter=%08lX\n", framecounter);
-#endif
   return 0;
 }
