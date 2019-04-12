@@ -212,7 +212,7 @@ void fadeloop(void) {
   custom.bpl1mod = 0;
   custom.bpl2mod = 0;
   vertical_blank_irqfun = &funnyirqfun;
-  while(mousebutton == 0) ;
+  waitframes(4);
 }
 
 
