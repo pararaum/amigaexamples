@@ -118,6 +118,11 @@ public:
     }
   }
   virtual ~OutputBasis() {}
+
+  void write_uword(unsigned short us) {
+    out << static_cast<unsigned char>(us >> 8)
+	<< static_cast<unsigned char>(us & 0x00FF);
+  }
 };
 
 
@@ -130,19 +135,12 @@ class OutputBitplanes : public OutputBasis {
 public:
   OutputBitplanes(const std::string &ifn, std::ostream &out_) : OutputBasis(ifn, out_) {}
 
-  virtual void output_header(unsigned int __attribute__((unused))width, unsigned int __attribute__((unused)) height, unsigned int __attribute__((unused)) no_bitplanes) {
-#if 0
-    out << "P4\n";
-    out << "# bitplanes=" << no_bitplanes << '\n';
-    out << width << ' ';
-    out << height * no_bitplanes;
-    out << std::endl;
-#endif
+  virtual void output_header(void) {
   }
   virtual void output_footer(void) {
   }
   virtual void operator()(bool ilvd, unsigned int width, unsigned int height, const std::vector<std::vector<unsigned char>> &rbpls) {
-    output_header(width, height, rbpls.size());
+    output_header();
     output_raw_bitplanes(ilvd, width / 8, height, rbpls);
     output_footer();
   }
@@ -218,18 +216,8 @@ public:
   OutputBitplanesASM(const std::string &ifn, std::ostream &out_)
     : OutputBitplanes_as_ASCII(ifn, out_) {
   }
-  virtual void output_header(unsigned int width, unsigned int height, unsigned int no_bitplanes) {
-    std::string fname(frobnicate_filename());
-    
-    out << "\t; Filename '" << inpfname << "'\n";
-    out << fname + "_width\tEQU\t" << width << std::endl;
-    out << fname + "_height\tEQU\t" << height << std::endl;
-    out << fname + "_bitplanes\tEQU\t" << no_bitplanes << std::endl;
-    out << "\tXDEF\t" << fname << std::endl;
-    out << "\tXDEF\t" << fname + "_width\n";
-    out << "\tXDEF\t" << fname + "_height\n";
-    out << "\tXDEF\t" << fname + "_bitplanes\n";
-    out << fname << ":\n";
+  virtual void output_header(void) {
+    out << frobnicate_filename() << ":\n";
   }
   virtual void output_row_header(void) {
     out << "\tDC.B\t";
@@ -257,14 +245,8 @@ public:
   ~OutputBitplanesC() {
     out << "};\n";
   }
-  virtual void output_header(unsigned int width, unsigned int height, unsigned int no_bitplanes) {
-    std::string fname(frobnicate_filename());
-    
-    out << "\t/* Filename '" << inpfname << "' */\n";
-    out << "#define " << fname + "_width\t" << width << "\n";
-    out << "#define " << fname + "_height\t" << height << "\n";
-    out << "#define " << fname + "_bitplanes\t" << no_bitplanes << "\n";
-    out << "unsigned char " << (args.bitplane_chip_flag ? "__chip " : "/*__chip*/") << fname << "[] = {\n";
+  virtual void output_header(void) {
+    out << "unsigned char " << (args.bitplane_chip_flag ? "__chip " : "/*__chip*/") << frobnicate_filename() << "[] = {\n";
   }
   virtual void output_row_header(void) {
     out << '\t';
@@ -280,6 +262,95 @@ public:
 
     sprintf(buf, "0x%02x", (unsigned int)ch);
     out << buf;
+  }
+};
+
+
+/*! \brief Image Header Writer Class
+ *
+ * This class will write the image header in the appropriate format.
+ */
+class HeaderWriter : public OutputBasis {
+public:
+  using OutputBasis::OutputBasis;
+
+  /*! \brief Write the header
+   *
+   *The palette is written to the output but the number of bitplanes
+   *will specify the maximum number of colours written (2^bitpl).
+   *
+   *@param palette pointer to an SDL_Palette
+   *@param bitpl number of bitplanes
+   */
+  virtual void operator()(unsigned short __attribute__((unused))width, unsigned short __attribute__((unused)) height, unsigned short __attribute__((unused)) no_bitplanes) = 0;
+};
+
+
+/*!\brief Write binary header
+ *
+ * This writes a very simple binary header of 16 bytes, consisting of:
+ *
+ *  - Width (UWORD)
+ *  - Height (UWORD)
+ *  - Bitplanes (UWORD)
+ *
+ * Remaining words are set to zero.
+ */
+class HeaderWriterBin : public HeaderWriter {
+public:
+  using HeaderWriter::HeaderWriter;
+
+  virtual void operator()(unsigned short width, unsigned short height, unsigned short no_bitplanes) {
+    int i;
+
+    write_uword(width);
+    write_uword(height);
+    write_uword(no_bitplanes);
+    write_uword(0);
+    for(i = 0; i < 4; ++i) {
+      write_uword(0);
+    }
+#if 0
+    out << "P4\n";
+    out << "# bitplanes=" << no_bitplanes << '\n';
+    out << width << ' ';
+    out << height * no_bitplanes;
+    out << std::endl;
+#endif
+  }
+};
+
+
+class HeaderWriterASM : public HeaderWriter {
+public:
+  using HeaderWriter::HeaderWriter;
+
+  virtual void operator()(unsigned short width, unsigned short height, unsigned short no_bitplanes) {
+    std::string fname(frobnicate_filename());
+
+    out << "\t; Filename '" << inpfname << "'\n";
+    out << fname + "_width\tEQU\t" << width << std::endl;
+    out << fname + "_height\tEQU\t" << height << std::endl;
+    out << fname + "_bitplanes\tEQU\t" << no_bitplanes << std::endl;
+    out << "\tXDEF\t" << fname << std::endl;
+    out << "\tXDEF\t" << fname + "_width\n";
+    out << "\tXDEF\t" << fname + "_height\n";
+    out << "\tXDEF\t" << fname + "_bitplanes\n";
+  }
+};
+
+
+class HeaderWriterC : public HeaderWriter {
+public:
+  using HeaderWriter::HeaderWriter;
+
+  virtual void operator()(unsigned short width, unsigned short height, unsigned short no_bitplanes) {
+    std::string fname(frobnicate_filename());
+
+    out << "\t/* Filename '" << inpfname << "' */\n";
+    out << "#define " << fname + "_width\t" << width << "\n";
+    out << "#define " << fname + "_height\t" << height << "\n";
+    out << "#define " << fname + "_bitplanes\t" << no_bitplanes << "\n";
   }
 };
 
@@ -357,9 +428,7 @@ public:
     for(int i = 0; i < num_colors(palette, bitpl); ++i) {
       unsigned short col = amiga_colour(palette, i);
 
-      out << static_cast<unsigned char>(col >> 8)
-	  << static_cast<unsigned char>(col & 0x00FF)
-	;
+      write_uword(col);
     }
   }
 };
@@ -424,7 +493,18 @@ void handle_file(const char *fname) {
       bplvec.resize(args.bitplane_number_arg);
     }
     if(args.header_flag) {
-      throw std::domain_error("header");
+      HeaderWriter *headerwriter = NULL;
+      if((outformat == "bin") || (outformat == "raw")) {
+	headerwriter = new HeaderWriterBin(fname, std::cout);
+      } else if(outformat == "asm") {
+	headerwriter = new HeaderWriterASM(fname, std::cout);
+      } else if(outformat == "c") {
+	headerwriter = new HeaderWriterC(fname, std::cout);
+      } else {
+	throw std::invalid_argument("header, unknown format: " + outformat);
+      }
+      (*headerwriter)(surf->w, surf->h, args.bitplane_number_arg);
+      delete headerwriter;
     }
     if(args.palette_flag) {
       PaletteWriter *palettewriter = NULL;
