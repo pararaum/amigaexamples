@@ -12,7 +12,7 @@ OOBJS=../../framework/own.o
 all:	$(TARGET)
 
 serene_scence.deflate: serene_scene.png
-	../../tools/convert_img2raw serene_scene.png -B 3 -p -O bin|gzip -9|tail -c +11 > serene_scene.deflate
+	../../tools/convert_img2raw serene_scene.png -B 3 -b -h -p -O bin|gzip -9|tail -c +11 > serene_scene.deflate
 
 $(TARGET):	$(TARGET).o inflate.o image.o
 	$(LD) $(VLINKFLAGS) -o $@ $+ $(OOBJS) $(LIBS)

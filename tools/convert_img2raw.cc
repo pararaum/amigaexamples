@@ -508,7 +508,7 @@ void handle_file(const char *fname) {
     }
     if(args.palette_flag) {
       PaletteWriter *palettewriter = NULL;
-      if(outformat == "bin") {
+      if((outformat == "bin") || (outformat == "raw")) {
 	palettewriter = new PaletteWriterBin(fname, std::cout);
       } else if(outformat == "asm") {
 	palettewriter = new PaletteWriterASM(fname, std::cout);
@@ -523,7 +523,7 @@ void handle_file(const char *fname) {
     if(args.bitplanes_flag) {
       OutputBitplanes *obfunctor;
       std::vector<std::vector<unsigned char>> raws(bitplanes2bins(bplvec));
-      if(outformat == "bin") {
+      if((outformat == "bin") || (outformat == "raw")) {
 	obfunctor = new OutputBitplanes(fname, std::cout);
       } else if(outformat == "c") {
 	obfunctor = new OutputBitplanesC(fname, std::cout);
