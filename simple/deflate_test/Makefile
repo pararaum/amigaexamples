@@ -7,7 +7,7 @@ LD=vc
 LIBS=-lamiga
 VLINKFLAGS=-s
 TARGET=deflator
-#OOBJS=inflate.o
+OOBJS=../../framework/own.o
 
 all:	$(TARGET)
 

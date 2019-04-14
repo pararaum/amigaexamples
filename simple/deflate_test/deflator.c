@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <hardware/custom.h>
+#include <hardware/dmabits.h>
 
 /*
  * This is an example of how to use the inflate.asm code from
@@ -6,8 +8,13 @@
  * easily with gzip.
  */
 
+/* Custom chip registers. */
+extern struct Custom custom;
 extern void inflate(void *output_buffer, void *input_stream);
 extern unsigned char deflated_data[];
+extern void *own_machine(ULONG __reg("d0") initbits);
+extern void disown_machine(void);
+extern void wait_for_mouse(void);
 
 /* Excerpt from RFC 1952:
  
@@ -201,15 +208,64 @@ unsigned char lorem_bin[] = {
   0x95, 0xbe, 0xec, 0xd0, 0x2b, 0x02, 0x00, 0x00
 };
 unsigned int lorem_bin_len = 332;
-unsigned char __chip buffer[320*200/8+1024];
+UWORD __chip buffer[320*200/sizeof(UWORD)+1024];
+UWORD __chip copper_list[] = {
+  /* Bitplane pointer. */
+  0xe0, 0,
+  0xe2, 0,
+  0xe4, 0,
+  0xe6, 0,
+  0xe8, 0,
+  0xea, 0,
+  /* NOP */
+  0x1fe, 0,
+  /* End of List */
+  0xFFFF, 0xFFFE
+};
 
+void init_copper(UWORD *image) {
+  int i;
+  int planes = image[2];
+  int colors = (1 << planes);
+  ULONG address = (ULONG)image + 16 +  colors * 2;
+
+  /* Set up copper list */
+  custom.cop1lc = (ULONG)copper_list;
+  custom.dmacon = DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER;
+  custom.diwstrt = 0x2c81;
+  custom.diwstop = 0x2cc1;
+  custom.ddfstrt = 0x0038;
+  custom.ddfstop = 0x00d0;
+  custom.bplcon0 = 0x0200 | 0x1000 * planes; /* colour burst */
+  custom.bplcon1 = 0;
+  custom.bplcon2 = 0x0024;
+  custom.bplcon3 = 0;
+  custom.bpl1mod = 320/8*(planes-1);
+  custom.bpl2mod = 320/8*(planes-1);
+  custom.fmode = 0;
+  copper_list[1] = address >> 16;
+  copper_list[3] = address & 0xFFFF;
+  copper_list[5] = (address+320/8) >> 16;
+  copper_list[7] = (address+320/8) & 0xFFFF;
+  copper_list[9] = (address+320/8*2) >> 16;
+  copper_list[11] = (address+320/8*2) & 0xFFFF;
+  for(i = 0; i < colors; ++i) {
+    custom.color[i] = image[8 + i];
+  }
+}
 
 int main(int argc, char **argv) {
   printf("inflate=$%08lX\n", (unsigned long)&inflate);
   printf("buffer=$%08lX\n", (unsigned long)&buffer);
+  printf("init_copper=$%08lx\n", (unsigned long)&init_copper);
   puts("Deflating data...");
   inflate(buffer, &lorem_bin[10]);
-  printf("DATA\n%s\nDATA END\n", buffer);
+  printf("DATA\n%s\nDATA END\n", (char*)buffer);
   inflate(buffer, deflated_data);
+  printf("%hu\t%hu\t%hu\n", buffer[0], buffer[1], buffer[2]);
+  own_machine(0x3);
+  init_copper(buffer);
+  wait_for_mouse();
+  disown_machine();
   return 0;
 }

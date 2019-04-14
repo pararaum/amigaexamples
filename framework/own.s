@@ -9,6 +9,8 @@
 
 	XDEF	own_machine
 	XDEF	disown_machine
+	XDEF	_own_machine
+	XDEF	_disown_machine
 	XDEF	_own_supervisor
 	XDEF	_disown_supervisor
 	XDEF	gfxbase
@@ -19,7 +21,11 @@ COP1LCH	EQU	$dff080
 	;; deb_noforbid equ 1
 	section framework,code
 	
-
+;;; Convenience function for C call. Parameters see below. Output: D0: gfxbase
+_own_machine:
+	bsr.s	own_machine
+	move.l	a0,d0
+	rts
 ;;; This function will open the graphics library and take over the
 ;	machine. The bits in D0 tell the function which further
 ;	initialisations should be done.
@@ -81,6 +87,7 @@ restore_view:
 	jsr _LVOWaitTOF(a6)	; WaitTOF
 	rts
 
+_disown_machine:
 disown_machine:
 	movem.l	d0-d7/a0-a6,-(sp)
 	move.l	$4.w,a6
