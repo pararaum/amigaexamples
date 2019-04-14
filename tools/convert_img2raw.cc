@@ -492,48 +492,60 @@ void handle_file(const char *fname) {
     if(args.bitplane_number_arg < 8) {
       bplvec.resize(args.bitplane_number_arg);
     }
-    if(args.header_flag) {
-      HeaderWriter *headerwriter = NULL;
-      if((outformat == "bin") || (outformat == "raw")) {
-	headerwriter = new HeaderWriterBin(fname, std::cout);
-      } else if(outformat == "asm") {
-	headerwriter = new HeaderWriterASM(fname, std::cout);
-      } else if(outformat == "c") {
-	headerwriter = new HeaderWriterC(fname, std::cout);
-      } else {
-	throw std::invalid_argument("header, unknown format: " + outformat);
+    if(!(args.header_flag || args.palette_flag || args.bitplanes_flag)) {
+      std::cerr << "File: " << fname << '\n'
+		<< "\tFormat: " << format->format << '\n'
+		<< "\tBitPerPixel: " << (int)format->BitsPerPixel << '\n'
+		<< "\tncolors: " << palette->ncolors << '\n'
+	;
+      for(int i = 0; i < palette->ncolors; ++i) {
+	SDL_Color &cref(palette->colors[i]);
+	std::cerr << boost::format("\t\t$%02X%02X%02X\n") % (int)cref.r % (int)cref.g % (int)cref.b;
       }
-      (*headerwriter)(surf->w, surf->h, args.bitplane_number_arg);
-      delete headerwriter;
-    }
-    if(args.palette_flag) {
-      PaletteWriter *palettewriter = NULL;
-      if((outformat == "bin") || (outformat == "raw")) {
-	palettewriter = new PaletteWriterBin(fname, std::cout);
-      } else if(outformat == "asm") {
-	palettewriter = new PaletteWriterASM(fname, std::cout);
-      } else if(outformat == "c") {
-	palettewriter = new PaletteWriterC(fname, std::cout);
-      } else {
-	throw std::invalid_argument("palette, unknown format: " + outformat);
+    } else {
+      if(args.header_flag) {
+	HeaderWriter *headerwriter = NULL;
+	if((outformat == "bin") || (outformat == "raw")) {
+	  headerwriter = new HeaderWriterBin(fname, std::cout);
+	} else if(outformat == "asm") {
+	  headerwriter = new HeaderWriterASM(fname, std::cout);
+	} else if(outformat == "c") {
+	  headerwriter = new HeaderWriterC(fname, std::cout);
+	} else {
+	  throw std::invalid_argument("header, unknown format: " + outformat);
+	}
+	(*headerwriter)(surf->w, surf->h, args.bitplane_number_arg);
+	delete headerwriter;
       }
-      (*palettewriter)(palette, args.bitplane_number_arg);
-      delete palettewriter;
-    }
-    if(args.bitplanes_flag) {
-      OutputBitplanes *obfunctor;
-      std::vector<std::vector<unsigned char>> raws(bitplanes2bins(bplvec));
-      if((outformat == "bin") || (outformat == "raw")) {
-	obfunctor = new OutputBitplanes(fname, std::cout);
-      } else if(outformat == "c") {
-	obfunctor = new OutputBitplanesC(fname, std::cout);
-      } else if(outformat == "asm") {
-	obfunctor = new OutputBitplanesASM(fname, std::cout);
-      } else {
-	throw std::invalid_argument("unknown format: " + outformat);
+      if(args.palette_flag) {
+	PaletteWriter *palettewriter = NULL;
+	if((outformat == "bin") || (outformat == "raw")) {
+	  palettewriter = new PaletteWriterBin(fname, std::cout);
+	} else if(outformat == "asm") {
+	  palettewriter = new PaletteWriterASM(fname, std::cout);
+	} else if(outformat == "c") {
+	  palettewriter = new PaletteWriterC(fname, std::cout);
+	} else {
+	  throw std::invalid_argument("palette, unknown format: " + outformat);
+	}
+	(*palettewriter)(palette, args.bitplane_number_arg);
+	delete palettewriter;
       }
-      (*obfunctor)(args.interleave_flag, surf->w, surf->h, raws);
-      delete obfunctor;
+      if(args.bitplanes_flag) {
+	OutputBitplanes *obfunctor;
+	std::vector<std::vector<unsigned char>> raws(bitplanes2bins(bplvec));
+	if((outformat == "bin") || (outformat == "raw")) {
+	  obfunctor = new OutputBitplanes(fname, std::cout);
+	} else if(outformat == "c") {
+	  obfunctor = new OutputBitplanesC(fname, std::cout);
+	} else if(outformat == "asm") {
+	  obfunctor = new OutputBitplanesASM(fname, std::cout);
+	} else {
+	  throw std::invalid_argument("unknown format: " + outformat);
+	}
+	(*obfunctor)(args.interleave_flag, surf->w, surf->h, raws);
+	delete obfunctor;
+      }
     }
   }
   SDL_FreeSurface(surf);
