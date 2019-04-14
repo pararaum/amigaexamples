@@ -7,6 +7,7 @@
  */
 
 extern void inflate(void *output_buffer, void *input_stream);
+extern unsigned char deflated_data[];
 
 /* Excerpt from RFC 1952:
  
@@ -200,7 +201,8 @@ unsigned char lorem_bin[] = {
   0x95, 0xbe, 0xec, 0xd0, 0x2b, 0x02, 0x00, 0x00
 };
 unsigned int lorem_bin_len = 332;
-unsigned char buffer[1<<12];
+unsigned char __chip buffer[320*200/8+1024];
+
 
 int main(int argc, char **argv) {
   printf("inflate=$%08lX\n", (unsigned long)&inflate);
@@ -208,5 +210,6 @@ int main(int argc, char **argv) {
   puts("Deflating data...");
   inflate(buffer, &lorem_bin[10]);
   printf("DATA\n%s\nDATA END\n", buffer);
+  inflate(buffer, deflated_data);
   return 0;
 }
