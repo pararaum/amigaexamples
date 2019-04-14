@@ -217,8 +217,14 @@ UWORD __chip copper_list[] = {
   0xe6, 0,
   0xe8, 0,
   0xea, 0,
+  /* BPLCON0 */
+  0x0100, 0,
   /* NOP */
   0x1fe, 0,
+  /* Wait for line 44 + 200 = $f4. */
+  0xf401, 0xff00,
+  /* BPLCON0: disable bitplanes */
+  0x0100, 0,
   /* End of List */
   0xFFFF, 0xFFFE
 };
@@ -231,6 +237,7 @@ void init_copper(UWORD *image) {
 
   /* Set up copper list */
   custom.cop1lc = (ULONG)copper_list;
+  custom.dmacon = 0x7fff;
   custom.dmacon = DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER;
   custom.diwstrt = 0x2c81;
   custom.diwstop = 0x2cc1;
@@ -249,6 +256,7 @@ void init_copper(UWORD *image) {
   copper_list[7] = (address+320/8) & 0xFFFF;
   copper_list[9] = (address+320/8*2) >> 16;
   copper_list[11] = (address+320/8*2) & 0xFFFF;
+  copper_list[13] = 0x0200 | 0x1000 * planes; /* colour burst */
   for(i = 0; i < colors; ++i) {
     custom.color[i] = image[8 + i];
   }
@@ -263,7 +271,7 @@ int main(int argc, char **argv) {
   printf("DATA\n%s\nDATA END\n", (char*)buffer);
   inflate(buffer, deflated_data);
   printf("%hu\t%hu\t%hu\n", buffer[0], buffer[1], buffer[2]);
-  own_machine(0x3);
+  own_machine(1|2|8);
   init_copper(buffer);
   wait_for_mouse();
   disown_machine();
