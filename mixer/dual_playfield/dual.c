@@ -37,7 +37,8 @@ void setup_system(void) {
   custom.diwstop = 0x2cc1;
   custom.ddfstrt = 0x0038;
   custom.ddfstop = 0x00d0;
-  custom.bplcon0 = 0x0200 | 0x1000 * 5; /* colour burst */
+  /* 9:colour burst, 10: dual playfield, upper nibble: no bitplanes */
+  custom.bplcon0 = (1<<9) | (1<<10) | 0x1000 * 5;
   custom.bplcon1 = 0;
   custom.bplcon2 = 0x0024;
   custom.bplcon3 = 0;
@@ -48,7 +49,7 @@ void setup_system(void) {
 
 
 int main(int argc, char **argv) {
-  printf("copperlist=$%08lX\n", (ULONG)copperlist);
+  printf("\fcopperlist=$%08lX\n", (ULONG)copperlist);
   printf("bitplane1data=$%08lX\n", (ULONG)bitplane1data);
   printf("setup_copper=$%08lX\n", (ULONG)setup_copper);
   setup_copper();
