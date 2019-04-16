@@ -29,7 +29,6 @@ void setup_copper(void) {
     copperlist[1+4*i] = address >> 16;
     copperlist[3+4*i] = address & 0xffff;
   }
-  return;
   address = (ULONG)bitplane1data;
   /* Set the blitter A pointer in copper list. */
   copperlist_blit_a_ptr[1] = address >> 16;
@@ -44,8 +43,6 @@ void setup_copper(void) {
 
 
 void setup_system(void) {
-  /* Set up copper list */
-  custom.cop1lc = (ULONG)copperlist;
   custom.dmacon = 0x7fff;
   custom.dmacon = DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER;
   custom.diwstrt = 0x2c81;
@@ -62,6 +59,8 @@ void setup_system(void) {
   custom.fmode = 0;
   /* Allow the copper to access the blitter. */
   custom.copcon = 1;
+  /* Set up copper list */
+  custom.cop1lc = (ULONG)copperlist;
 }
 
 

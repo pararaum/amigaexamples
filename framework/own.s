@@ -21,8 +21,9 @@ COP1LCH	EQU	$dff080
 	;; deb_noforbid equ 1
 	section framework,code
 	
-;;; Convenience function for C call. Parameters see below. Output: D0: gfxbase
+;;; Convenience function for C call. Parameters see below and are read from the integer from the stack. Output: D0: gfxbase
 _own_machine:
+	move.l	4(a7),d0
 	bsr.s	own_machine
 	move.l	a0,d0
 	rts

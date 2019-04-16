@@ -49,7 +49,6 @@ _copperlist:
 	dc.w	$180,$0fff
 	dc.w	$180,$000f
 	dc.w	$180,0
-	dc.l	$FFFFFFFE
 	dc.w	bltcon0,$09f0
 	dc.w	$180,$0fff
 	dc.w	bltcon1,$0002
