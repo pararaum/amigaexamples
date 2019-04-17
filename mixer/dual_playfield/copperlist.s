@@ -34,6 +34,7 @@ _copperlist:
 	;; Wait for a visible line and wait for blitter!
 	dc.w	$3007,$7ffe
 	dc.w	color+0,$0f00	;Turn to red.
+	dc.l	$FFFFFFFE
 	;; Blitter activity!
 	dc.w	$180,$000f
 	dc.w	$180,$0fff
@@ -48,7 +49,6 @@ _copperlist:
 	dc.w	$180,$000f
 	dc.w	$180,$0fff
 	dc.w	$180,$000f
-	dc.w	$180,0
 	dc.w	bltcon0,$09f0
 	dc.w	$180,$0fff
 	dc.w	bltcon1,$0002
@@ -64,9 +64,8 @@ _copperlist_blit_modulos:
 	dc.w	bltamod,0
 	dc.w	bltdmod,0
 	;; H9-H0, W5-W0. Width is in words.
-	;; 	dc.w	bltsize,(200<<6)|(320/16)
+	dc.w	bltsize,(200<<6)|(320/16)
 	;; Wait for the next line and wait for blitter!.
 	dc.w	$3107,$fffe
 	dc.w	color+0,$0000	;Turn to black.
-
 	dc.l	$FFFFFFFE
