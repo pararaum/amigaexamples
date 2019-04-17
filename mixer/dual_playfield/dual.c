@@ -29,7 +29,10 @@ void setup_copper(void) {
     copperlist[1+4*i] = address >> 16;
     copperlist[3+4*i] = address & 0xffff;
   }
+  /* Address of bitplane data (top left corner). */
   address = (ULONG)bitplane1data;
+  /* Now move to end as we are using descending mode. */
+  address += 320*200/8*3;
   /* Set the blitter A pointer in copper list. */
   copperlist_blit_a_ptr[1] = address >> 16;
   copperlist_blit_a_ptr[3] = address & 0xffff;
@@ -58,7 +61,7 @@ void setup_system(void) {
   custom.bpl2mod = 320/8*(2-1);
   custom.fmode = 0;
   /* Allow the copper to access the blitter. */
-  custom.copcon = 1;
+  custom.copcon = 0xFFFF;
   /* Set up copper list */
   custom.cop1lc = (ULONG)copperlist;
 }
@@ -163,12 +166,12 @@ void run(void) {
   setup_system();
   if(run_demo()) {
   }
-  do {
-    while((custom.vhposr & 0xff00) != 0x4000) ;
-    custom.color[0] = 0x00ff;
-    scroll_rect(bitplane1data);
-    custom.color[0] = 0x0ff0;
-  } while(1);
+  /* while(0) { */
+  /*   while((custom.vhposr & 0xff00) != 0x4000) ; */
+  /*   custom.color[0] = 0x00ff; */
+  /*   scroll_rect(bitplane1data); */
+  /*   custom.color[0] = 0x0ff0; */
+  /* } */
   wait_for_mouse();
   /* stop all */
   /* muzak off */
