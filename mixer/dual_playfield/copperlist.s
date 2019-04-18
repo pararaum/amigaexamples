@@ -28,7 +28,23 @@ _copperlist:
 	dc.w	bplpt+14,0
 	dc.w	bplpt+16,0
 	dc.w	bplpt+18,0
-	dc.w	color+0,$00f0
+_copperlist_colors:
+	dc.w	color+0,$0000
+	dc.w	color+2,$0010
+	dc.w	color+4,$0020
+	dc.w	color+6,$0030
+	dc.w	color+8,$0040
+	dc.w	color+$a,$0050
+	dc.w	color+$c,$0060
+	dc.w	color+$e,$0070
+	dc.w	color+$10,$0080
+	dc.w	color+$12,$0090
+	dc.w	color+$14,$00a0
+	dc.w	color+$16,$00b0
+	dc.w	color+$18,$00c0
+	dc.w	color+$1a,$00d0
+	dc.w	color+$1c,$00e0
+	dc.w	color+$1e,$00f0
 	dc.w	$2f07,$fffe
 	dc.w	color+0,$0fee
 	;; Wait for a visible line and wait for blitter!
