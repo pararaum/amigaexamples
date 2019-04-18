@@ -10,7 +10,8 @@ extern UWORD copperlist_blit_d_ptr[];
 extern UWORD copperlist_blit_modulos[];
 extern void wait_for_mouse(void);
 
-unsigned char __chip bitplane1data[320*256/8*5];
+unsigned char __chip playfield1data[320*256/8*3];
+unsigned char __chip playfield2data[320*256/8*2];
 
 int run_demo() {
   return 0;
@@ -20,17 +21,23 @@ void setup_copper(void) {
   int i;
   ULONG address;
 
-  for(i = 0; i < sizeof(bitplane1data); ++i) {
-    bitplane1data[i] = i;
+  for(i = 0; i < sizeof(playfield1data); ++i) {
+    playfield1data[i] = i;
   }
   for(i = 0; i < 3; ++i) {
-    address = (ULONG)bitplane1data;
+    address = (ULONG)playfield1data;
     address += i * 320/8;
     copperlist[1+4*i] = address >> 16;
     copperlist[3+4*i] = address & 0xffff;
   }
+  for(i = 0; i < 2; ++i) {
+    address = (ULONG)playfield2data;
+    address += i * 320/8;
+    copperlist[13+4*i] = address >> 16;
+    copperlist[15+4*i] = address & 0xffff;
+  }
   /* Address of bitplane data (top left corner). */
-  address = (ULONG)bitplane1data;
+  address = (ULONG)playfield1data;
   /* Now move to end as we are using descending mode. */
   address += 320*200/8*3;
   /* Set the blitter A pointer in copper list. */
@@ -169,7 +176,7 @@ void run(void) {
   /* while(0) { */
   /*   while((custom.vhposr & 0xff00) != 0x4000) ; */
   /*   custom.color[0] = 0x00ff; */
-  /*   scroll_rect(bitplane1data); */
+  /*   scroll_rect(playfield1data); */
   /*   custom.color[0] = 0x0ff0; */
   /* } */
   wait_for_mouse();
@@ -184,7 +191,8 @@ int main(int argc, char **argv) {
   putchar('\f');
   printf("run=$%08lX\n", (ULONG)&run);
   printf("copperlist=$%08lX\n", (ULONG)copperlist);
-  printf("bitplane1data=$%08lX\n", (ULONG)bitplane1data);
+  printf("playfield1data=$%08lX\n", (ULONG)playfield1data);
+  printf("playfield2data=$%08lX\n", (ULONG)playfield2data);
   printf("scroll_rect=$%08lX\n", (ULONG)&scroll_rect);
   printf("setup_copper=$%08lX\n", (ULONG)setup_copper);
   for(l = 0; l < 1000000; ++l) {

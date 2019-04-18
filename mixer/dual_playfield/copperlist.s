@@ -35,22 +35,9 @@ _copperlist:
 	dc.w	$3007,$7ffe
 	dc.w	color+0,$0f00	;Turn to red.
 	;; Blitter activity!
-	dc.w	$180,$000f
-	dc.w	$180,$0fff
-	dc.w	$180,$000f
-	dc.w	$180,$0fff
-	dc.w	$180,$000f
-	dc.w	$180,$0fff
-	dc.w	$180,$000f
-	dc.w	$180,$0fff
-	dc.w	$180,$000f
-	dc.w	$180,$0fff
-	dc.w	$180,$000f
-	dc.w	$180,$0fff
-	dc.w	$180,$000f
 	dc.w	bltcon0,$29f0
 	dc.w	bltcon1,$0002
-	dc.w	bltafwm,$ffff	;First word mask
+	dc.w	bltafwm,$fffe	;First word mask
 	dc.w	bltalwm,$7fff	;Last word mask
 _copperlist_blit_a_ptr:
 	dc.w	bltapt,0
@@ -65,7 +52,7 @@ _copperlist_blit_modulos:
 	dc.w	bltsize,((3*200)<<6)|(320/16)
 	;; Wait for the next line and wait for blitter!.
 	dc.w	$3107,$7ffe
-	dc.w	color+0,$0000	;Turn to black.
+	dc.w	color+0,$0fff	;Turn to white.
 	dc.w	$fa07,$fffe
 	dc.w	color+0,$0888
 	dc.l	$FFFFFFFE
