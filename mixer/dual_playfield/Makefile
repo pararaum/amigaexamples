@@ -9,7 +9,10 @@ CC=vc
 ALL=dual
 OBJS=copperlist.o
 
-all:	$(ALL)
+all:	logo_plate.inc $(ALL)
+
+logo_plate.inc: logo_plate.png
+	../../tools/convert_img2raw -O c -B3 -h -p -b $+ > $@
 
 dual:	dual.o $(OBJS)
 	vc $(CFLAGS) -o $@ $+ $(OOBJS) $(LIBS)

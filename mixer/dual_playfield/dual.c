@@ -5,12 +5,14 @@
 /* Custom chip registers. */
 extern struct Custom custom;
 extern UWORD copperlist[];
+extern UWORD copperlist_colors[];
 extern UWORD copperlist_blit_a_ptr[];
 extern UWORD copperlist_blit_d_ptr[];
 extern UWORD copperlist_blit_modulos[];
+extern UWORD copperlist_blit_size[];
 extern void wait_for_mouse(void);
 
-unsigned char __chip playfield1data[320*256/8*3];
+#include "logo_plate.inc"
 unsigned char __chip playfield2data[320*256/8*2];
 
 int run_demo() {
@@ -21,11 +23,12 @@ void setup_copper(void) {
   int i;
   ULONG address;
 
-  for(i = 0; i < sizeof(playfield1data); ++i) {
-    playfield1data[i] = i;
+  for(i = 0; i < sizeof(playfield2data); ++i) {
+    playfield2data[i] = i;
   }
+  /* Bitplane pointers */
   for(i = 0; i < 3; ++i) {
-    address = (ULONG)playfield1data;
+    address = (ULONG)logo_plate_png;
     address += i * 320/8;
     copperlist[1+4*i] = address >> 16;
     copperlist[3+4*i] = address & 0xffff;
@@ -36,10 +39,11 @@ void setup_copper(void) {
     copperlist[13+4*i] = address >> 16;
     copperlist[15+4*i] = address & 0xffff;
   }
+  /* Blitter via Copper */
   /* Address of bitplane data (top left corner). */
-  address = (ULONG)playfield1data;
+  address = (ULONG)playfield2data;
   /* Now move to end as we are using descending mode. */
-  address += 320*200/8*3;
+  address += 320*200/8*2;
   /* Set the blitter A pointer in copper list. */
   copperlist_blit_a_ptr[1] = address >> 16;
   copperlist_blit_a_ptr[3] = address & 0xffff;
@@ -49,6 +53,12 @@ void setup_copper(void) {
   /* Module is zero. */
   copperlist_blit_modulos[1] = 0;
   copperlist_blit_modulos[3] = 0;
+  /* Size is two bitplanes */
+  copperlist_blit_size[1] = ((2*200)<<6)|(320/16);
+  /* Bitplane colors */
+  for(i = 0; i < 8; ++i) {
+    copperlist_colors[1+2*i] = logo_plate_png_palette[i];
+  }
 }
 
 
@@ -191,7 +201,7 @@ int main(int argc, char **argv) {
   putchar('\f');
   printf("run=$%08lX\n", (ULONG)&run);
   printf("copperlist=$%08lX\n", (ULONG)copperlist);
-  printf("playfield1data=$%08lX\n", (ULONG)playfield1data);
+  printf("logo_plate_png=$%08lX\n", (ULONG)logo_plate_png);
   printf("playfield2data=$%08lX\n", (ULONG)playfield2data);
   printf("scroll_rect=$%08lX\n", (ULONG)&scroll_rect);
   printf("setup_copper=$%08lX\n", (ULONG)setup_copper);

@@ -1,10 +1,12 @@
 	include "hardware/custom.i"
 
 	XDEF	_copperlist
-	XDEF	_wait_for_mouse
+	XDEF	_copperlist_colors
 	XDEF	_copperlist_blit_a_ptr
 	XDEF	_copperlist_blit_d_ptr
 	XDEF	_copperlist_blit_modulos
+	XDEF	_copperlist_blit_size
+	XDEF	_wait_for_mouse
 
 	SECTION CODE,code
 ;;; Wait for mouse button.
@@ -18,16 +20,21 @@ l$:     btst    #6,(a0)
 	SECTION	CHIP,data_c
 
 _copperlist:
+	;; First odd then even bitplanes.
+	;; ODD
 	dc.w	bplpt,0
 	dc.w	bplpt+2,0
-	dc.w	bplpt+4,0
-	dc.w	bplpt+6,0
 	dc.w	bplpt+8,0
 	dc.w	bplpt+10,0
-	dc.w	bplpt+12,0
-	dc.w	bplpt+14,0
 	dc.w	bplpt+16,0
 	dc.w	bplpt+18,0
+	;; EVEN
+	dc.w	bplpt+4,0
+	dc.w	bplpt+6,0
+	dc.w	bplpt+12,0
+	dc.w	bplpt+14,0
+_copperlist_bplcon_top:
+	dc.w	bplcon0,(1<<9)|(1<<10)|$5000
 _copperlist_colors:
 	dc.w	color+0,$0000
 	dc.w	color+2,$0010
@@ -53,7 +60,7 @@ _copperlist_colors:
 	;; Blitter activity!
 	dc.w	bltcon0,$29f0
 	dc.w	bltcon1,$0002
-	dc.w	bltafwm,$fffe	;First word mask
+	dc.w	bltafwm,$ffff	;First word mask
 	dc.w	bltalwm,$7fff	;Last word mask
 _copperlist_blit_a_ptr:
 	dc.w	bltapt,0
@@ -64,11 +71,13 @@ _copperlist_blit_d_ptr:
 _copperlist_blit_modulos:
 	dc.w	bltamod,0
 	dc.w	bltdmod,0
+_copperlist_blit_size:
 	;; H9-H0, W5-W0. Width is in words.
-	dc.w	bltsize,((3*200)<<6)|(320/16)
+	dc.w	bltsize,((2*200)<<6)|(320/16)
 	;; Wait for the next line and wait for blitter!.
 	dc.w	$3107,$7ffe
 	dc.w	color+0,$0fff	;Turn to white.
-	dc.w	$fa07,$fffe
+	dc.w	$fa01,$fffe
+	dc.w	bplcon0,(1<<9)
 	dc.w	color+0,$0888
 	dc.l	$FFFFFFFE
