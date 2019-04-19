@@ -11,7 +11,7 @@ extern UWORD copperlist_blit_d_ptr[];
 extern UWORD copperlist_blit_modulos[];
 extern UWORD copperlist_blit_size[];
 extern void wait_for_mouse(void);
-extern ULONG *setup_interrupt(void);
+extern ULONG *setup_interrupt(void *playfieldptr);
 
 #include "logo_plate.inc"
 unsigned char __chip playfield2data[320*256/8*2];
@@ -192,7 +192,7 @@ ULONG run(void) {
   own_machine(1|2|8);
   /* init muzak */
   setup_system();
-  framecounterptr = setup_interrupt();
+  framecounterptr = setup_interrupt(playfield2data);
   if(run_demo()) {
   }
   /* while(0) { */

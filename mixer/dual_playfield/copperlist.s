@@ -58,7 +58,7 @@ _copperlist_colors:
 	dc.w	$3007,$7ffe
 	dc.w	color+0,$0f00	;Turn to red.
 	;; Blitter activity!
-	dc.w	bltcon0,$29f0
+	dc.w	bltcon0,$19f0
 	dc.w	bltcon1,$0002
 	dc.w	bltafwm,$ffff	;First word mask
 	dc.w	bltalwm,$7fff	;Last word mask
