@@ -21,6 +21,8 @@ extern ULONG framecounter;
 unsigned char __chip playfield2data[320*256/8*2];
 unsigned char __chip scrollerarea[(320+32)/8*55*3];
 void **vectors = (void *)0UL;
+unsigned char *scroller_src_ptr = NULL;
+const char scroller_text[] = "WELCOME TO THE \"DUAL-PLAYFIELD STARFIELD AND SCROLLER DEMO\". THE STARFIELD BEHIND THE LOGO IS GENERATED USING THE BLITTER. I KNOW THAT IT IS A HUGE WASTE OF TIME TO SCROLL THE WHOLE(!) AREA WITH THE BLITTER BUT I WAS JUST CHECKING HOW FAST THE BLITTER CAN BE. IT REALLY WORKS NICELY AND I LIKE THE EFFECT THAT THERE ARE MORE STARS AT THE TOP THAN AT THE BOTTOM OF THE LOG AREA... NOW THE MOST IMPORANT PART -- THE GREETINGS: JACK BEATMASTER, MEEPSTER, ROZ, STROBO, ZAKE, PAUL HOLT, TEZ, SEBASTIAN L., KYLEARAN OF CLUSTER, ABYSS CONNECTION, COYHOT, PINKAMENA, CLASSIC VIDEOGAMES RADIO, ZIONA, LPCHIP, BOZ, KRAXXULTIMA... AND TO EVERYBODY I FORGOT...    ";
 
 void setup_copper(void) {
   int i;
@@ -195,28 +197,54 @@ BLTCON0
  */
 void irq_scroller(void) {
   int i, j;
-  const char characters[] = ",-. 0123456789:;(')?!ABCDEFGHIJKLMNOPQRSTUVWXYZ\"";
   unsigned char *sptr, *dptr;
 
   if(framecounter % 32 == 0) {
-    custom.color[0] = 0x0b00;
-    sptr = &KNIGHT2_png[16];
+    sptr = scroller_src_ptr;
     dptr = &scrollerarea[320/8];
-    for(j = 0; j < 25*3; ++j) {
-      for(i = 0; i < 4; ++i) {
-	*dptr++ = *sptr++;
+    if(sptr) {
+      for(j = 0; j < 25*3; ++j) {
+	for(i = 0; i < 4; ++i) {
+	  *dptr++ = *sptr++;
+	}
+	sptr += 320/8 - 4;
+	dptr += (320+32)/8 - 4;
       }
-      sptr += 320/8 - 4;
-      dptr += (320+32)/8 - 4;
+      scroller_src_ptr = NULL;
+    } else {
+      for(j = 0; j < 25*3; ++j) {
+	for(i = 0; i < 4; ++i) {
+	  *dptr++ = 0;
+	}
+	dptr += (320+32)/8 - 4;
+      }
     }
-    custom.color[0] = 0x00b0;
   }
   /* Scroll the whole area. */
-  scroll_rect(scrollerarea + (320+32)/8*3*25, 0, 25 * 3, 320+32);
+  scroll_rect(scrollerarea + (320+32)/8*3*25, 0, 25*3, 320+32);
+}
+
+unsigned char *find_char_pos(char x) {
+  int pos;
+  int col, row;
+  static const char characters[] = ",-. 0123456789:;(')?!ABCDEFGHIJKLMNOPQRSTUVWXYZ\"";
+
+  for(pos = 0; pos < sizeof(characters); ++pos) {
+    if(x == characters[pos]) {
+      break;
+    }
+  }
+  if(pos >= sizeof(characters)-1) {
+    return NULL;
+  }
+  col = pos % 10;
+  row = pos / 10;
+  return &KNIGHT2_png[col*4 + row*320/8*3*25];
 }
 
 void run(void) {
   ULONG *framecounterptr;
+  const char *scrolltextptr = scroller_text;
 
   setup_copper();
   own_machine(1|2|8);
@@ -227,6 +255,12 @@ void run(void) {
     while(*framecounterptr < 50*3);
     vectors[0xfc] = (void*)&irq_scroller;
     while(1) {
+      while(scroller_src_ptr != NULL) ;
+      scroller_src_ptr = find_char_pos(*scrolltextptr++);
+      if(scroller_src_ptr == NULL) {
+	scrolltextptr = scroller_text;
+	scroller_src_ptr = find_char_pos(' ');
+      }
     }
     wait_for_mouse(); /* Just in case. */
   }
