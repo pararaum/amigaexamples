@@ -34,15 +34,30 @@ n2$:
 irqroutine:
 	move.l	playfieldptr,a1
 	lea.l	rng_data,a0
-	move.l	(a0),d0
-	move.w	d0,d1
-	mulu.w	#33,d1
-	rol.l	#1,d0
-	add.l	d1,d0
-	addq.l	#5,d0
-	move.l	d0,(a0)
-	and.w	#$3fff,d0
+	;; Read current value into d0-d1.
+	move.w	(a0),d2
+	move.w	d2,d0
+	move.w	d2,d1
+	;; See https://en.wikipedia.org/wiki/Linear_feedback_shift_register Xorshift LFSR.
+	lsr.w	#7,d1
+	eor.w	d1,d0
+	move.w	d2,d1
+	lsl.w	#8,d1
+	lsl.w	#1,d1
+	eor.w	d1,d0
+	move.w	d2,d1
+	lsr.w	#8,d1
+	lsr.w	#5,d1
+	eor.w	d1,d0
+	move.w	d0,(a0)		; Store next value.
+	and.w	#$00ff,d0	; Only lower 8 bit.
+	cmp.w	#200,d0		; < 200? This is the number of lines.
+	bcc.s	skip$
+	;; d0 containes the line number
+	mulu.w	#320/8*2,d0	; 320 pixels and 2 bitplanes.
+	subq	#1,d0		; Move to the right end of the screen on the *previous* line.
 	bset.b	#0,(a1,d0)
+skip$:
 	rts
 
 
@@ -50,7 +65,7 @@ irqroutine:
 _framecounter:	dc.l	0
 _interrupt_pointer:	dc.l	0
 
-rng_data:	dc.l	1555680554
+rng_data:	dc.w	$ACE1
 
 	section BSS,bss
 old_frame:	ds.l	1

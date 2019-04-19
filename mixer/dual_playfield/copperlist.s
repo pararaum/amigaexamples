@@ -8,6 +8,10 @@
 	XDEF	_copperlist_blit_size
 	XDEF	_wait_for_mouse
 
+	MACRO	COPPERNOP
+	dc.w	$01FE,"no"
+	ENDM
+
 	SECTION CODE,code
 ;;; Wait for mouse button.
 ;;; Destroys: A0
@@ -33,6 +37,7 @@ _copperlist:
 	dc.w	bplpt+6,0
 	dc.w	bplpt+12,0
 	dc.w	bplpt+14,0
+	COPPERNOP
 _copperlist_bplcon_top:
 	dc.w	bplcon0,(1<<9)|(1<<10)|$5000
 _copperlist_colors:
@@ -77,7 +82,10 @@ _copperlist_blit_size:
 	;; Wait for the next line and wait for blitter!.
 	dc.w	$3107,$7ffe
 	dc.w	color+0,$0fff	;Turn to white.
-	dc.w	$fa01,$fffe
+	;; The display window starts at $2c and we have got 200 lines. Therefore the end of the bitplanes should be at ❨(format "$%x" (+ #x2c 200))"$f4"❩ line $f4.
+	dc.w	$f401,$fffe
+	;; Dispable bitplane dma
 	dc.w	bplcon0,(1<<9)
+	;; Colour is grey.
 	dc.w	color+0,$0888
 	dc.l	$FFFFFFFE
