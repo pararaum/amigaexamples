@@ -252,7 +252,7 @@ void run(void) {
   setup_system();
   framecounterptr = setup_interrupt(playfield2data);
   if(framecounterptr != NULL) {
-    while(*framecounterptr < 50*3);
+    while(*framecounterptr < 50*4);
     vectors[0xfc] = (void*)&irq_scroller;
     while(1) {
       while(scroller_src_ptr != NULL) ;

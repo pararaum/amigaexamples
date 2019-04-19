@@ -106,11 +106,12 @@ _copperlist_scroller_bplpt:
 	dc.w	bplpt+10,$3000
 	dc.w	bpl1mod,(320+32)/8*2+32/8
 	dc.w	bpl2mod,(320+32)/8*2+32/8
-	dc.w	$f501,$fffe
-	dc.w	bplcon0,(1<<9)|$3000 ; Three bitplanes.
 	;; Reach bottom of pal screen via copper.
 	dc.w	$ffdf,$fffe
-	;; End of screen display area.
-	dc.w	$2c07,$fffe
-	dc.w	color,$00f
+	;; Turn display on again.
+	dc.w	$0101,$fffe
+	dc.w	bplcon0,(1<<9)|$3000 ; Three bitplanes.
+;	;; End of screen display area.
+;	dc.w	$2c07,$fffe
+;	dc.w	color,$00f
 	dc.l	$FFFFFFFE
