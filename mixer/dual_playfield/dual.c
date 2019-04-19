@@ -11,6 +11,7 @@ extern UWORD copperlist_blit_d_ptr[];
 extern UWORD copperlist_blit_modulos[];
 extern UWORD copperlist_blit_size[];
 extern void wait_for_mouse(void);
+extern ULONG *setup_interrupt(void);
 
 #include "logo_plate.inc"
 unsigned char __chip playfield2data[320*256/8*2];
@@ -175,12 +176,15 @@ BLTCON0
 }
 
 
-void run(void) {
+ULONG run(void) {
   long int i;
+  ULONG *framecounterptr;
+
   setup_copper();
   own_machine(1|2|8);
   /* init muzak */
   setup_system();
+  framecounterptr = setup_interrupt();
   if(run_demo()) {
   }
   /* while(0) { */
@@ -193,10 +197,11 @@ void run(void) {
   /* stop all */
   /* muzak off */
   disown_machine();
+  return *framecounterptr;
 }
 
 int main(int argc, char **argv) {
-  long l;
+  unsigned long l;
 
   putchar('\f');
   printf("run=$%08lX\n", (ULONG)&run);
@@ -205,8 +210,9 @@ int main(int argc, char **argv) {
   printf("playfield2data=$%08lX\n", (ULONG)playfield2data);
   printf("scroll_rect=$%08lX\n", (ULONG)&scroll_rect);
   printf("setup_copper=$%08lX\n", (ULONG)setup_copper);
-  for(l = 0; l < 1000000; ++l) {
+  for(l = 0; l < 100000; ++l) {
   }
-  run();
+  l = run();
+  printf("framecounter = %lu\n", l);
   return 0;
 }

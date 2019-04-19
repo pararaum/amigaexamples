@@ -7,7 +7,7 @@ LIBS=-lamiga
 OOBJS=../../framework/own.o ../../framework/iff.o ../../framework/copper_fade.o
 CC=vc
 ALL=dual
-OBJS=copperlist.o
+OBJS=copperlist.o interrupt.o
 
 all:	logo_plate.inc $(ALL)
 
