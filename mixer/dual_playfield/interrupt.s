@@ -20,16 +20,29 @@ irq$:	movem.l	d0-d7/a0-a6,-(sp)
 	addq.l	#1,_framecounter
 	tst.l	$3f0.w
 	beq.s	n1$
-	jsr	($3f0).w
+	move.l	($3f0).w,a0
+	jsr	(a0)
 n1$:	tst.l	$3f4.w
 	beq.s	n2$
-	jsr	($3f4).w
+	move.l	($3f4).w,a0
+	jsr	(a0)
 n2$:
 	bsr	irqroutine
+	btst	#6,$BFE001	; Mouse button?
+	bne.s	nom$		; No mouse button
+	;; Button pressed, do the stack trick:
+	lea.l	stacktrick$(pc),a0
+	move.l	a0,15*4+2(a7)	; New return address
+nom$:
 	;; Acknowledge interrupt.
 	move.w	#INTF_VERTB,$dff000+intreq
 	movem.l	(sp)+,d0-d7/a0-a6
 	rte
+stacktrick$:
+	move.l	old_frame,a7
+	moveq	#0,d0
+	rts
+
 
 irqroutine:
 	subq.w	#1,skipctr$

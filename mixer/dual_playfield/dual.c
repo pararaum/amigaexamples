@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <hardware/custom.h>
 #include <hardware/dmabits.h>
+#include "font.h"
 
 /* Custom chip registers. */
 extern struct Custom custom;
@@ -10,16 +11,16 @@ extern UWORD copperlist_blit_a_ptr[];
 extern UWORD copperlist_blit_d_ptr[];
 extern UWORD copperlist_blit_modulos[];
 extern UWORD copperlist_blit_size[];
+extern UWORD copperlist_scroller_bplpt[];
+extern UWORD copperlist_bplmod_top[];
 extern void wait_for_mouse(void);
 extern ULONG *setup_interrupt(void *playfieldptr);
+extern ULONG framecounter;
 
 #include "logo_plate.inc"
 unsigned char __chip playfield2data[320*256/8*2];
+unsigned char __chip scrollerarea[(320+32)/8*55*3];
 void **vectors = (void *)0UL;
-
-int run_demo() {
-  return 0;
-}
 
 void setup_copper(void) {
   int i;
@@ -37,6 +38,12 @@ void setup_copper(void) {
     address += i * 320/8;
     copperlist[13+4*i] = address >> 16;
     copperlist[15+4*i] = address & 0xffff;
+  }
+  for(i = 0; i < 3; ++i) {
+    address = (ULONG)scrollerarea;
+    address += i * (320+32)/8;
+    copperlist_scroller_bplpt[1+4*i] = address >> 16;
+    copperlist_scroller_bplpt[3+4*i] = address & 0xffff;
   }
   /* Blitter via Copper */
   /* Address of bitplane data (top left corner). */
@@ -58,6 +65,9 @@ void setup_copper(void) {
   for(i = 0; i < 8; ++i) {
     copperlist_colors[1+2*i] = logo_plate_png_palette[i];
   }
+  /* Modulos for the upper logo bitplanes. */
+  copperlist_bplmod_top[1] = 320/8*(3-1);
+  copperlist_bplmod_top[3] = 320/8*(2-1);
 }
 
 
@@ -104,13 +114,12 @@ void waitblit(void) {
  *
  * @param bitplane lower right corner
  * @param modulo modulo in bytes for even and odd planes
+ * @param lines number of lines
+ * @param width in pixels
  */
-void scroll_rect(unsigned char *bitplane) {
-  unsigned char *address = bitplane; /* + SCROLLER_AREA_WIDTH / 8 - modulo * 2;*/
-  /* No modulo, we need to scroll the whole area. */
-  unsigned short modulo = 0;
+void scroll_rect(unsigned char *bitplane, unsigned short modulo, UWORD lines, UWORD width) {
+  unsigned char *address = bitplane;
 
-  address += 320*200/8*3;
   waitblit();
   /*
 BLTCON0
@@ -160,14 +169,14 @@ BLTCON0
                    The cycle occurs normally, but the data
                    bus is tristate (hires chips only)
    */
-  custom.bltcon0 = 0x29f0;
+  custom.bltcon0 = 0x19f0;
   custom.bltcon1 = 0x0002;
   /* A first word mask; The worst word in a line a seen by the
      blitter. Remember the descending mode! We will start at the end
      of the line. */
   custom.bltafwm = 0xffff;
   /* A last word mask */
-  custom.bltalwm = 0x7fff;
+  custom.bltalwm = 0xffff;
   /* channel A pointer */
   custom.bltapt = address;
   /* channel D pointer */
@@ -177,12 +186,32 @@ BLTCON0
   /* H9-H0, W5-W0; width is in words. By writing the size into the
      custom chip register the blit begins and continues while the cpu
      is still running. */
-  custom.bltsize = ((200*3) << 6) | ((320/8 - modulo) / 2);
+  custom.bltsize = ((lines) << 6) | ((width/8 - modulo) / 2);
 }
 
+/*! \brief scoller routine in interrupt 
+ *
+ * This routine is scroller every VBLANK.
+ */
+void irq_scroller(void) {
+  int i, j;
+  const char characters[] = ",-. 0123456789:;(')?!ABCDEFGHIJKLMNOPQRSTUVWXYZ\"";
 
-ULONG run(void) {
-  long int i;
+  if(framecounter % 32 == 0) {
+    custom.color[0] = 0x0b00;
+    for(j = 0; j < 25*3; ++j) {
+      for(i = 0; i < 4; ++i) {
+	/* scrollerarea[320/8+j*(320+32)/8+i] = KNIGHT2_png[4*4+j*320/8+i]; */
+	scrollerarea[320/8+j*(320+32)/8+i] = KNIGHT2_png[16+j*320/8+i];
+      }
+    }
+    custom.color[0] = 0x00b0;
+  }
+  /* Scroll the whole area. */
+  scroll_rect(scrollerarea + (320+32)/8*3*25, 0, 25 * 3, 320+32);
+}
+
+void run(void) {
   ULONG *framecounterptr;
 
   setup_copper();
@@ -190,25 +219,24 @@ ULONG run(void) {
   /* init muzak */
   setup_system();
   framecounterptr = setup_interrupt(playfield2data);
-  if(run_demo()) {
+  if(framecounterptr != NULL) {
+    while(*framecounterptr < 50*3);
+    vectors[0xfc] = (void*)&irq_scroller;
+    while(1) {
+    }
+    wait_for_mouse(); /* Just in case. */
   }
-  /* while(0) { */
-  /*   while((custom.vhposr & 0xff00) != 0x4000) ; */
-  /*   custom.color[0] = 0x00ff; */
-  /*   scroll_rect(playfield1data); */
-  /*   custom.color[0] = 0x0ff0; */
-  /* } */
-  wait_for_mouse();
   /* stop all */
+  custom.intena = 0x7fff;
   /* muzak off */
   disown_machine();
-  return *framecounterptr;
 }
 
 int main(int argc, char **argv) {
   unsigned long l;
 
   putchar('\f');
+  printf("irq_scroller=$%08lX\n", (ULONG)&irq_scroller);
   printf("run=$%08lX\n", (ULONG)&run);
   printf("copperlist=$%08lX\n", (ULONG)copperlist);
   printf("logo_plate_png=$%08lX\n", (ULONG)logo_plate_png);
@@ -217,7 +245,6 @@ int main(int argc, char **argv) {
   printf("setup_copper=$%08lX\n", (ULONG)setup_copper);
   for(l = 0; l < 100000; ++l) {
   }
-  l = run();
-  printf("framecounter = %lu\n", l);
+  run();
   return 0;
 }

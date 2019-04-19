@@ -6,6 +6,8 @@
 	XDEF	_copperlist_blit_d_ptr
 	XDEF	_copperlist_blit_modulos
 	XDEF	_copperlist_blit_size
+	XDEF	_copperlist_scroller_bplpt
+	XDEF	_copperlist_bplmod_top
 	XDEF	_wait_for_mouse
 
 	MACRO	COPPERNOP
@@ -38,6 +40,9 @@ _copperlist:
 	dc.w	bplpt+12,0
 	dc.w	bplpt+14,0
 	COPPERNOP
+_copperlist_bplmod_top:
+	dc.w	bpl1mod,0
+	dc.w	bpl2mod,0
 _copperlist_bplcon_top:
 	dc.w	bplcon0,(1<<9)|(1<<10)|$5000
 _copperlist_colors:
@@ -82,4 +87,30 @@ _copperlist_blit_size:
 	dc.w	$f401,$fffe
 	;; Disable bitplane dma
 	dc.w	bplcon0,(1<<9)
+	;; New colours from here, from KNIGHT2 font.
+	DC.W	color+00,$0000
+	DC.W	color+02,$0222
+	DC.W	color+04,$0444
+	DC.W	color+06,$0566
+	DC.W	color+08,$0488
+	DC.W	color+10,$0888
+	DC.W	color+12,$0aaa
+	DC.W	color+14,$0ccc
+	;; Set bitplanepointers again
+_copperlist_scroller_bplpt:
+	dc.w	bplpt+00,0
+	dc.w	bplpt+02,$1000
+	dc.w	bplpt+04,0
+	dc.w	bplpt+06,$2000
+	dc.w	bplpt+08,0
+	dc.w	bplpt+10,$3000
+	dc.w	bpl1mod,(320+32)/8*2+32/8
+	dc.w	bpl2mod,(320+32)/8*2+32/8
+	dc.w	$f501,$fffe
+	dc.w	bplcon0,(1<<9)|$3000 ; Three bitplanes.
+	;; Reach bottom of pal screen via copper.
+	dc.w	$ffdf,$fffe
+	;; End of screen display area.
+	dc.w	$2c07,$fffe
+	dc.w	color,$00f
 	dc.l	$FFFFFFFE
