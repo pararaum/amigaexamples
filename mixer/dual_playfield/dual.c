@@ -15,6 +15,7 @@ extern ULONG *setup_interrupt(void);
 
 #include "logo_plate.inc"
 unsigned char __chip playfield2data[320*256/8*2];
+void **vectors = (void *)0UL;
 
 int run_demo() {
   return 0;
@@ -64,6 +65,8 @@ void setup_copper(void) {
 
 
 void setup_system(void) {
+  int i;
+
   custom.dmacon = 0x7fff;
   custom.dmacon = DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER|DMAF_BLITTER;
   custom.diwstrt = 0x2c81;
@@ -82,6 +85,11 @@ void setup_system(void) {
   custom.copcon = 0xFFFF;
   /* Set up copper list */
   custom.cop1lc = (ULONG)copperlist;
+  /* System misuse test: */
+  for(i = 0xf0; i < 0x100; ++i) {
+    /* vectors[i] = (void*)&run_demo; */
+    vectors[i] = NULL;
+  }
 }
 
 

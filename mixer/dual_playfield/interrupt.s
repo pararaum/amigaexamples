@@ -17,6 +17,13 @@ _setup_interrupt:
 	rts
 irq$:	movem.l	d0-d7/a0-a6,-(sp)
 	addq.l	#1,_framecounter
+	tst.l	$3f0.w
+	beq.s	n1$
+	jsr	($3f0).w
+n1$:	tst.l	$3f4.w
+	beq.s	n2$
+	jsr	($3f4).w
+n2$:
 	;; Acknowledge interrupt.
 	move.w	#INTF_VERTB,$dff000+intreq
 	movem.l	(sp)+,d0-d7/a0-a6
