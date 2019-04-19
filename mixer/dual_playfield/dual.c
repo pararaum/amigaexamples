@@ -196,14 +196,18 @@ BLTCON0
 void irq_scroller(void) {
   int i, j;
   const char characters[] = ",-. 0123456789:;(')?!ABCDEFGHIJKLMNOPQRSTUVWXYZ\"";
+  unsigned char *sptr, *dptr;
 
   if(framecounter % 32 == 0) {
     custom.color[0] = 0x0b00;
+    sptr = &KNIGHT2_png[16];
+    dptr = &scrollerarea[320/8];
     for(j = 0; j < 25*3; ++j) {
       for(i = 0; i < 4; ++i) {
-	/* scrollerarea[320/8+j*(320+32)/8+i] = KNIGHT2_png[4*4+j*320/8+i]; */
-	scrollerarea[320/8+j*(320+32)/8+i] = KNIGHT2_png[16+j*320/8+i];
+	*dptr++ = *sptr++;
       }
+      sptr += 320/8 - 4;
+      dptr += (320+32)/8 - 4;
     }
     custom.color[0] = 0x00b0;
   }
