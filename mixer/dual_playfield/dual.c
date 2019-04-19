@@ -25,9 +25,6 @@ void setup_copper(void) {
   int i;
   ULONG address;
 
-  for(i = 0; i < sizeof(playfield2data); ++i) {
-    playfield2data[i] = i;
-  }
   /* Bitplane pointers */
   for(i = 0; i < 3; ++i) {
     address = (ULONG)logo_plate_png;

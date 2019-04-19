@@ -49,24 +49,21 @@ _copperlist_colors:
 	dc.w	color+$a,$0050
 	dc.w	color+$c,$0060
 	dc.w	color+$e,$0070
-	dc.w	color+$10,$0080
-	dc.w	color+$12,$0090
-	dc.w	color+$14,$00a0
-	dc.w	color+$16,$00b0
+	dc.w	color+$10,$0080	; Playfield 2 transparent
+	dc.w	color+$12,$0AAA
+	dc.w	color+$14,$0DDD
+	dc.w	color+$16,$0FEF
 	dc.w	color+$18,$00c0
 	dc.w	color+$1a,$00d0
 	dc.w	color+$1c,$00e0
 	dc.w	color+$1e,$00f0
-	dc.w	$2f07,$fffe
-	dc.w	color+0,$0fee
-	;; Wait for a visible line and wait for blitter!
-	dc.w	$3007,$7ffe
-	dc.w	color+0,$0f00	;Turn to red.
+	;; Wait for blitter!
+	dc.w	$0007,$7ffe
 	;; Blitter activity!
-	dc.w	bltcon0,$19f0
+	dc.w	bltcon0,$39f0
 	dc.w	bltcon1,$0002
 	dc.w	bltafwm,$ffff	;First word mask
-	dc.w	bltalwm,$7fff	;Last word mask
+	dc.w	bltalwm,$ffff	;Last word mask
 _copperlist_blit_a_ptr:
 	dc.w	bltapt,0
 	dc.w	bltapt+2,0
@@ -79,13 +76,10 @@ _copperlist_blit_modulos:
 _copperlist_blit_size:
 	;; H9-H0, W5-W0. Width is in words.
 	dc.w	bltsize,((2*200)<<6)|(320/16)
-	;; Wait for the next line and wait for blitter!.
-	dc.w	$3107,$7ffe
-	dc.w	color+0,$0fff	;Turn to white.
+	;; Wait for blitter!.
+	dc.w	$0007,$7ffe
 	;; The display window starts at $2c and we have got 200 lines. Therefore the end of the bitplanes should be at ❨(format "$%x" (+ #x2c 200))"$f4"❩ line $f4.
 	dc.w	$f401,$fffe
-	;; Dispable bitplane dma
+	;; Disable bitplane dma
 	dc.w	bplcon0,(1<<9)
-	;; Colour is grey.
-	dc.w	color+0,$0888
 	dc.l	$FFFFFFFE
