@@ -111,6 +111,11 @@ _copperlist_scroller_bplpt:
 	;; Turn display on again.
 	dc.w	$0101,$fffe
 	dc.w	bplcon0,(1<<9)|$3000 ; Three bitplanes.
+	;; (format "%x" (+ 1 24))"19"; Font height is 24 pixels.
+	dc.w	$19fd,$fffe	; Wait for end of line
+	;; Now do the mirror effect.
+	dc.w	bpl1mod,-((320)/8)
+	dc.w	bpl2mod,-((320)/8)
 ;	;; End of screen display area.
 ;	dc.w	$2c07,$fffe
 ;	dc.w	color,$00f
