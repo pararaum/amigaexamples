@@ -1,6 +1,6 @@
 #! /usr/bin/make -f
 
-CFLAGS=-speed -DNDEBUG
+CFLAGS=-speed -DNDEBUG -c99
 AS=vasmm68k_mot -Fhunk -I$$HOME/include/ -I../../framework/
 VLINKFLAGS=-s
 LIBS=-lamiga

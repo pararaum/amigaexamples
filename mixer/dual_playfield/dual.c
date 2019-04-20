@@ -14,6 +14,8 @@ extern UWORD copperlist_blit_size[];
 extern UWORD copperlist_scroller_bplpt[];
 extern UWORD copperlist_bplmod_top[];
 extern ULONG framecounter;
+extern void *own_machine(ULONG bits);
+extern void *disown_machine(void);
 void pt_InitMusic(void *mod_pointer);
 void pt_PlayMusic(void);
 void pt_StopMusic(void);
@@ -313,6 +315,7 @@ int main(int argc, char **argv) {
   printf("scroll_rect=$%08lX\n", (ULONG)&scroll_rect);
   printf("setup_copper=$%08lX\n", (ULONG)setup_copper);
   printf("setup_interrupt=$%08lX\n", (ULONG)&setup_interrupt);
+  //Give some time to turn debugger on.
   for(l = 0; l < 100000; ++l) {
   }
   run();
