@@ -13,16 +13,25 @@ extern UWORD copperlist_blit_modulos[];
 extern UWORD copperlist_blit_size[];
 extern UWORD copperlist_scroller_bplpt[];
 extern UWORD copperlist_bplmod_top[];
-extern void wait_for_mouse(void);
-extern ULONG *setup_interrupt(void *playfieldptr, void (*innerfun)(void));
 extern ULONG framecounter;
+void pt_InitMusic(void *mod_pointer);
+void pt_PlayMusic(void);
+void pt_StopMusic(void);
+extern UBYTE tracker_song_data[];
+void wait_for_mouse(void);
+ULONG *setup_interrupt(void *playfieldptr, void (*innerfun)(void));
 
 #include "logo_plate.inc"
 unsigned char __chip playfield2data[320*256/8*2];
 unsigned char __chip scrollerarea[(320+32)/8*55*3];
 void **vectors = (void *)0UL;
 unsigned char *scroller_src_ptr = NULL;
-const char scroller_text[] = "WELCOME TO THE \"DUAL-PLAYFIELD STARFIELD AND SCROLLER DEMO\". THE STARFIELD BEHIND THE LOGO IS GENERATED USING THE BLITTER. I KNOW THAT IT IS A HUGE WASTE OF TIME TO SCROLL THE WHOLE(!) AREA WITH THE BLITTER BUT I WAS JUST CHECKING HOW FAST THE BLITTER CAN BE. IT REALLY WORKS NICELY AND I LIKE THE EFFECT THAT THERE ARE MORE STARS AT THE TOP THAN AT THE BOTTOM OF THE LOG AREA... NOW THE MOST IMPORANT PART -- THE GREETINGS: JACK BEATMASTER, MEEPSTER, ROZ, STROBO, ZAKE, PAUL HOLT, TEZ, SEBASTIAN L., KYLEARAN OF CLUSTER, ABYSS CONNECTION, COYHOT, PINKAMENA, CLASSIC VIDEOGAMES RADIO, ZIONA, LPCHIP, BOZ, KRAXXULTIMA... AND TO EVERYBODY I FORGOT...    ";
+const char scroller_text[] = "MUSIC? OK... \x80WELCOME TO THE \"DUAL-PLAYFIELD STARFIELD AND SCROLLER DEMO\". "
+  "THE STARFIELD BEHIND THE LOGO IS GENERATED USING THE BLITTER. "
+  "I KNOW THAT IT IS A HUGE WASTE OF TIME TO SCROLL THE WHOLE(!) AREA WITH THE BLITTER BUT I WAS JUST CHECKING HOW FAST THE BLITTER CAN BE. "
+  "IT REALLY WORKS NICELY AND I LIKE THE EFFECT THAT THERE ARE MORE STARS AT THE TOP THAN AT THE BOTTOM OF THE LOGO AREA... "
+  "CREDITS GO TO: PARARAUM (GRAPHICS, CODING), JACKBEATMASTER (MUZAK), ? (font). "
+  "NOW THE MOST IMPORANT PART -- THE GREETINGS: JACK BEATMASTER, MEEPSTER, ROZ, STROBO, ZAKE, PAUL HOLT, TEZ, SEBASTIAN L., KYLEARAN OF CLUSTER, ABYSS CONNECTION, COYHOT, PINKAMENA, CLASSIC VIDEOGAMES RADIO, ZIONA, LPCHIP, BOZ, KRAXXULTIMA... AND TO EVERYBODY I FORGOT...    ";
 
 void setup_copper(void) {
   int i;
@@ -242,29 +251,41 @@ unsigned char *find_char_pos(char x) {
   return &KNIGHT2_png[col*4 + row*320/8*3*25];
 }
 
+
 void inner_loop(void) {
   const char *scrolltextptr = scroller_text;
-
   while(framecounter < 50*4) {
   }
   vectors[0xfc] = (void*)&irq_scroller;
   /* One hour should be enough for everybody! */
   while(framecounter < /*50*(60*60); closes prime:*/180001) {
     while(scroller_src_ptr != NULL) ;
-    scroller_src_ptr = find_char_pos(*scrolltextptr++);
-    if(scroller_src_ptr == NULL) {
-      scrolltextptr = scroller_text;
-      scroller_src_ptr = find_char_pos(' ');
+    if(*scrolltextptr >= 0x00) {
+      scroller_src_ptr = find_char_pos(*scrolltextptr);
+      if(scroller_src_ptr == NULL) {
+	scrolltextptr = scroller_text;
+	scroller_src_ptr = find_char_pos(' ');
+      }
+    } else {
+      switch(*scrolltextptr) {
+      case 0x80:
+	vectors[0xfd] = (void*)&pt_PlayMusic;
+	break;
+      default:
+	break;
+      }
     }
+    ++scrolltextptr;
   }
 }
+
 
 void run(void) {
   ULONG *framecounterptr;
 
   setup_copper();
   own_machine(1|2|8);
-  /* init muzak */
+  pt_InitMusic(tracker_song_data);
   setup_system();
   /* Inner loop is used for the stack trick. It is called from the
      assembler routine. If it ends then the code continues here. If a
@@ -274,7 +295,7 @@ void run(void) {
   framecounterptr = setup_interrupt(playfield2data, &inner_loop);
   /* stop all */
   custom.intena = 0x7fff;
-  /* muzak off */
+  pt_StopMusic();
   disown_machine();
 }
 
@@ -282,6 +303,8 @@ int main(int argc, char **argv) {
   unsigned long l;
 
   putchar('\f');
+  printf("tracker_song_data=$%08lX\n", (ULONG)tracker_song_data);
+  printf("inner_loop=$%08lX\n", (ULONG)&inner_loop);
   printf("irq_scroller=$%08lX\n", (ULONG)&irq_scroller);
   printf("run=$%08lX\n", (ULONG)&run);
   printf("copperlist=$%08lX\n", (ULONG)copperlist);
