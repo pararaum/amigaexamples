@@ -70,7 +70,7 @@ irqroutine:
 	cmp.w	#400,d0		; < 400? This is the number of lines times two bitplanes.
 	bcc.s	skip$
 	;; d0 containes the line number
-	mulu.w	#320/8*2,d0	; 320 pixels and 2 bitplanes.
+	mulu.w	#320/8,d0	; 320 pixels per scanline.
 	subq	#1,d0		; Move to the right end of the screen on the *previous* line.
 	bset.b	#0,(a1,d0)
 skip$:
