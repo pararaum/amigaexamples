@@ -16,7 +16,6 @@
 	XDEF	_pt_InitMusic
 	XDEF	_pt_PlayMusic
 	XDEF	_pt_StopMusic
-	XDEF	_tracker_song_data
 
 	XDEF	pt_audchan1temp
 	XDEF	pt_audchan2temp
@@ -1268,15 +1267,4 @@ pt_PattDelayTime
 		dc.b	0
 pt_PattDelayTime2
 		dc.b	0
-	even
-
-	section	chipmusic,data_c
-_tracker_song_data:
-	incbin	"../../data/ramcharg.mod"
-	even
-	cmp.l	#"SONG",_tracker_song_data
-	cmp.l	#"CHN1",pt_audchan1temp
-	cmp.l	#"CHN2",pt_audchan2temp
-	cmp.l	#"CHN3",pt_audchan3temp
-	cmp.l	#"CHN4",pt_audchan4temp
 	even

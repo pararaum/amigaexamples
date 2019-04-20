@@ -5,7 +5,7 @@ ASFLAGS=-m68000 -L /dev/stdout -Lnf
 LD=vlink
 VLINKFLAGS=-s
 #TARGET=sprite_example
-OBJS=own.o iff.o copper_fade.o
+OBJS=own.o iff.o copper_fade.o music.o
 
 all:	$(OBJS)
 
