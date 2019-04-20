@@ -114,8 +114,37 @@ _copperlist_scroller_bplpt:
 	;; (format "%x" (+ 1 24))"19"; Font height is 24 pixels.
 	dc.w	$19fd,$fffe	; Wait for end of line
 	;; Now do the mirror effect.
-	dc.w	bpl1mod,-((320)/8)
-	dc.w	bpl2mod,-((320)/8)
+	dc.w	bpl1mod,-((320)/8)-((320+32)/8*3)
+	dc.w	bpl2mod,-((320)/8)-((320+32)/8*3)
+	;; Shift to the right to increase mirror illusion.
+	dc.w	$20fd,$fffe
+	dc.w	bplcon1,$11
+	dc.w	$21fd,$fffe
+	dc.w	bplcon1,$22
+	dc.w	$22fd,$fffe
+	dc.w	bplcon1,$33
+	dc.w	$23fd,$fffe
+	dc.w	bplcon1,$44
+	dc.w	$24fd,$fffe
+	dc.w	bplcon1,$55
+	dc.w	$25fd,$fffe
+	dc.w	bplcon1,$66
+	dc.w	$26fd,$fffe
+	dc.w	bplcon1,$77
+	dc.w	$27fd,$fffe
+	dc.w	bplcon1,$88
+	dc.w	$28fd,$fffe
+	dc.w	bplcon1,$99
+	dc.w	$29fd,$fffe
+	dc.w	bplcon1,$aa
+	dc.w	$2afd,$fffe
+	dc.w	bplcon1,$bb
+	dc.w	$2bfd,$fffe
+	dc.w	bplcon1,$cc
+	dc.w	$2cfd,$fffe
+	dc.w	bplcon1,$dd
+	dc.w	$2dfd,$fffe
+	dc.w	bplcon1,$00
 ;	;; End of screen display area.
 ;	dc.w	$2c07,$fffe
 ;	dc.w	color,$00f
