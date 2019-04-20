@@ -5,7 +5,7 @@ AS=vasmm68k_mot -Fhunk -I$$HOME/include/ -I../framework/
 ASFLAGS=-DNDEBUG
 VLINKFLAGS=-s
 LIBS=-lamiga
-OOBJS=../framework/own.o
+OOBJS=../framework/own.o ../framework/music.o
 CC=vc
 ALL=scroller scroller2 scroller3
 
@@ -22,7 +22,7 @@ scroller3:	scroller3.o scroller3.asm.o music.o textmonochrome.o
 	vc $(CFLAGS) -o $@ $+ $(OOBJS) $(LIBS)
 
 logo.c: logo.xpm
-	../tools/convert_img2raw -p -B4 -O c $< > $@
+	../tools/convert_img2raw -h -p -b -B4 -O c $< > $@
 
 .PHONY: clean
 clean:

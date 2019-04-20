@@ -58,7 +58,7 @@ interrupt_autovector:
 	IFND	NDEBUG
 	move.w	#$007D,$180(a6)		;Change background
 	ENDIF
-	jsr	pt_PlayMusic
+	jsr	_pt_PlayMusic
 	IFND	NDEBUG
 	move.w	#$0010,$180(a6)		;Change background
 	ENDIF
@@ -84,8 +84,9 @@ _init_framework:
 	lea.l	interrupt_autovector(pc),a0
 	move.l	a0,$64.w
 	move.w	#$8000|(1<<14)|(1<<2),intena(a6)
-	lea.l	tracker_song_data,a0
-	jsr	pt_InitMusic
+	pea.l	tracker_song_data
+	jsr	_pt_InitMusic
+	addq.l	#4,a7
 	movem.l	(sp)+,d2-d7/a2-a6
 	rts
 
@@ -93,7 +94,7 @@ _init_framework:
 _shutdown_framework:
 	movem.l	d2-d7/a2-a6,-(sp)
         jsr     disown_machine
-	jsr	pt_StopMusic
+	jsr	_pt_StopMusic
 	movem.l	(sp)+,d2-d7/a2-a6
 	rts
 
