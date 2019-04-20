@@ -14,7 +14,7 @@ extern UWORD copperlist_blit_size[];
 extern UWORD copperlist_scroller_bplpt[];
 extern UWORD copperlist_bplmod_top[];
 extern void wait_for_mouse(void);
-extern ULONG *setup_interrupt(void *playfieldptr);
+extern ULONG *setup_interrupt(void *playfieldptr, void (*innerfun)(void));
 extern ULONG framecounter;
 
 #include "logo_plate.inc"
@@ -242,28 +242,36 @@ unsigned char *find_char_pos(char x) {
   return &KNIGHT2_png[col*4 + row*320/8*3*25];
 }
 
+void inner_loop(void) {
+  const char *scrolltextptr = scroller_text;
+
+  while(framecounter < 50*4) {
+  }
+  vectors[0xfc] = (void*)&irq_scroller;
+  /* One hour should be enough for everybody! */
+  while(framecounter < /*50*(60*60); closes prime:*/180001) {
+    while(scroller_src_ptr != NULL) ;
+    scroller_src_ptr = find_char_pos(*scrolltextptr++);
+    if(scroller_src_ptr == NULL) {
+      scrolltextptr = scroller_text;
+      scroller_src_ptr = find_char_pos(' ');
+    }
+  }
+}
+
 void run(void) {
   ULONG *framecounterptr;
-  const char *scrolltextptr = scroller_text;
 
   setup_copper();
   own_machine(1|2|8);
   /* init muzak */
   setup_system();
-  framecounterptr = setup_interrupt(playfield2data);
-  if(framecounterptr != NULL) {
-    while(*framecounterptr < 50*4);
-    vectors[0xfc] = (void*)&irq_scroller;
-    while(1) {
-      while(scroller_src_ptr != NULL) ;
-      scroller_src_ptr = find_char_pos(*scrolltextptr++);
-      if(scroller_src_ptr == NULL) {
-	scrolltextptr = scroller_text;
-	scroller_src_ptr = find_char_pos(' ');
-      }
-    }
-    wait_for_mouse(); /* Just in case. */
-  }
+  /* Inner loop is used for the stack trick. It is called from the
+     assembler routine. If it ends then the code continues here. If a
+     mouse button is pressed then the stack frame is restored and the
+     code also continues here.
+   */
+  framecounterptr = setup_interrupt(playfield2data, &inner_loop);
   /* stop all */
   custom.intena = 0x7fff;
   /* muzak off */
@@ -281,6 +289,7 @@ int main(int argc, char **argv) {
   printf("playfield2data=$%08lX\n", (ULONG)playfield2data);
   printf("scroll_rect=$%08lX\n", (ULONG)&scroll_rect);
   printf("setup_copper=$%08lX\n", (ULONG)setup_copper);
+  printf("setup_interrupt=$%08lX\n", (ULONG)&setup_interrupt);
   for(l = 0; l < 100000; ++l) {
   }
   run();

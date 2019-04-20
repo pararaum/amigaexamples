@@ -14,6 +14,10 @@ _setup_interrupt:
 	move.l	a0,$6c.w	; Set level 3 autovector (VBLANK)
 	;; Enable interrupt
 	move.w	#INTF_SETCLR|INTF_INTEN|INTF_VERTB,$dff000+intena
+	;; Get function pointer.
+	move.l	8(a7),a0
+	;; Call
+	jsr	(a0)
 	move.l	#_framecounter,d0
 	rts
 irq$:	movem.l	d0-d7/a0-a6,-(sp)
