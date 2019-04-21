@@ -1,6 +1,7 @@
 ;;; IFF tools to make it easier to include images in this format. 
 ;;; See here, too? http://wiki.amigaos.net/wiki/IFF_Source_Code
 
+	XDEF	uncompress_body_continous
 	XDEF	uncompress_body_interleaved
 	XDEF	find_iff_chunk
 	XDEF	copy_cmap_chunk

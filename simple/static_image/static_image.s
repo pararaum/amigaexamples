@@ -151,7 +151,7 @@ ok$:	move.l	a0,a5		;Pointer to body chunk data
 	move.w	#320/8,d6	;Width in bytes
 	move.w	#200,d7		;Height in lines
 	moveq	#3,d5		;Number of bitplanes
-	jsr	uncompress_body
+	jsr	uncompress_body_continous
 	lea.l	ilbm_image,a0	;Pointer to image.
 	lea.l	colour_space,a1 ;Here the colour values are copied to.
 	moveq	#0,d0		;No skip.
@@ -178,7 +178,7 @@ ok$:	move.l	a0,a5		;Pointer to body chunk data
 	move.w	#1280/8,d6	;Width in bytes
 	move.w	#200,d7		;Height in lines
 	moveq	#3,d5		;Number of bitplanes
-	jsr	uncompress_body
+	jsr	uncompress_body_continous
 	lea.l	panorama_image,a0	;Pointer to image.
 	lea.l	colour_space,a1 ;Here the colour values are copied to.
 	moveq	#0,d0		;No skip.
