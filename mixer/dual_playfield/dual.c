@@ -315,7 +315,7 @@ int main(int argc, char **argv) {
   printf("setup_copper=$%08lX\n", (ULONG)setup_copper);
   printf("setup_interrupt=$%08lX\n", (ULONG)&setup_interrupt);
   //Give some time to turn debugger on.
-  for(l = 0; l < 509; ++l) {
+  for(l = 0; l < 337; ++l) {
     while(custom.vposr & 0x0001) ;
     while(!(custom.vposr & 0x0001)) ;
   }
