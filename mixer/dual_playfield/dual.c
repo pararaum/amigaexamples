@@ -4,7 +4,7 @@
 #include "font.h"
 
 /* Custom chip registers. */
-extern struct Custom custom;
+extern volatile struct Custom custom;
 extern UWORD copperlist[];
 extern UWORD copperlist_colors[];
 extern UWORD copperlist_blit_a_ptr[];
@@ -13,7 +13,7 @@ extern UWORD copperlist_blit_modulos[];
 extern UWORD copperlist_blit_size[];
 extern UWORD copperlist_scroller_bplpt[];
 extern UWORD copperlist_bplmod_top[];
-extern ULONG framecounter;
+extern volatile ULONG framecounter;
 extern void *own_machine(ULONG bits);
 extern void *disown_machine(void);
 void pt_InitMusic(void *mod_pointer);
@@ -27,7 +27,7 @@ ULONG *setup_interrupt(void *playfieldptr, void (*innerfun)(void));
 unsigned char __chip playfield2data[320*256/8*2];
 unsigned char __chip scrollerarea[(320+32)/8*55*3];
 void **vectors = (void *)0UL;
-unsigned char *scroller_src_ptr = NULL;
+volatile unsigned char * volatile scroller_src_ptr = NULL;
 const char scroller_text[] = "MUSIC? OK... \x80WELCOME TO THE \"DUAL-PLAYFIELD STARFIELD AND SCROLLER DEMO\". "
   "THE STARFIELD BEHIND THE LOGO IS GENERATED USING THE BLITTER. "
   "I KNOW THAT IT IS A HUGE WASTE OF TIME TO SCROLL THE WHOLE(!) AREA WITH THE BLITTER BUT I WAS JUST CHECKING HOW FAST THE BLITTER CAN BE. "
@@ -208,17 +208,16 @@ BLTCON0
  */
 void irq_scroller(void) {
   int i, j;
-  unsigned char *sptr, *dptr;
+  unsigned char *dptr;
 
   if(framecounter % 32 == 0) {
-    sptr = scroller_src_ptr;
     dptr = &scrollerarea[320/8];
-    if(sptr) {
+    if(scroller_src_ptr) {
       for(j = 0; j < 25*3; ++j) {
 	for(i = 0; i < 4; ++i) {
-	  *dptr++ = *sptr++;
+	  *dptr++ = *scroller_src_ptr++;
 	}
-	sptr += 320/8 - 4;
+	scroller_src_ptr += 320/8 - 4;
 	dptr += (320+32)/8 - 4;
       }
       scroller_src_ptr = NULL;
@@ -316,7 +315,9 @@ int main(int argc, char **argv) {
   printf("setup_copper=$%08lX\n", (ULONG)setup_copper);
   printf("setup_interrupt=$%08lX\n", (ULONG)&setup_interrupt);
   //Give some time to turn debugger on.
-  for(l = 0; l < 100000; ++l) {
+  for(l = 0; l < 509; ++l) {
+    while(custom.vposr & 0x0001) ;
+    while(!(custom.vposr & 0x0001)) ;
   }
   run();
   return 0;

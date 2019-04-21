@@ -116,6 +116,15 @@ _copperlist_scroller_bplpt:
 	;; Now do the mirror effect.
 	dc.w	bpl1mod,-((320)/8)-((320+32)/8*3)
 	dc.w	bpl2mod,-((320)/8)-((320+32)/8*3)
+	;; New colours from here, now darker.
+	DC.W	color+00,$0000
+	DC.W	color+02,$0111
+	DC.W	color+04,$0222
+	DC.W	color+06,$0233
+	DC.W	color+08,$0244
+	DC.W	color+10,$0444
+	DC.W	color+12,$0555
+	DC.W	color+14,$0666
 	;; Shift to the right to increase mirror illusion.
 	dc.w	$20fd,$fffe
 	dc.w	bplcon1,$11
