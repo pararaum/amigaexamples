@@ -590,7 +590,7 @@ information_bitplane:
 
 	section	staimg~b,bss
 	ALIGN	2
-	;; Colour space is the space where the colour information is copied to. It will be only read by the CPU so need for chip memory.
+	;; Colour space is the space where the colour information is copied to. It will be only read by the CPU so no need for chip memory.
 colour_space:
 	ds.w	32		; Space for maximum number of colours.
 
