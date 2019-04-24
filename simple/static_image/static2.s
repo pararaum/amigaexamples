@@ -13,7 +13,7 @@ _start:	jmp	main(pc)
 	align	4
 	dcb.b	16,'#'
 	dc.l	debugstorage
-	dc.l	debugstorageptr
+	align	4
 	dcb.b	16,'#'
 	align	4
 main:	nop
@@ -61,7 +61,6 @@ read_mouse:
 	;; d3.w	old y
 	;; a5 pointer to debug storage
 	movem.l	d0-d7/a0-a6,-(sp)
-	move.l	debugstorageptr,a5
 	move.w	oldx,d2
 	move.w	oldy,d3
 	clr.l	d1
@@ -72,13 +71,6 @@ read_mouse:
 	move.b	joy0dat+1(a6),d0 ; Delta X
 	; ext.w	d0		; Extend to 16 bits
 	move.w	d0,oldx		; Store as new value
-	nop
-	move.w	#'&&',(a5)+
-	move.w	d2,(a5)+
-	move.w	d3,(a5)+
-	move.w	d0,(a5)+
-	move.w	d1,(a5)+
-	nop
 	sub.w	d2,d0		; Calculate delta X
 	cmp.w	#-240,d0
 	bgt.s	nou1$		; Underflow
@@ -90,9 +82,6 @@ nou1$:	cmp.w	#240,d0		; Overflow
 	add.w	#256,d0
 noo1$:	ext.l	d0
 	add.l	d0,screenposx
-	nop
-	move.w	d0,(a5)+
-	nop
 	sub.w	d3,d1		; Calculate delta Y
 	cmp.w	#-240,d1
 	bgt.s	nou2$		; Underflow
@@ -104,24 +93,12 @@ nou2$:	cmp.w	#240,d1		; Overflow
 	add.w	#256,d1
 noo2$:	ext.l	d1
 	add.l	d1,screenposy
-	nop
-	move.w	d1,(a5)+
-	nop
 	swap	d1		; Move delta to upper 16 bits.
 	and.w	#0,d1
 	or.w	d0,d1
 	move.w	#320/8,d0
 	lea.l	onscreen+320/8*28,a0
 	jsr	draw_uint32_number
-	nop
-	move.w	#'``',(a5)+
-	move.l	screenposx,(a5)+
-	move.l	screenposy,(a5)+
-	adda.w	#31,a5
-	move.l	a5,d0
-	and.l	#$fffffff0,d0
-	move.l	d0,debugstorageptr
-	nop
 	movem.l	(sp)+,d0-d7/a0-a6
 	rts
 	
@@ -239,8 +216,6 @@ screenposx:
 	dc.l	0
 screenposy:
 	dc.l	0
-debugstorageptr:
-	dc.l	debugstorage
 
 	SECTION bss_c,bss_c
 image:	ds.b	WIDTH*HEIGHT/8
@@ -249,4 +224,4 @@ onscreen:
 
 	SECTION BSS,bss
 debugstorage:
-	ds.l	200000
+	ds.l	1<<10
