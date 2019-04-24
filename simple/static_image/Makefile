@@ -9,7 +9,7 @@ LIB=../../framework/own.o ../../framework/iff.o
 
 all:	$(TARGET) static2
 
-static2:	static2.o
+static2:	static2.o draw_font.o
 	$(LD) -e _start $(VLINKFLAGS) -o $@ $+ $(LIB)
 
 $(TARGET):	$(TARGET).o $(OBJS)
