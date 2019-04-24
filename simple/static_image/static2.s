@@ -11,6 +11,11 @@ _start:	jmp	main(pc)
 	dc.b	"Static image 2",10
 	dc.b	"Code: Pararaum / T7D",0
 	align	4
+	dcb.b	16,'#'
+	dc.l	debugstorage
+	dc.l	debugstorageptr
+	dcb.b	16,'#'
+	align	4
 main:	nop
 	moveq	#1|2|4,d0
 	jsr	own_machine
@@ -18,12 +23,120 @@ main:	nop
 	bsr	setup_copper
 	jsr	waitsome
 	bsr	draw_coordinates
-l3$:	btst	#6,$bfe001	; Left mouse clicked?
+l3$:	nop
+	bsr	wait_frame
+	nop
+	bsr	joydat2screen
+	bsr	read_mouse
+	bsr	display_positions
+	btst	#6,$bfe001	; Left mouse clicked?
 	bne.s	l3$
 	jsr	disown_machine
 	;; setup copper
 	moveq	#0,d0
 	rts
+
+wait_frame:
+l1$:	btst.b	#0,vposr+1(a6)
+	bne.s	l1$
+l2$:	btst.b	#0,vposr+1(a6)
+	beq.s	l2$
+	rts
+
+display_positions:
+	movem.l	d0-d7/a0-a6,-(sp)
+	move.w	#320/8,d0
+	move.l	screenposx,d1
+	lea.l	onscreen+20+320/8*240,a0
+	jsr	draw_uint32_number
+	move.w	#320/8,d0
+	move.l	screenposy,d1
+	lea.l	onscreen+30+320/8*240,a0
+	jsr	draw_uint32_number
+	movem.l	(sp)+,d0-d7/a0-a6
+
+	
+read_mouse:
+	;; d2.w old x
+	;; d3.w	old y
+	;; a5 pointer to debug storage
+	movem.l	d0-d7/a0-a6,-(sp)
+	move.l	debugstorageptr,a5
+	move.w	oldx,d2
+	move.w	oldy,d3
+	clr.l	d1
+	move.b	joy0dat(a6),d1	; Delta Y
+	; ext.w	d1		; Sign extend to 16 bits
+	move.w	d1,oldy		; Store as new value.
+	clr.l	d0
+	move.b	joy0dat+1(a6),d0 ; Delta X
+	; ext.w	d0		; Extend to 16 bits
+	move.w	d0,oldx		; Store as new value
+	nop
+	move.w	#'&&',(a5)+
+	move.w	d2,(a5)+
+	move.w	d3,(a5)+
+	move.w	d0,(a5)+
+	move.w	d1,(a5)+
+	nop
+	sub.w	d2,d0		; Calculate delta X
+	cmp.w	#-240,d0
+	bgt.s	nou1$		; Underflow
+	add.w	#256,d0
+	bra.s	noo1$
+nou1$:	cmp.w	#240,d0		; Overflow
+	blt.s	noo1$
+	neg.w	d0
+	add.w	#256,d0
+noo1$:	ext.l	d0
+	add.l	d0,screenposx
+	nop
+	move.w	d0,(a5)+
+	nop
+	sub.w	d3,d1		; Calculate delta Y
+	cmp.w	#-240,d1
+	bgt.s	nou2$		; Underflow
+	add.w	#256,d1
+	bra.s	noo2$
+nou2$:	cmp.w	#240,d1		; Overflow
+	blt.s	noo2$
+	neg.w	d1
+	add.w	#256,d1
+noo2$:	ext.l	d1
+	add.l	d1,screenposy
+	nop
+	move.w	d1,(a5)+
+	nop
+	swap	d1		; Move delta to upper 16 bits.
+	and.w	#0,d1
+	or.w	d0,d1
+	move.w	#320/8,d0
+	lea.l	onscreen+320/8*28,a0
+	jsr	draw_uint32_number
+	nop
+	move.w	#'``',(a5)+
+	move.l	screenposx,(a5)+
+	move.l	screenposy,(a5)+
+	adda.w	#31,a5
+	move.l	a5,d0
+	and.l	#$fffffff0,d0
+	move.l	d0,debugstorageptr
+	nop
+	movem.l	(sp)+,d0-d7/a0-a6
+	rts
+	
+
+joydat2screen:
+	movem.l	d0-d7/a0-a6,-(sp)
+	move.w	joy0dat(a6),d1
+	swap	d1
+	move.w	joy1dat(a6),d1
+	move.w	#320/8,d0
+	lea.l	onscreen+320/8*14,a0
+	jsr	draw_uint32_number
+	movem.l	(sp)+,d0-d7/a0-a6
+	rts
+
 
 waitsome:
 	moveq	#103,d0
@@ -90,7 +203,7 @@ copper_list:
 	dc.w	$008e,$2c81,$0090,$2cc1		; DIWSTRT/DIWSTOP
 	dc.w	$0092,$0038,$0094,$00d0		; DDFSTRT/DDFSTOP
 	;; http://amiga-dev.wikidot.com/hardware:bplcon0
-	dc.w	bplcon0,$1200			; 1 Bitplanes, output enabled
+	dc.w	bplcon0,$2200			; 2 Bitplanes, output enabled
 copper_scrollcon:
 	;; http://www.winnicki.net/amiga/memmap/BPLCON1.html, scrolling
 	;; Lower nibbles are for scrolling, PF 1 and PF2.
@@ -120,8 +233,20 @@ copper_bplptr:
 	dc.w	$ffff,$fffe
 
 	SECTION DATA,data
+oldx:	dc.w	0
+oldy:	dc.w	0
+screenposx:
+	dc.l	0
+screenposy:
+	dc.l	0
+debugstorageptr:
+	dc.l	debugstorage
 
 	SECTION bss_c,bss_c
 image:	ds.b	WIDTH*HEIGHT/8
 onscreen:
 	ds.b	320*256/8
+
+	SECTION BSS,bss
+debugstorage:
+	ds.l	200000
