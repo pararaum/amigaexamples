@@ -206,7 +206,7 @@ copper_list:
 	dc.w 	fmode,$0000
 	;; Setting up display.
 	;; see also: http://cyberpingui.free.fr/tuto_graphics.htm
-	dc.w	$008e,$2c81,$0090,$2cc1		; DIWSTRT/DIWSTOP
+	dc.w	$008e,$2c91,$0090,$2cc1		; DIWSTRT/DIWSTOP
 	dc.w	$0092,$0038,$0094,$00d0		; DDFSTRT/DDFSTOP
 	;; http://amiga-dev.wikidot.com/hardware:bplcon0
 	dc.w	bplcon0,$2200			; 2 Bitplanes, output enabled
