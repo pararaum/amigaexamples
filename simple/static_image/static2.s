@@ -29,11 +29,39 @@ l3$:	nop
 	bsr	joydat2screen
 	bsr	read_mouse
 	bsr	display_positions
+	bsr	move_image
 	btst	#6,$bfe001	; Left mouse clicked?
 	bne.s	l3$
 	jsr	disown_machine
 	;; setup copper
 	moveq	#0,d0
+	rts
+
+move_image:
+	move.l	screenposy,d0
+	and.l	#2048-1,d0
+	move.l	d0,screenposy
+	lsr.w	#1,d0		; Divide by two to have more precise motion.
+	mulu	#WIDTH/8,d0
+	add.l	#image,d0	 ; Image address + screenposy lines
+	move.l	screenposx,d1	 ; X position into register
+	and.l	#2048-1,d1
+	move.l	d1,screenposx
+	lsr.w	#1,d1		; Divide by two to have more precise motion.
+	and.w	#$fff0,d1	; Ignore the lowest 4 bits, these are handled
+				; via the scroll register.
+	lsr.w	#3,d1		 ; Divide by 8 for bytes
+	neg.w	d1
+	ext.l	d1
+	add.l	d1,d0		 ; Add to the screen pointer
+	;; Now set the start position in the copper list.
+	move.w	d0,6(a1)	 ; Lower 16 bits of address
+	swap	d0		 ; Switch words
+	move.w	d0,2(a1)	 ; Upper 16 bits of address
+	move.l	screenposx,d1	 ; X position into register
+	lsr.w	#1,d1		; Divide by two to have more precise motion.
+	and.w	#$f,d1		 ; Lowest four bits
+	move.w	d1,copper_scrollcon+2 ;Set BPLCON1 in copper list.
 	rts
 
 wait_frame:
@@ -42,6 +70,7 @@ l1$:	btst.b	#0,vposr+1(a6)
 l2$:	btst.b	#0,vposr+1(a6)
 	beq.s	l2$
 	rts
+
 
 display_positions:
 	movem.l	d0-d7/a0-a6,-(sp)
