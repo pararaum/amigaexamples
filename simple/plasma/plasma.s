@@ -46,10 +46,10 @@ do_plasma:
 	;; D4: phase in Y
 	lea.l	copper_plasma_space,a5
 	lea.l	sinustable,a4
-	move.w	#PLASMA_HEIGHT-1,d7
+	move.w	#PLASMA_HEIGHT/4-1,d7
 	move.w	phasey$(pc),d4
 l2$:	move.w	#PLASMA_COPPER_MPL-1,d6
-	addq.l	#4,a5		; Skip WAIT
+	addq.l	#4+2,a5		; Skip WAIT, and point to colour value
 	move.w	phasex$(pc),d5	; Get current phase in X direction.
 l1$:	move.w	d5,d1
 	and.w	#$3FE,d1
@@ -58,12 +58,12 @@ l1$:	move.w	d5,d1
 	and.w	#$3fe,d1
 	add.w	(a4,d1),d0
 	lsr.w	#10-4+1,d0
-	move.w	d0,2(a5)
+	move.w	d0,(a5)
 	addq.l	#4,a5
 	add.w	#37,d5		; sin(37*x)
 	dbf	d6,l1$
 	add.w	#31,d4		; sin(31*x)
-	addq.l	#4,a5		; Skip black at the end.
+	addq.l	#2,a5		; Skip black at the end.
 	dbf	d7,l2$
 	addq.w	#3,phasex$
 	subq.w	#1,phasey$
