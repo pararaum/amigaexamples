@@ -9,17 +9,21 @@ _start:	jmp	main(pc)
 	dc.b	"Plasma",10
 	dc.b	"Code: Pararaum / T7D",0
 	align	4
+	cmp.l	#"main",main
+	cmp.l	#"seco",setup_copper
+	cmp.l	#"COPL",copper_list
+	align	4
 main:	nop
 	moveq	#OWN_libraries|OWN_view|OWN_trap,d0
 	jsr	own_machine
 	lea.l	$DFF000,a6
 	bsr	setup_system
-	jsr	waitsome
 l3$:	btst	#6,$bfe001	; Left mouse clicked?
 	bne.s	l3$
 	jsr	disown_machine
 	moveq	#0,d0
 	rts
+	jmp	_start
 
 
 wait_frame:
@@ -27,17 +31,6 @@ l1$:	btst.b	#0,vposr+1(a6)
 	bne.s	l1$
 l2$:	btst.b	#0,vposr+1(a6)
 	beq.s	l2$
-	rts
-
-
-waitsome:
-	moveq	#103,d0
-l1$:	btst	#0,vposr+1(a6)
-	beq.s	l1$
-	move.w	d0,color(a6)
-l2$:	btst	#0,vposr+1(a6)
-	bne.s	l2$
-	dbf	d0,l1$
 	rts
 
 
@@ -96,15 +89,16 @@ copper_bplptr:
 	;; Per line we have (/ 752 8)94 color changes.
 	;; (* 6 15)90: we will do 6 blocks are 15 colour changes.
 	;; Horizontal blanking? There is a problem there... The calculation does not seem to work... Therefore we advised the following pattern to count.
-	dc.w	$3007,$fffe	;Wait for line 48.
+	dc.w	$ffdf,$fffe	; End of NTSC.
+	dc.w	$0107,$fffe	;Wait for line 257.
 	;; White marker for easy spottin.
 	dc.w	color,$fff
 ;;; (format "%02x %02x %02x" 255 51 136)"ff 33 88"
-	REPT	100		; Lines
+	REPT	10		; Lines
 	dc.w	color, $00FF,  color, $0001,  color, $0F02,  color, $0003,  color, $0F04,  color, $0005,  color, $0F06,  color, $0007,  color, $0F08,  color, $0009,  color, $0F0A,  color, $000B,  color, $0F0C,  color, $000D,  color, $0F0E,  color, $000F,  color, $0F10,  color, $0011,  color, $0F12,  color, $0013,  color, $0F14,  color, $0015,  color, $0F16,  color, $0017,  color, $0F18,  color, $0019,  color, $0F1A,  color, $001B,  color, $0F1C,  color, $001D,  color, $0F1E,  color, $001F,  color, $0F20,  color, $0021,  color, $0F22,  color, $0023,  color, $0F24,  color, $0025,  color, $0F26,  color, $0027,  color, $0F28,  color, $0029,  color, $0F2A,  color, $002B,  color, $0F2C,  color, $002D,  color, $0F2E,  color, $002F,  color, $0F30,  color, $0031,  color, $0F32,  color, $0033,  color, $0F34,  color, $0035,  color, $0F36,  color, $0037,  color, $0F38
 	ENDR			; Lines
 	;; Now make a zig-zag pattern.
-	dc.w	$3c41,$fffe
+	dc.w	$0f41,$fffe
 	;; White marker for easy spottin.
 	dc.w	color,$fff
 	rept	10		; Lines
