@@ -4,7 +4,7 @@ AS=vasmm68k_mot -Lnf -Fhunk -I$$HOME/include/ -I../../framework
 LD=vlink
 VLINKFLAGS=-s
 TARGET=plasma
-OBJS=
+OBJS=sinus.o
 LIB=../../framework/own.o ../../framework/iff.o
 
 all:	$(TARGET)

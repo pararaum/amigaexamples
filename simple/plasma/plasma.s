@@ -3,34 +3,80 @@
         INCLUDE "hardware/dmabits.i"
 	include	"own.i"
 
-;;; A6 contains the $DFF000 custom chip base.
+PLASMA_WIDTH = 256
+PLASMA_HEIGHT = 128
+PLASMA_COPPER_MPL = 256/8
+PLASMA_TOPLINE = $30
 
-_start:	jmp	main(pc)
+	;;; A6 contains the $DFF000 custom chip base.
+
+	_start:	jmp	main(pc)
 	dc.b	"Plasma",10
 	dc.b	"Code: Pararaum / T7D",0
 	align	4
 	cmp.l	#"main",main
 	cmp.l	#"seco",setup_copper
+	cmp.l	#"plas",do_plasma
 	cmp.l	#"COPL",copper_list
+	cmp.l	#"CPLS",copper_plasma_space
 	align	4
-main:	nop
+	main:	nop
 	moveq	#OWN_libraries|OWN_view|OWN_trap,d0
 	jsr	own_machine
 	lea.l	$DFF000,a6
 	bsr	setup_system
-l3$:	btst	#6,$bfe001	; Left mouse clicked?
+	l3$:	nop
+	bsr	wait_frame
+	move.w	#$b5b,color+2(a6)
+	bsr	do_plasma
+	move.w	#$fff,color+2(a6)
+	btst	#6,$bfe001	; Left mouse clicked?
 	bne.s	l3$
 	jsr	disown_machine
 	moveq	#0,d0
 	rts
 	jmp	_start
 
+do_plasma:
+	;; A5: Pointer to the copper plasma space.
+	;; A4: Pointer to the sinustable
+	;; D7: line counter
+	;; D6: column counter
+	;; D5: phase in X
+	;; D4: phase in Y
+	lea.l	copper_plasma_space,a5
+	lea.l	sinustable,a4
+	move.w	#PLASMA_HEIGHT-1,d7
+	move.w	phasey$(pc),d4
+l2$:	move.w	#PLASMA_COPPER_MPL-1,d6
+	addq.l	#4,a5		; Skip WAIT
+	move.w	phasex$(pc),d5	; Get current phase in X direction.
+l1$:	move.w	d5,d1
+	and.w	#$3FE,d1
+	move.w	(a4,d1),d0
+	move.w	d4,d1
+	and.w	#$3fe,d1
+	add.w	(a4,d1),d0
+	lsr.w	#10-4+1,d0
+	move.w	d0,2(a5)
+	addq.l	#4,a5
+	add.w	#37,d5		; sin(37*x)
+	dbf	d6,l1$
+	add.w	#31,d4		; sin(31*x)
+	addq.l	#4,a5		; Skip black at the end.
+	dbf	d7,l2$
+	addq.w	#3,phasex$
+	subq.w	#1,phasey$
+	rts
+phasex$:	dc.w	0
+phasey$:	dc.w	0
+
 
 wait_frame:
 l1$:	btst.b	#0,vposr+1(a6)
-	bne.s	l1$
+	beq.s	l1$
 l2$:	btst.b	#0,vposr+1(a6)
-	beq.s	l2$
+	bne.s	l2$
 	rts
 
 
@@ -40,7 +86,10 @@ setup_system:
 	move.w	#DMAF_SETCLR|DMAF_BLITTER|DMAF_COPPER|DMAF_COPPER|DMAF_RASTER|DMAF_MASTER,dmacon(a6)
 	rts
 
+;;; Setup the copper and write the corresponding wait and color instructions.
 setup_copper:
+	movem.l	d2-d7/a2-a6,-(sp)
+	;; D3: line numner
 	;; Setup copper pointer.
 	move.l	#copper_list,cop1lc(a6)
 	clr.w	copjmp1(a6)	 ; Strobe copper
@@ -48,6 +97,24 @@ setup_copper:
 	move.w	d0,copper_bplptr+6 ; Lower 16 bits.
 	swap	d0
 	move.w	d0,copper_bplptr+2 ; Upper 16 bits.
+	;; Plasma is W*H "Pixels".
+	;; D3: line
+	moveq	#0,d3		; Line
+	lea.l	copper_plasma_space,a2 ; Space to where the data should be generated.
+l2$:	move.w	d3,d0		       ; Current line
+	add.w	#PLASMA_TOPLINE,d0     ; Current scanline
+	lsl.w	#8,d0		       ; VPOS is bit 9-15
+	or.w	#$51,d0		       ; or x-position (odd!)
+	move.w	d0,(a2)+
+	move.w	#$FFFE,(a2)+	; Mask for WAIT
+	moveq	#PLASMA_COPPER_MPL-1,d0 ;MOVEs per line
+l1$:	move.l	#$01800000,(a2)+
+	dbf	d0,l1$
+	addq.w	#1,d3		; Next line.
+	move.l	#$01800000,(a2)+ ; Turn to black again.
+	cmp.w	#PLASMA_HEIGHT,d3
+	bcs.s	l2$
+	movem.l	(sp)+,d2-d7/a2-a6
 	rts
 
 	SECTION	CHIP,data_c
@@ -85,6 +152,10 @@ copper_bplptr:
 	dc.w	$00f0,$0000,$00f2,$0000
 	dc.w	color+2*0,$0000	;Colour 0
 	dc.w	color+2*1,$05b5	;Colour 1
+copper_plasma_space:
+	;; +1 for the wait comman, +1 for the black at the end.
+	dcb.l	PLASMA_HEIGHT*(PLASMA_COPPER_MPL+1+1),$01feEAEA
+
 	;; Each line has 752 pixels, the copper needs 4 pixel clocks per word, two words are needed, therefore every 8 pixels can be changed.
 	;; Per line we have (/ 752 8)94 color changes.
 	;; (* 6 15)90: we will do 6 blocks are 15 colour changes.
