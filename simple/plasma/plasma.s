@@ -1,7 +1,7 @@
         INCLUDE "hardware/custom.i"
         INCLUDE "hardware/intbits.i"
+        INCLUDE "hardware/dmabits.i"
 	include	"own.i"
-
 
 ;;; A6 contains the $DFF000 custom chip base.
 
@@ -10,15 +10,14 @@ _start:	jmp	main(pc)
 	dc.b	"Code: Pararaum / T7D",0
 	align	4
 main:	nop
-	moveq	#1|2|4,d0
+	moveq	#OWN_libraries|OWN_view|OWN_trap,d0
 	jsr	own_machine
 	lea.l	$DFF000,a6
-	bsr	setup_copper
+	bsr	setup_system
 	jsr	waitsome
 l3$:	btst	#6,$bfe001	; Left mouse clicked?
 	bne.s	l3$
 	jsr	disown_machine
-	;; setup copper
 	moveq	#0,d0
 	rts
 
@@ -41,10 +40,21 @@ l2$:	btst	#0,vposr+1(a6)
 	dbf	d0,l1$
 	rts
 
+
+setup_system:
+	move.w	#$7fff,dmacon(a6)
+	bsr	setup_copper
+	move.w	#DMAF_SETCLR|DMAF_BLITTER|DMAF_COPPER|DMAF_COPPER|DMAF_RASTER|DMAF_MASTER,dmacon(a6)
+	rts
+
 setup_copper:
 	;; Setup copper pointer.
 	move.l	#copper_list,cop1lc(a6)
 	clr.w	copjmp1(a6)	 ; Strobe copper
+	move.l	#bitplane,d0	 ; Address of bitplane
+	move.w	d0,copper_bplptr+6 ; Lower 16 bits.
+	swap	d0
+	move.w	d0,copper_bplptr+2 ; Upper 16 bits.
 	rts
 
 	SECTION	CHIP,data_c
@@ -55,10 +65,10 @@ copper_list:
 	dc.w 	fmode,$0000
 	;; Setting up display.
 	;; see also: http://cyberpingui.free.fr/tuto_graphics.htm
-	dc.w	$008e,$2c91,$0090,$2cc1		; DIWSTRT/DIWSTOP
+	dc.w	$008e,$2c81,$0090,$2cc1		; DIWSTRT/DIWSTOP
 	dc.w	$0092,$0038,$0094,$00d0		; DDFSTRT/DDFSTOP
 	;; http://amiga-dev.wikidot.com/hardware:bplcon0
-	dc.w	bplcon0,$0200			; 0 Bitplanes, output enabled
+	dc.w	bplcon0,$1200			; 1 Bitplane, output enabled
 copper_scrollcon:
 	;; http://www.winnicki.net/amiga/memmap/BPLCON1.html, scrolling
 	;; Lower nibbles are for scrolling, PF 1 and PF2.
@@ -81,6 +91,7 @@ copper_bplptr:
 	dc.w	$00ec,$0000,$00ee,$0000
 	dc.w	$00f0,$0000,$00f2,$0000
 	dc.w	color+2*0,$0000	;Colour 0
+	dc.w	color+2*1,$05b5	;Colour 1
 	;; Each line has 752 pixels, the copper needs 4 pixel clocks per word, two words are needed, therefore every 8 pixels can be changed.
 	;; Per line we have (/ 752 8)94 color changes.
 	;; (* 6 15)90: we will do 6 blocks are 15 colour changes.
@@ -89,9 +100,9 @@ copper_bplptr:
 	;; White marker for easy spottin.
 	dc.w	color,$fff
 ;;; (format "%02x %02x %02x" 255 51 136)"ff 33 88"
-	rept	100		; Lines
+	REPT	100		; Lines
 	dc.w	color, $00FF,  color, $0001,  color, $0F02,  color, $0003,  color, $0F04,  color, $0005,  color, $0F06,  color, $0007,  color, $0F08,  color, $0009,  color, $0F0A,  color, $000B,  color, $0F0C,  color, $000D,  color, $0F0E,  color, $000F,  color, $0F10,  color, $0011,  color, $0F12,  color, $0013,  color, $0F14,  color, $0015,  color, $0F16,  color, $0017,  color, $0F18,  color, $0019,  color, $0F1A,  color, $001B,  color, $0F1C,  color, $001D,  color, $0F1E,  color, $001F,  color, $0F20,  color, $0021,  color, $0F22,  color, $0023,  color, $0F24,  color, $0025,  color, $0F26,  color, $0027,  color, $0F28,  color, $0029,  color, $0F2A,  color, $002B,  color, $0F2C,  color, $002D,  color, $0F2E,  color, $002F,  color, $0F30,  color, $0031,  color, $0F32,  color, $0033,  color, $0F34,  color, $0035,  color, $0F36,  color, $0037,  color, $0F38
-	endr			; Lines
+	ENDR			; Lines
 	;; Now make a zig-zag pattern.
 	dc.w	$3c41,$fffe
 	;; White marker for easy spottin.
@@ -107,6 +118,23 @@ copper_bplptr:
 	;; End of Copper List
 	dc.w	$ffff,$fffe
 
+bitplane:
+	REPT	14
+	dcb.b	40,$55
+	dcb.b	40,$AA
+	ENDR
+	REPT	100
+	dc.b	$55
+	dcb.b	38
+	dc.b	$55
+	dc.b	$AA
+	dcb.b	38
+	dc.b	$AA
+	ENDR
+	REPT	14
+	dcb.b	40,$55
+	dcb.b	40,$AA
+	ENDR
 
 	SECTION BSS,bss
 debugstorage:
