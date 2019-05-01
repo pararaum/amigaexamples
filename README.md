@@ -17,4 +17,10 @@ Links
  * http://vikke.net/index.php?id=copperbars-1 Copperbars demo.
  * http://www.flashtro.com/index.php?e=page&c=crack8&id=605 Simple scroller.
  * https://github.com/AxisOxy/Planet-Rocklobster
+ * http://www.stashofcode.fr/tag/amiga/
 
+Copper/Plasma
+-------------
+
+ * http://eab.abime.net/showthread.php?t=29570
+ * http://www.stashofcode.fr/wait-skip-copjmpx-usage-avance-copper-1/
