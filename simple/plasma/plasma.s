@@ -46,7 +46,7 @@ do_plasma:
 	;; D4: phase in Y
 	lea.l	copper_plasma_space,a5
 	lea.l	sinustable,a4
-	move.w	#PLASMA_HEIGHT/4-1,d7
+	move.w	#PLASMA_HEIGHT-1,d7
 	move.w	phasey$(pc),d4
 l2$:	move.w	#PLASMA_COPPER_MPL-1,d6
 	addq.l	#4+2,a5		; Skip WAIT, and point to colour value
