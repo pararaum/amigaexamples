@@ -99,28 +99,35 @@ init_blitter$:
 	move.w	#2,bltdmod(a6)	;Skip every second word (one word copper command, one word for value)
 	rts
 
+	RSRESET
+plasmastruct_phasex1	rs.w	1
+plasmastruct_phasex2	rs.w	1
+plasmastruct_phasey1	rs.w	1
+plasmastruct_phasey2	rs.w	1
+plasmastruct_SizeOf	rs.w
+
 do_plasma:
 	lea.l	sinustable,a5
 	lea	colour_area_r,a0
 	lea.l	phaser$(pc),a1
-	addq.w	#3,0(a1)
-	addq.w	#1,2(a1)
-	addq.w	#4,4(a1)
-	addq.w	#1,6(a1)
+	addq.w	#3,plasmastruct_phasex1(a1)
+	addq.w	#1,plasmastruct_phasex2(a1)
+	addq.w	#4,plasmastruct_phasey1(a1)
+	addq.w	#1,plasmastruct_phasey2(a1)
 	bsr	plasmoid$
 	lea	colour_area_g,a0
 	lea.l	phaseg$(pc),a1
-	addq.w	#5,0(a1)
-	subq.w	#2,2(a1)
-	subq.w	#6,4(a1)
-	addq.w	#1,6(a1)
+	addq.w	#5,plasmastruct_phasex1(a1)
+	subq.w	#2,plasmastruct_phasex2(a1)
+	subq.w	#6,plasmastruct_phasey1(a1)
+	addq.w	#1,plasmastruct_phasey2(a1)
 	bsr	plasmoid$
 	lea	colour_area_b,a0
 	lea.l	phaseb$(pc),a1
-	addq.w	#6,0(a1)
-	addq.w	#1,2(a1)
-	addq.w	#7,4(a1)
-	addq.w	#3,6(a1)
+	addq.w	#6,plasmastruct_phasex1(a1)
+	addq.w	#1,plasmastruct_phasex2(a1)
+	addq.w	#7,plasmastruct_phasey1(a1)
+	addq.w	#3,plasmastruct_phasey2(a1)
 	bsr	plasmoid$
 	rts
 plasmoid$:
