@@ -7,9 +7,12 @@ TARGET=plasma
 OBJS=sinus.o
 LIB=../../framework/own.o ../../framework/iff.o
 
-all:	$(TARGET)
+all:	$(TARGET) plasma2
 
 $(TARGET):	$(TARGET).o $(OBJS)
+	$(LD) -e _start $(VLINKFLAGS) -o $@ $+ $(LIB)
+
+plasma2:	plasma2.o $(OBJS)
 	$(LD) -e _start $(VLINKFLAGS) -o $@ $+ $(LIB)
 
 %.o:	%.s
