@@ -30,22 +30,20 @@ main:	nop
 	lea.l	$DFF000,a6
 	bsr	setup_system
 l3$:	nop
-	bsr	wait_frame
-	move.w	#$b5b,color+2(a6)
+	;; 	bsr	wait_frame
+	move.w	counter$(pc),color+2(a6)
 	bsr	do_plasma
-	move.w	#$bb5,color+2(a6)
-	bsr	blit_plasma
-	move.w	#$55c,color+2(a6)
+	addq.w	#3,counter$
 	btst	#6,$bfe001	; Left mouse clicked?
 	bne.s	l3$
 	jsr	disown_machine
 	moveq	#0,d0
 	rts
+counter$:	dc.w	0
 	jmp	_start
 
 ;;; Blit the plasma lines
 blit_plasma:
-	movem.l	d2-d7/a0-a6,-(sp)
 	;; WAITBLIT
 wb1$:	btst.b	#6,dmaconr(a6)
 	bne.s	wb1$
@@ -79,7 +77,6 @@ wb2$:	btst.b	#6,dmaconr(a6)
 	;; Move to the line in copper commands. +4 for first wait, +4 for MOVE black at right side.
 	lea.l	4+4+PLASMA_COPPER_MPL*4(a5),a5
 	dbf	d7,wb2$
-	movem.l	(sp)+,d2-d7/a0-a6
 	rts
 init_blitter$:
 	;; Now prepare the blitter
@@ -103,19 +100,37 @@ init_blitter$:
 	rts
 
 do_plasma:
-	lea	colour_area_r,a2
-	lea	colour_area_g,a3
-	lea	colour_area_b,a4
 	lea.l	sinustable,a5
-	move.l	a2,a0
-	;; 
+	lea	colour_area_r,a0
+	lea.l	phaser$(pc),a1
+	addq.w	#3,0(a1)
+	addq.w	#1,2(a1)
+	addq.w	#4,4(a1)
+	addq.w	#1,6(a1)
+	bsr	plasmoid$
+	lea	colour_area_g,a0
+	lea.l	phaseg$(pc),a1
+	addq.w	#5,0(a1)
+	subq.w	#2,2(a1)
+	subq.w	#6,4(a1)
+	addq.w	#1,6(a1)
+	bsr	plasmoid$
+	lea	colour_area_b,a0
+	lea.l	phaseb$(pc),a1
+	addq.w	#6,0(a1)
+	addq.w	#1,2(a1)
+	addq.w	#7,4(a1)
+	addq.w	#3,6(a1)
+	bsr	plasmoid$
+	rts
+plasmoid$:
 	move.w	#PLASMA_HEIGHT-1,d7
-	move.w	phasey1$(pc),d4
-	move.w	phasey2$(pc),d5
+	move.w	4(a1),d4
+	move.w	6(a1),d5
 l2$:
 	move.w	#PLASMA_COPPER_MPL-1,d6
-	move.w	phasex1$(pc),d2
-	move.w	phasex2$(pc),d3
+	move.w	0(a1),d2
+	move.w	2(a1),d3
 l1$:
 	move.w	d2,d0
 	and.w	#$3fe,d0
@@ -134,44 +149,15 @@ l1$:
 	add.w	#13,d2
 	addq.w	#5,d3
 	dbf	d6,l1$
-	add.w	#17,d4
-	addq.w	#6,d5
+	add.w	#27,d4
+	add.w	#11,d5
 	dbf	d7,l2$
-	addq.w	#3,phasex1$
-	addq.w	#1,phasex2$
-	addq.w	#4,phasey1$
-	addq.w	#1,phasey2$
 	rts
 	;; 
-	move.l	a3,a0
-	bsr	inc$
-	move.l	a4,a0
-	bsr	inc$
-	lea	2(a2),a0
-	bsr	inc$
-	lea	4(a3),a0
-	bsr	inc$
-	lea	6(a4),a0
-	bsr	inc$
-	lea	8(a2),a0
-	bsr	inc$
-	lea	8(a3),a0
-	bsr	inc$
-	bsr	inc$
-	lea	8(a4),a0
-	bsr	inc$
-	bsr	inc$
-	bsr	inc$
-	rts
-inc$:	move.w	(a0),d0
-	addq.w	#1,d0
-	and.w	#$f,d0
-	move.w	d0,(a0)
-	rts
-phasex1$:	dc.w	0
-phasex2$:	dc.w	0
-phasey1$:	dc.w	0
-phasey2$:	dc.w	0
+phaser$:	dc.w	0,0,0,0
+phaseg$:	dc.w	10,10,10,10
+phaseb$:	dc.w	20,30,40,50
+
 	
 wait_frame:
 l1$:	btst.b	#0,vposr+1(a6)
@@ -185,7 +171,16 @@ setup_system:
 	move.w	#$7fff,dmacon(a6)
 	bsr	setup_copper
 	move.w	#DMAF_SETCLR|DMAF_BLITTER|DMAF_COPPER|DMAF_COPPER|DMAF_RASTER|DMAF_MASTER,dmacon(a6)
+	move.l	#irq_routine,$6c.w ;Vertical blanking
+	move.w	#INTF_SETCLR|INTF_INTEN|INTF_VERTB,intena(a6)
 	rts
+
+irq_routine:
+	movem.l	d0-d7/a0-a6,-(sp)
+	move.w	#INTF_VERTB,intreq(a6) ;Acknowledge interrupt
+	bsr	blit_plasma
+	movem.l	(sp)+,d0-d7/a0-a6
+	rte
 
 ;;; Setup the copper and write the corresponding wait and color instructions.
 setup_copper:
@@ -261,7 +256,7 @@ copper_bplptr:
 	dc.w	$00ec,$0000,$00ee,$0000
 	dc.w	$00f0,$0000,$00f2,$0000
 	dc.w	color+2*0,$0000	;Colour 0
-	dc.w	color+2*1,$05f5	;Colour 1
+	;; 	dc.w	color+2*1,$05f5	;Colour 1
 copper_plasma_space:
 	;; +1 for the wait command, +1 for the black at the end.
 	dcb.l	PLASMA_HEIGHT*(PLASMA_COPPER_MPL+1+1),$01feEAEA
