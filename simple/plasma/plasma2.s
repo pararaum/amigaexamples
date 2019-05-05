@@ -39,11 +39,36 @@ l3$:	nop
 	rts
 	jmp	_start
 
+;;; Blit the plasma lines
 blit_plasma:
+	movem.l	d2-d7/a0-a6,-(sp)
 	;; WAITBLIT
-	btst.b	#6,dmaconr(a6)
-	bne.s	blit_plasma
-	;; ShiftA=8 ShiftB=4, useA-D
+wb1$:	btst.b	#6,dmaconr(a6)
+	bne.s	wb1$
+	bsr	init_blitter$
+	;; A2: pointer to red
+	;; A3: pointer to green
+	;; A4: pointer to blue
+	;; A5: copper are target
+	lea.l	colour_area_r,a2
+	lea.l	colour_area_g,a3
+	lea.l	colour_area_b,a4
+	lea.l	copper_plasma_space,a5
+	lea.l	PLASMA_COPPER_MPL*2(a2),a0 ; End of current line for r
+	move.l	a0,bltapt(a6)
+	lea.l	PLASMA_COPPER_MPL*2(a3),a0 ; End of current line for g
+	move.l	a0,bltbpt(a6)
+	lea.l	PLASMA_COPPER_MPL*2(a4),a0 ; End of current line for b
+	move.l	a0,bltcpt(a6)
+	lea.l	2+PLASMA_COPPER_MPL*4(a5),a0 ; Last move for this line in copper list.
+	move.l	a0,bltdpt(a6)
+	;; H9-H0, W5-W0 width is in words. By writing the size into the custom chip register the blit begins and continues while the cpu is still running.
+	move.w	#(PLASMA_COPPER_MPL<<6)|(1),bltsize(a6)
+	movem.l	(sp)+,d2-d7/a0-a6
+	rts
+init_blitter$:
+	;; Now prepare the blitter
+	;; ShiftA=8, useA-D
 	;; Minterms: d=a+b+c
 	;; d=a(b+B)(c+C) + (a+A)b(c+C) + (a+A)(b+B)c
 	;; d=(ab+aB)(c+C) + (ab+Ab)(c+C) + (ab+aB+Ab+AB)c
@@ -53,21 +78,14 @@ blit_plasma:
 	;; Descending mode, ShiftB=4
 	move.w	#$4002,bltcon1(a6)
 	;; Now set up first and last blitmask
-	moveq	#-1,d0
+	moveq	#-1,d0		; All bits set
 	move.w	d0,bltafwm(a6)
 	move.w	d0,bltalwm(a6)
-	move.l	#colour_area_r+PLASMA_COPPER_MPL*2,bltapt(a6)
-	move.l	#colour_area_g+PLASMA_COPPER_MPL*2,bltbpt(a6)
-	move.l	#colour_area_b+PLASMA_COPPER_MPL*2,bltcpt(a6)
-	move.l	#copper_plasma_space+2+PLASMA_COPPER_MPL*4,bltdpt(a6)
-	clr.w	bltamod(a6)
+	clr.w	bltamod(a6)	; No modulos here
 	clr.w	bltbmod(a6)
 	clr.w	bltcmod(a6)
-	move.w	#2,bltdmod(a6)	;Skip every second word
-	;; H9-H0, W5-W0 width is in words. By writing the size into the custom chip register the blit begins and continues while the cpu is still running.
-	move.w	#(PLASMA_COPPER_MPL<<6)|(1),bltsize(a6)
+	move.w	#2,bltdmod(a6)	;Skip every second word (one word copper command, one word for value)
 	rts
-
 
 do_plasma:
 	lea	colour_area_r,a2
