@@ -19,9 +19,13 @@ PLASMA_TOPLINE = $30
 	cmp.l	#"plas",do_plasma
 	cmp.l	#"COPL",copper_list
 	cmp.l	#"CPLS",copper_plasma_space
+	cmp.l	#"COLR",colour_area_r
+	cmp.l	#"COLG",colour_area_g
+	cmp.l	#"COLB",colour_area_b
+	cmp.l	#"COLE",colour_area_end
 	align	4
 main:	nop
-	moveq	#OWN_libraries|OWN_view|OWN_trap,d0
+	moveq	#OWN_libraries|OWN_view|OWN_trap|OWN_interrupt,d0
 	jsr	own_machine
 	lea.l	$DFF000,a6
 	bsr	setup_system
@@ -50,20 +54,31 @@ wb1$:	btst.b	#6,dmaconr(a6)
 	;; A3: pointer to green
 	;; A4: pointer to blue
 	;; A5: copper are target
+	;; D7: line counter
 	lea.l	colour_area_r,a2
 	lea.l	colour_area_g,a3
 	lea.l	colour_area_b,a4
 	lea.l	copper_plasma_space,a5
-	lea.l	PLASMA_COPPER_MPL*2(a2),a0 ; End of current line for r
+	move.w	#PLASMA_HEIGHT-1,d7	   ; -1 as using dbf
+wb2$:	btst.b	#6,dmaconr(a6)
+	bne.s	wb2$
+	lea.l	PLASMA_COPPER_MPL*2-2(a2),a0 ; End of current line for r
 	move.l	a0,bltapt(a6)
-	lea.l	PLASMA_COPPER_MPL*2(a3),a0 ; End of current line for g
+	lea.l	PLASMA_COPPER_MPL*2-2(a3),a0 ; End of current line for g
 	move.l	a0,bltbpt(a6)
-	lea.l	PLASMA_COPPER_MPL*2(a4),a0 ; End of current line for b
+	lea.l	PLASMA_COPPER_MPL*2-2(a4),a0 ; End of current line for b
 	move.l	a0,bltcpt(a6)
 	lea.l	2+PLASMA_COPPER_MPL*4(a5),a0 ; Last move for this line in copper list.
 	move.l	a0,bltdpt(a6)
 	;; H9-H0, W5-W0 width is in words. By writing the size into the custom chip register the blit begins and continues while the cpu is still running.
 	move.w	#(PLASMA_COPPER_MPL<<6)|(1),bltsize(a6)
+	;; Advance one line
+	lea.l	PLASMA_COPPER_MPL*2(a2),a2
+	lea.l	PLASMA_COPPER_MPL*2(a3),a3
+	lea.l	PLASMA_COPPER_MPL*2(a4),a4
+	;; Move to the line in copper commands. +4 for first wait, +4 for MOVE black at right side.
+	lea.l	4+4+PLASMA_COPPER_MPL*4(a5),a5
+	dbf	d7,wb2$
 	movem.l	(sp)+,d2-d7/a0-a6
 	rts
 init_blitter$:
@@ -220,6 +235,8 @@ bitplane:
 	dcb.b	(320-16)/8
 	dc.w	$8CEF
 
+	dc.b	"COLOUR AREA"
+	EVEN
 	;; A word for every RGB colour
 colour_area_r:
 	dcb.w	PLASMA_HEIGHT*PLASMA_COPPER_MPL
@@ -227,6 +244,11 @@ colour_area_g:
 	dcb.w	PLASMA_HEIGHT*PLASMA_COPPER_MPL
 colour_area_b:
 	dcb.w	PLASMA_HEIGHT*PLASMA_COPPER_MPL
+	dc.b	"COLOUR AREA ENDS"
+	EVEN
+colour_area_end:
+	illegal
+
 
 	SECTION BSS,bss
 debugstorage:
