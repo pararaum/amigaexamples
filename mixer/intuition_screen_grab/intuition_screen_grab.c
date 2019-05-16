@@ -44,7 +44,7 @@ int main(int argc, char **argc) {
   myscreen = IntuitionBase->ActiveScreen;
   bitmap = &(myscreen->BitMap);
   printf("bitmap = $%08lX\n", (unsigned long)bitmap);
-  printf("byterperrow=%u rows=%u\n",
+  printf("bytesperrow=%u rows=%u\n",
 	 bitmap->BytesPerRow,
 	 bitmap->Rows
 	 );

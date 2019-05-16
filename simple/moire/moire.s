@@ -171,8 +171,8 @@ copper_bitplane_modulos:
 	dc.w	bpl2mod,(moirepattern_png_width-320)/8
 	dc.w	color+2*0,$0000	;Colour 0
 	dc.w	color+2*1,$0aaa	;Colour 1
-	dc.w	color+2*2,$0666	;Colour 2
-	dc.w	color+2*3,$0fff	;Colour 3
+	dc.w	color+2*2,$0fff	;Colour 2
+	dc.w	color+2*3,$0111	;Colour 3
 
 	dc.w	$ffdf,$fffe	; End of NTSC.
 	dc.w	$0107,$fffe	;Wait for line 257.

@@ -1,4 +1,5 @@
 #! /usr/bin/make -f
+CFLAGS=-speed -O3
 
 .PHONY:	all clean
 
@@ -8,5 +9,5 @@ clean:
 	rm -f intuition_screen_grab
 
 intuition_screen_grab: intuition_screen_grab.c
-	vc -o $@ -O2 $+ -lamiga
+	vc $(CFLAGS) -o $@ $+ -lamiga
 
