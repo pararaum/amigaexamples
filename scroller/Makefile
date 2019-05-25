@@ -5,7 +5,7 @@ AS=vasmm68k_mot -Fhunk -I$$HOME/include/ -I../framework/
 ASFLAGS=-DNDEBUG
 VLINKFLAGS=-s
 LIBS=-lamiga
-OOBJS=../framework/own.o ../framework/music.o
+OOBJS=../framework/own.o ../framework/music.o ../framework/textmonochrome.o
 CC=vc
 ALL=scroller scroller2 scroller3
 
