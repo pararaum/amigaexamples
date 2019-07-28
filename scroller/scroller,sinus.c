@@ -8,6 +8,11 @@
 #define BPLHEIGHT 256
 #define BPLNO 1
 
+typedef struct Bitplaneinformation {
+  unsigned char *bitplanedata;
+  unsigned short int row_addresses[BPLHEIGHT];
+} Bitplaneinformation_t;
+
 extern volatile struct Custom custom;
 static UWORD __chip very_simple_copperlist[] = {
   0xe0, 0, /* Bitplane pointer */
@@ -61,9 +66,10 @@ static void wait4mouse(void) {
   while((*cia & (1 << 6)) != 0) ;
 }
 
-static void xor_pixel(UBYTE *bplptr, short int x, short int y) {
-  // Multiply by the number of bytes in each row.
-  bplptr += (y * (BPLWIDTH/8));
+static void xor_pixel(Bitplaneinformation_t *bplinfo, short int x, short int y) {
+  UBYTE *bplptr= bplinfo->bitplanedata;
+  // Multiply by the number of bytes in each row: bplptr += (y * (BPLWIDTH/8));
+  bplptr += bplinfo->row_addresses[y];
   // Advance in order to point the byte which contains the pixel.
   bplptr += x / 8;
   *bplptr ^= 1 << (7 - (x & 7));
@@ -78,36 +84,43 @@ static void waitframe(void) {
   while((custom.vposr & 1) == 1) ;
 }
 
-static void do_da_sinus() {
+static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   int i, t;
   const int timestep = 17;
 
   for(t = 0; t < 1000 * timestep; t += timestep) {
     custom.color[0] = 0x09f9;
     for(i = 0; i < 320; ++i) {
-      xor_pixel(bitplanedata, i, 128 + (sinus(t + i * 32) + sinus(5 + 2*t + i * 16))/2);
+      xor_pixel(bplinfo, i, 128 + (sinus(t + i * 32) + sinus(5 + 2*t + i * 16))/2);
     }
     custom.color[0] = 0x0fff;
     waitframe();
     custom.color[0] = 0x0f99;
     for(i = 0; i < 320; ++i) {
-      xor_pixel(bitplanedata, i, 128 + (sinus(t + i * 32) + sinus(5 + 2*t + i * 16))/2);
+      xor_pixel(bplinfo, i, 128 + (sinus(t + i * 32) + sinus(5 + 2*t + i * 16))/2);
     }
     custom.color[0] = 0x0;
   }
 }
 
 int main(int argc, char **argv) {
+  Bitplaneinformation_t bplinfo = {
+    &bitplanedata[0]
+  };
+
   puts("Sinus-Scroller by Pararaum / T7D");
   printf("bitplanedata %lX\n", (ULONG)bitplanedata);
   printf("xor_pixel %lX\n", (ULONG)&xor_pixel);
   printf("sizeof(long_sinusdat) = %d\n", (int)sizeof(long_sinusdat));
+  for(int i = 0; i < BPLHEIGHT; ++i) {
+    bplinfo.row_addresses[i] = i * BPLWIDTH/8;
+  }
   own_machine(OWN_libraries|OWN_view|OWN_trap|OWN_interrupt);
   custom.dmacon = DMAF_SETCLR | DMAF_MASTER | DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER;
   set_bitplane_ptr((ULONG)&bitplanedata);
   setup_custom_chips(&very_simple_copperlist[0]);
   bitplanedata[40] = 0xff;
-  do_da_sinus();
+  do_da_sinus(&bplinfo);
   wait4mouse();
   disown_machine();
   return 0;
