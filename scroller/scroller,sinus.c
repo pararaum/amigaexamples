@@ -8,6 +8,8 @@
 #define BPLHEIGHT 256
 #define BPLNO 1
 
+#define WAITBLIT while(custom.dmaconr & (1 << 14));
+
 typedef struct Bitplaneinformation {
   unsigned char *bitplanedata;
   unsigned short int row_addresses[BPLHEIGHT];
@@ -84,6 +86,61 @@ static void waitframe(void) {
   while((custom.vposr & 1) == 1) ;
 }
 
+
+static void draw_vline(UBYTE *bplptr, int x1, int y1) {
+  const int dx = 0;
+  const int dy = 16;
+  unsigned short bltcon1 = ((x1 & 0xf) << 12) | 1; // Bit0 = line drawing mode.
+  const int dmax = dy;
+  int dmin;
+  int slope;
+
+  if(dx <= dy) {
+    dmin = dx;
+  } else {
+    dmin = dy;
+  }
+  // Get the octant [http://www.winnicki.net/amiga/memmap/LineMode.html].
+  // For a line straigt down, the octant is 0 (or maybe 2?).
+  if(dx >= dy) { /* REMOVE? */
+    bltcon1 |= 1 << 4;
+  }
+  slope = (4 * dmin) - (2 * dmax);
+  /* Calculate the position in the bitplane here, as multiplication is
+   * expensive and the blitter may be working anyway.*/
+  int position = y1 * BPLWIDTH/8 + x1/8;
+  position &= -2; // We need the word.
+  WAITBLIT;
+  /* The article in
+   * http://www.stashofcode.fr/coder-une-cracktro-sur-amiga-1/ has the
+   * right formula for bltamod, the text in
+   * http://www.winnicki.net/amiga/memmap/LineMode.html seems to be
+   * wrong! And
+   * http://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node0128.html
+   * has it right again...
+   */
+  custom.bltamod = 4 * (dmin - dmax);
+  custom.bltbmod = 4 * dmin;
+  custom.bltapt = (void *)slope;
+  if(slope < 0) {
+    bltcon1 |= 1 << 6;
+  }
+  custom.bltcon1 = bltcon1;
+  custom.bltbdat = -1; // Solid line
+  custom.bltcmod = BPLWIDTH/8;
+  custom.bltdmod = BPLWIDTH/8;
+  custom.bltcpt = bplptr + position;
+  custom.bltdpt = bplptr + position;
+  custom.bltcon0 = ((x1 & 0xF) << 12)
+    | 0x0b00 /* Channels to use. */
+    | 0x004a; /* XOR */
+  custom.bltadat = 0x8000;
+  custom.bltafwm = -1;
+  custom.bltalwm = -1;
+  custom.bltsize = dmax * 64 + 66;
+}
+
+
 static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   int i, t;
   const int timestep = 17;
@@ -99,6 +156,8 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
     for(i = 0; i < 320; ++i) {
       xor_pixel(bplinfo, i, 128 + (sinus(t + i * 32) + sinus(5 + 2*t + i * 16))/2);
     }
+    custom.color[0] = 0x044f;
+    draw_vline(bplinfo->bitplanedata, t / 17, 150);
     custom.color[0] = 0x0;
   }
 }
