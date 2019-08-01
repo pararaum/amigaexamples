@@ -87,7 +87,7 @@ static void waitframe(void) {
 }
 
 
-static void draw_vline(UBYTE *bplptr, int x1, int y1) {
+static void draw_vline(UBYTE *bplptr, unsigned short pattern, int x1, int y1) {
   const int dx = 0;
   const int dy = 16;
   unsigned short bltcon1 = ((x1 & 0xf) << 12) | 1; // Bit0 = line drawing mode.
@@ -126,7 +126,7 @@ static void draw_vline(UBYTE *bplptr, int x1, int y1) {
     bltcon1 |= 1 << 6;
   }
   custom.bltcon1 = bltcon1;
-  custom.bltbdat = -1; // Solid line
+  custom.bltbdat = pattern; // 16 bits for the line pattern.
   custom.bltcmod = BPLWIDTH/8;
   custom.bltdmod = BPLWIDTH/8;
   custom.bltcpt = bplptr + position;
@@ -157,7 +157,7 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
       xor_pixel(bplinfo, i, 128 + (sinus(t + i * 32) + sinus(5 + 2*t + i * 16))/2);
     }
     custom.color[0] = 0x044f;
-    draw_vline(bplinfo->bitplanedata, t / 17, 150);
+    draw_vline(bplinfo->bitplanedata, t / 17, t / 17, 150);
     custom.color[0] = 0x0;
   }
 }
