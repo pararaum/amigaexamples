@@ -12,7 +12,7 @@ ALL=scroller scroller2 scroller3 scroller,sinus
 
 all:	logo.c $(ALL)
 
-scroller,sinus:	scroller,sinus.o
+scroller,sinus:	scroller,sinus.o scroller,sinus.68k.o
 	vc $(CFLAGS) -o $@ $+ $(OOBJS) $(LIBS)
 
 scroller:	scroller.o assembler_connector.o

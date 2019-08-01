@@ -10,6 +10,8 @@
 
 #define WAITBLIT while(custom.dmaconr & (1 << 14));
 
+extern void set_irq(void (*irqhandler)(void));
+
 typedef struct Bitplaneinformation {
   unsigned char *bitplanedata;
   unsigned short int row_addresses[BPLHEIGHT];
@@ -82,8 +84,9 @@ static inline short int sinus(int phi) {
 }
 
 static void waitframe(void) {
-  while((custom.vposr & 1) == 0) ;
-  while((custom.vposr & 1) == 1) ;
+  /* while((custom.vposr & 1) == 0) ; */
+  /* while((custom.vposr & 1) != 0) ; */
+  while((custom.vhposr & 0xff00) != 0x0f00) ;
 }
 
 
@@ -92,14 +95,9 @@ static void draw_vline(UBYTE *bplptr, unsigned short pattern, int x1, int y1) {
   const int dy = 16;
   unsigned short bltcon1 = ((x1 & 0xf) << 12) | 1; // Bit0 = line drawing mode.
   const int dmax = dy;
-  int dmin;
+  const int dmin = 0;
   int slope;
 
-  if(dx <= dy) {
-    dmin = dx;
-  } else {
-    dmin = dy;
-  }
   // Get the octant [http://www.winnicki.net/amiga/memmap/LineMode.html].
   // For a line straigt down, the octant is 0 (or maybe 2?).
   if(dx >= dy) { /* REMOVE? */
@@ -146,20 +144,16 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   const int timestep = 17;
 
   for(t = 0; t < 1000 * timestep; t += timestep) {
+    waitframe();
     custom.color[0] = 0x09f9;
     for(i = 0; i < 320; ++i) {
-      xor_pixel(bplinfo, i, 128 + (sinus(t + i * 32) + sinus(5 + 2*t + i * 16))/2);
+      draw_vline(bplinfo->bitplanedata, t, i, 150);
     }
-    custom.color[0] = 0x0fff;
-    waitframe();
-    custom.color[0] = 0x0f99;
-    for(i = 0; i < 320; ++i) {
-      xor_pixel(bplinfo, i, 128 + (sinus(t + i * 32) + sinus(5 + 2*t + i * 16))/2);
-    }
-    custom.color[0] = 0x044f;
-    draw_vline(bplinfo->bitplanedata, t / 17, t / 17, 150);
     custom.color[0] = 0x0;
   }
+}
+
+void irqhandler(void) {
 }
 
 int main(int argc, char **argv) {
@@ -171,11 +165,13 @@ int main(int argc, char **argv) {
   printf("bitplanedata %lX\n", (ULONG)bitplanedata);
   printf("xor_pixel %lX\n", (ULONG)&xor_pixel);
   printf("sizeof(long_sinusdat) = %d\n", (int)sizeof(long_sinusdat));
+  printf("seq_irq %lX\n", (ULONG)&set_irq);
   for(int i = 0; i < BPLHEIGHT; ++i) {
     bplinfo.row_addresses[i] = i * BPLWIDTH/8;
   }
   own_machine(OWN_libraries|OWN_view|OWN_trap|OWN_interrupt);
   custom.dmacon = DMAF_SETCLR | DMAF_MASTER | DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER;
+  set_irq(&irqhandler);
   set_bitplane_ptr((ULONG)&bitplanedata);
   setup_custom_chips(&very_simple_copperlist[0]);
   bitplanedata[40] = 0xff;
