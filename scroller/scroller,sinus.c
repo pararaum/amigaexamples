@@ -92,7 +92,7 @@ static void waitframe(void) {
 
 static void draw_vline(UBYTE *bplptr, unsigned short pattern, int x1, int y1) {
   const int dx = 0;
-  const int dy = 16;
+  const int dy = 15;
   unsigned short bltcon1 = ((x1 & 0xf) << 12) | 1; // Bit0 = line drawing mode.
   const int dmax = dy;
   const int dmin = 0;
@@ -100,9 +100,7 @@ static void draw_vline(UBYTE *bplptr, unsigned short pattern, int x1, int y1) {
 
   // Get the octant [http://www.winnicki.net/amiga/memmap/LineMode.html].
   // For a line straigt down, the octant is 0 (or maybe 2?).
-  if(dx >= dy) { /* REMOVE? */
-    bltcon1 |= 1 << 4;
-  }
+  bltcon1 |= 1 << 2;
   slope = (4 * dmin) - (2 * dmax);
   /* Calculate the position in the bitplane here, as multiplication is
    * expensive and the blitter may be working anyway.*/
@@ -140,16 +138,16 @@ static void draw_vline(UBYTE *bplptr, unsigned short pattern, int x1, int y1) {
 
 
 static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
-  int i, t;
+  short int i, t;
   const int timestep = 17;
 
   for(t = 0; t < 1000 * timestep; t += timestep) {
     waitframe();
     custom.color[0] = 0x09f9;
-    for(i = 0; i < 320; ++i) {
+    for(i = 0; i < 40; i += 1) {
       draw_vline(bplinfo->bitplanedata, t, i, 150);
     }
-    custom.color[0] = 0x0;
+    custom.color[0] = 0x0faa;
   }
 }
 
@@ -175,6 +173,12 @@ int main(int argc, char **argv) {
   set_bitplane_ptr((ULONG)&bitplanedata);
   setup_custom_chips(&very_simple_copperlist[0]);
   bitplanedata[40] = 0xff;
+  for(short int x = 32; x < 256; ++x) {
+    draw_vline(bplinfo.bitplanedata, x, x, 100);
+  }
+  draw_vline(bplinfo.bitplanedata, 0xffff, 160, 80);
+  draw_vline(bplinfo.bitplanedata, 0xAAAA, 161, 80);
+  draw_vline(bplinfo.bitplanedata, 0x5555, 162, 80);
   do_da_sinus(&bplinfo);
   wait4mouse();
   disown_machine();
