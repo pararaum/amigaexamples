@@ -133,9 +133,21 @@ static void draw_vline(Bitplaneinformation_t *bplptr, unsigned short pattern, in
   custom.bltdmod = BPLWIDTH/8;
   custom.bltcpt = rowaddr;
   custom.bltdpt = rowaddr;
+  /*
+   * A: Bit to set in line
+   * B: line pattern
+   * C: original surface
+   * D=AB + A̅C
+   * D=AB + C
+   * Venn
+   * AB: 6 7
+   * ~AC: 1 3 (0 from ~A?)
+   * -> 11001011 
+   */
   custom.bltcon0 = ((x1 & 0xF) << 12)
     | 0x0b00 /* Channels to use. */
-    | 0x004a; /* XOR */
+    /* | 0x004a; /\* XOR *\/ */
+    | 0x00CA; /* OR */
   custom.bltadat = 0x8000;
   custom.bltafwm = -1;
   custom.bltalwm = -1;
@@ -168,10 +180,12 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   static unsigned short t = 0;
 
   for(i = 0; i < 140; i += 1) {
-    draw_vline(bplinfo, liberation_single_column_png[2*i], i, sinus(t+2*i) + 75);
+    draw_vline(bplinfo, liberation_single_column_png[i], i, sinus(t+2*i) + 75);
   }
   t += 17;
+  custom.color[0] = 0x000f;
   clear_bitplane(bplinfo->bitplanedata + bplinfo->row_addresses[10], BPLWIDTH/8, 100);
+  custom.color[0] = 0x00ff;
 }
 
 static void irqhandler(void) {
