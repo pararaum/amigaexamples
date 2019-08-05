@@ -94,7 +94,9 @@ static void waitframe(void) {
 }
 
 
-static void draw_vline(UBYTE *bplptr, unsigned short pattern, int x1, int y1) {
+static void draw_vline(Bitplaneinformation_t *bplptr, unsigned short pattern, int x1, int y1) {
+  UBYTE *rowaddr;
+  unsigned short deltarow;
   unsigned short bltcon1 = ((0xf) << 12) | 1; // Bit0 = line drawing mode.
   /* 
    * The BSH? bits in BLTCON1 define where the line pattern starts
@@ -108,14 +110,15 @@ static void draw_vline(UBYTE *bplptr, unsigned short pattern, int x1, int y1) {
   int slope;
 
   // Get the octant [http://www.winnicki.net/amiga/memmap/LineMode.html].
-  // For a line straigt down, the octant is 0 (or maybe 2?).
+  // For a line straight down, the octant is 0 (or maybe 2?).
   bltcon1 |= 3 << 2;
   slope = (4 * dmin) - (2 * dmax);
-  /* Calculate the position in the bitplane here, as multiplication is
-   * expensive and the blitter may be working anyway.*/
-  int position = y1 * BPLWIDTH/8 + x1/8;
-  position &= -2; // We need the word.
-  WAITBLIT;
+  /* Calculate the position in the bitplane here.*/
+  rowaddr = bplptr->bitplanedata; // Beginning of bitplane.
+  deltarow = bplptr->row_addresses[y1]; // Get offset of row.
+  deltarow += x1/8; // Advance to the corresponding byte (in X).
+  rowaddr += deltarow & (-2); // We need the word.;
+ WAITBLIT;
   /* The article in
    * http://www.stashofcode.fr/coder-une-cracktro-sur-amiga-1/ has the
    * right formula for bltamod, the text in
@@ -134,8 +137,8 @@ static void draw_vline(UBYTE *bplptr, unsigned short pattern, int x1, int y1) {
   custom.bltbdat = pattern; // 16 bits for the line pattern.
   custom.bltcmod = BPLWIDTH/8;
   custom.bltdmod = BPLWIDTH/8;
-  custom.bltcpt = bplptr + position;
-  custom.bltdpt = bplptr + position;
+  custom.bltcpt = rowaddr;
+  custom.bltdpt = rowaddr;
   custom.bltcon0 = ((x1 & 0xF) << 12)
     | 0x0b00 /* Channels to use. */
     | 0x004a; /* XOR */
@@ -151,7 +154,7 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   static unsigned short t = 0;
 
   for(i = 0; i < 100; i += 1) {
-    draw_vline(bplinfo->bitplanedata, t + i, i, 150);
+    draw_vline(bplinfo, t + i, i, 150);
   }
   t += 1;
 }
@@ -178,13 +181,13 @@ int main(int argc, char **argv) {
   setup_custom_chips(&very_simple_copperlist[0]);
   bitplanedata[40] = 0xff;
   for(short int x = 32; x < 256; ++x) {
-    draw_vline(bplinfo.bitplanedata, x, x, 100);
+    draw_vline(&bplinfo, x, x, 100);
   }
-  draw_vline(bplinfo.bitplanedata, 0xffff, 160, 80);
-  draw_vline(bplinfo.bitplanedata, 0xAAAA, 161, 80);
-  draw_vline(bplinfo.bitplanedata, 0x5555, 162, 80);
-  draw_vline(bplinfo.bitplanedata, 0xAAAA, 163, 80);
-  draw_vline(bplinfo.bitplanedata, 0x5555, 164, 80);
+  draw_vline(&bplinfo, 0xffff, 160, 80);
+  draw_vline(&bplinfo, 0xAAAA, 161, 80);
+  draw_vline(&bplinfo, 0x5555, 162, 80);
+  draw_vline(&bplinfo, 0xAAAA, 163, 80);
+  draw_vline(&bplinfo, 0x5555, 164, 80);
   wait4mouse();
   disown_machine();
   return 0;
