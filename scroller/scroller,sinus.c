@@ -185,10 +185,8 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   unsigned short i;
   static unsigned short t = 0;
 
-  clear_bitplane(bplinfo->row_addresses[bplinfo->bplidx][10],
-		 BPLWIDTH/8, 100);
   custom.color[0] = 0x00ff;
-  for(i = 0; i < 140; i += 1) {
+  for(i = 0; i < 110; i += 1) {
     draw_vline(bplinfo, liberation_single_column_png[i], i, sinus(t+2*i) + 75);
   }
   t += 17;
@@ -198,6 +196,10 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
 static void irqhandler(void) {
   custom.color[0] = 0x09f9;
   do_da_sinus(&bplinfo);
+  set_bitplane_ptr(&bplinfo);
+  bplinfo.bplidx ^= 1; //Switch bitplane
+  clear_bitplane(&(bplinfo.row_addresses[bplinfo.bplidx][9][0]),
+		 BPLWIDTH/8, 100);
   custom.color[0] = 0x0faa;
 }
 
