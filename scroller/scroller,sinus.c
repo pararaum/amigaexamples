@@ -91,16 +91,21 @@ static void waitframe(void) {
 
 
 static void draw_vline(UBYTE *bplptr, unsigned short pattern, int x1, int y1) {
-  const int dx = 0;
-  const int dy = 15;
-  unsigned short bltcon1 = ((x1 & 0xf) << 12) | 1; // Bit0 = line drawing mode.
-  const int dmax = dy;
+  unsigned short bltcon1 = ((0xf) << 12) | 1; // Bit0 = line drawing mode.
+  /* 
+   * The BSH? bits in BLTCON1 define where the line pattern starts
+   * (first bit). If we set this to the MSB (aka bit 15) then the line
+   * pattern will start immediately. This is what we want.
+   *
+   * See http://www.winnicki.net/amiga/memmap/LineMode.html.
+   */
+  const int dmax = 15; // Pixels down.
   const int dmin = 0;
   int slope;
 
   // Get the octant [http://www.winnicki.net/amiga/memmap/LineMode.html].
   // For a line straigt down, the octant is 0 (or maybe 2?).
-  bltcon1 |= 1 << 2;
+  bltcon1 |= 3 << 2;
   slope = (4 * dmin) - (2 * dmax);
   /* Calculate the position in the bitplane here, as multiplication is
    * expensive and the blitter may be working anyway.*/
@@ -144,8 +149,8 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   for(t = 0; t < 1000 * timestep; t += timestep) {
     waitframe();
     custom.color[0] = 0x09f9;
-    for(i = 0; i < 40; i += 1) {
-      draw_vline(bplinfo->bitplanedata, t, i, 150);
+    for(i = 0; i < 140; i += 1) {
+      draw_vline(bplinfo->bitplanedata, t + i, i, 150);
     }
     custom.color[0] = 0x0faa;
   }
@@ -179,6 +184,8 @@ int main(int argc, char **argv) {
   draw_vline(bplinfo.bitplanedata, 0xffff, 160, 80);
   draw_vline(bplinfo.bitplanedata, 0xAAAA, 161, 80);
   draw_vline(bplinfo.bitplanedata, 0x5555, 162, 80);
+  draw_vline(bplinfo.bitplanedata, 0xAAAA, 163, 80);
+  draw_vline(bplinfo.bitplanedata, 0x5555, 164, 80);
   do_da_sinus(&bplinfo);
   wait4mouse();
   disown_machine();
