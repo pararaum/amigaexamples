@@ -83,7 +83,7 @@ static void xor_pixel(Bitplaneinformation_t *bplinfo, short int x, short int y) 
   *bplptr ^= 1 << (7 - (x & 7));
 }
 
-static inline short int sinus(int phi) {
+static inline short int sinus(unsigned short int phi) {
   return long_sinusdat[phi & (sizeof(long_sinusdat) - 1)];
 }
 
@@ -153,10 +153,10 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   unsigned short i;
   static unsigned short t = 0;
 
-  for(i = 0; i < 100; i += 1) {
-    draw_vline(bplinfo, t + i, i, 150);
+  for(i = 0; i < 140; i += 1) {
+    draw_vline(bplinfo, t + i, i, sinus(t+2*i) + 150);
   }
-  t += 1;
+  t += 17;
 }
 
 void irqhandler(void) {
