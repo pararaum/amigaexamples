@@ -10,7 +10,7 @@
 
 #define WAITBLIT while(custom.dmaconr & (1 << 14));
 
-extern void set_irq(void (*irqhandler)(void));
+extern void set_irq(__reg("a0") void (*irqhandler)(void));
 
 typedef struct Bitplaneinformation {
   unsigned char *bitplanedata;
@@ -28,6 +28,10 @@ static UWORD __chip very_simple_copperlist[] = {
   0xffff, 0xfffe
 };
 static unsigned char __chip bitplanedata[BPLWIDTH/8 * BPLHEIGHT * BPLNO];
+static Bitplaneinformation_t bplinfo = {
+  &bitplanedata[0]
+};
+
 
 /*
 GHCI:
@@ -143,27 +147,22 @@ static void draw_vline(UBYTE *bplptr, unsigned short pattern, int x1, int y1) {
 
 
 static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
-  short int i, t;
-  const int timestep = 17;
+  unsigned short i;
+  static unsigned short t = 0;
 
-  for(t = 0; t < 1000 * timestep; t += timestep) {
-    waitframe();
-    custom.color[0] = 0x09f9;
-    for(i = 0; i < 140; i += 1) {
-      draw_vline(bplinfo->bitplanedata, t + i, i, 150);
-    }
-    custom.color[0] = 0x0faa;
+  for(i = 0; i < 100; i += 1) {
+    draw_vline(bplinfo->bitplanedata, t + i, i, 150);
   }
+  t += 1;
 }
 
 void irqhandler(void) {
+  custom.color[0] = 0x09f9;
+  do_da_sinus(&bplinfo);
+  custom.color[0] = 0x0faa;
 }
 
 int main(int argc, char **argv) {
-  Bitplaneinformation_t bplinfo = {
-    &bitplanedata[0]
-  };
-
   puts("Sinus-Scroller by Pararaum / T7D");
   printf("bitplanedata %lX\n", (ULONG)bitplanedata);
   printf("xor_pixel %lX\n", (ULONG)&xor_pixel);
@@ -186,7 +185,6 @@ int main(int argc, char **argv) {
   draw_vline(bplinfo.bitplanedata, 0x5555, 162, 80);
   draw_vline(bplinfo.bitplanedata, 0xAAAA, 163, 80);
   draw_vline(bplinfo.bitplanedata, 0x5555, 164, 80);
-  do_da_sinus(&bplinfo);
   wait4mouse();
   disown_machine();
   return 0;
