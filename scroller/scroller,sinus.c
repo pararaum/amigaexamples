@@ -11,6 +11,7 @@
 #define WAITBLIT while(custom.dmaconr & (1 << 14));
 
 extern void set_irq(__reg("a0") void (*irqhandler)(void));
+extern UWORD liberation_single_column_png[];
 
 typedef struct Bitplaneinformation {
   unsigned char *bitplanedata;
@@ -87,13 +88,6 @@ static inline short int sinus(unsigned short int phi) {
   return long_sinusdat[phi & (sizeof(long_sinusdat) - 1)];
 }
 
-static void waitframe(void) {
-  /* while((custom.vposr & 1) == 0) ; */
-  /* while((custom.vposr & 1) != 0) ; */
-  while((custom.vhposr & 0xff00) != 0x0f00) ;
-}
-
-
 static void draw_vline(Bitplaneinformation_t *bplptr, unsigned short pattern, int x1, int y1) {
   UBYTE *rowaddr;
   unsigned short deltarow;
@@ -149,17 +143,38 @@ static void draw_vline(Bitplaneinformation_t *bplptr, unsigned short pattern, in
 }
 
 
+static void clear_bitplane(unsigned char *btplptr, int width, int height) {
+  WAITBLIT;
+  custom.bltcon0 = 0x0100; // Only D channel, no logic function!
+  custom.bltcon1 = 0x0000; // No B shift, normal mode.
+  /* A first word mask; The first word in a line a seen by the
+     blitter. */
+  custom.bltafwm = 0;
+  /* A last word mask */
+  custom.bltalwm = 0;
+  /* channel D pointer */
+  custom.bltdpt = btplptr;
+  custom.bltamod = 0; // No modulo.
+  custom.bltdmod = 0;
+  /* H9-H0, W5-W0; width is in words. By writing the size into the
+     custom chip register the blit begins and continues while the cpu
+     is still running. */
+  custom.bltsize = (height << 6) | (width);
+}
+
+
 static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   unsigned short i;
   static unsigned short t = 0;
 
   for(i = 0; i < 140; i += 1) {
-    draw_vline(bplinfo, t + i, i, sinus(t+2*i) + 150);
+    draw_vline(bplinfo, liberation_single_column_png[2*i], i, sinus(t+2*i) + 75);
   }
   t += 17;
+  clear_bitplane(bplinfo->bitplanedata + bplinfo->row_addresses[10], BPLWIDTH/8, 100);
 }
 
-void irqhandler(void) {
+static void irqhandler(void) {
   custom.color[0] = 0x09f9;
   do_da_sinus(&bplinfo);
   custom.color[0] = 0x0faa;
