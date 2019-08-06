@@ -10,16 +10,17 @@
 
 #define WAITBLIT while(custom.dmaconr & (1 << 14));
 
-extern void set_irq(__reg("a0") void (*irqhandler)(void));
-extern UWORD liberation_single_column_png[];
-
 typedef struct Bitplaneinformation {
   unsigned char *bitplanedata[2];
   unsigned short bplidx; //!< Bitplane Index, which bitplane to use.
   unsigned char *row_addresses[2][BPLHEIGHT];
 } Bitplaneinformation_t;
 
+extern void set_irq(__reg("a0") void (*irqhandler)(void));
+extern UWORD liberation_single_column_png[];
+extern void draw_vline_fast(__reg("a0") Bitplaneinformation_t *bplptr, __reg("a1") unsigned short pattern, __reg("d0") int x1, __reg("d1") int y1);
 extern volatile struct Custom custom;
+
 static UWORD __chip very_simple_copperlist[] = {
   0xe0, 0, /* Bitplane pointer */
   0xe2, 0,
@@ -201,7 +202,7 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   custom.color[0] = 0x00ff;
   dvl_prepare_blitter(BPLWIDTH);
   for(i = 0; i < 144; i += 1) {
-    draw_vline(bplinfo, liberation_single_column_png[i], i, sinus(t+2*i) + 75);
+    draw_vline_fast(bplinfo, liberation_single_column_png[i], i, sinus(t+2*i) + 75);
   }
   t += 17;
   custom.color[0] = 0x000f;
@@ -224,6 +225,7 @@ int main(int argc, char **argv) {
   printf("xor_pixel $%lX\n", (ULONG)&xor_pixel);
   printf("sizeof(long_sinusdat) = %d\n", (int)sizeof(long_sinusdat));
   printf("seq_irq $%lX\n", (ULONG)&set_irq);
+  printf("draw_vline_fast $%lX\n", (ULONG)&draw_vline_fast);
   for(int i = 0; i < BPLHEIGHT; ++i) {
     bplinfo.row_addresses[0][i] = bplinfo.bitplanedata[0] + i * BPLWIDTH/8;
     bplinfo.row_addresses[1][i] = bplinfo.bitplanedata[1] + i * BPLWIDTH/8;

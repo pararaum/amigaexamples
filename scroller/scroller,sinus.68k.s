@@ -3,10 +3,19 @@
 
 	XDEF	_set_irq
 	XDEF	_liberation_single_column_png
+	XDEF	_draw_vline_fast
+
+	;; These must be the same es in the C-CODE
+BPLWIDTH	EQU 320
+BPLHEIGHT	EQU 256
+BPLNO		EQU 1
+
 
 	rsreset			; Define a structure
 bplinfo_bitplanedata:	rs.l	2
 bplinfo_bplidx:	rs.w	1
+bplinfo_row_addresses_0:	rs.l	BPLHEIGHT
+bplinfo_row_addresses_1:	rs.l	BPLHEIGHT
 bplinfo_SIZEOF:	rs
 
 	SECTION TEXT
@@ -38,9 +47,34 @@ irqroutine:
 ;;; Draw the vertical line but fast...
 ;;; Input
 ;;; A0=pointer to the Bitplaneinfo structure
+;;; A1.w=pattern
+;;; D0=x1
+;;; D1=y1
 _draw_vline_fast:
-	move.l	bplinfo_bitplanedata(a0),d0
-	move.l	bplinfo_bitplanedata+4(a0),d0
+	;; D4.w = y1
+	movem.l	d3-d4/a6,-(sp)
+	lea.l	$DFF000,a6	; Custom base
+	move.w	a1,bltbdat(a6)	; Store the pattern.
+	move.w	d1,d4
+	lea.l	bplinfo_row_addresses_0(a0),a1 ; Put row address pointer into A1
+	tst.w	bplinfo_bplidx(a0) ; Are we in the 0th or 1st bitplane?
+	beq.s	l1$
+	lea.l	bplinfo_row_addresses_1(a0),a1 ; Advance to the secondary plane.
+l1$:
+	lsl.w	#2,d1		; Get index into the row table.
+	move.l	(a1,d1.w),a1	; Get address into A1
+	lsr.w	#3,d0		; Divide X-position by 8 to get the byte
+	and.w	#$FFFE,d0	; Must be even.
+	add.w	d0,a1		; Adjust plane pointer
+	move.l	a1,bltcpt(a6)
+	move.l	a1,bltdpt(a6)
+	move.w	#$8000,bltadat(a6)
+	ror.w	#4,d4		; Four right is equivalent to 12 left.
+	and.w	#$F000,d4	; If the lower bits are removed.
+	or.w	#$0bca,d4	; Channels and use an OR.
+	move.w	d4,bltcon0(a6)
+	move.w	#15*64+66,bltsize(a6) ; Start the blit.
+	movem.l	(sp)+,a6/d3-d4
 	rts
 
 	SECTION DATA,DATA
