@@ -4,6 +4,11 @@
 	XDEF	_set_irq
 	XDEF	_liberation_single_column_png
 
+	rsreset			; Define a structure
+bplinfo_bitplanedata:	rs.l	2
+bplinfo_bplidx:	rs.w	1
+bplinfo_SIZEOF:	rs
+
 	SECTION TEXT
 
 ;;; Set vertical blank.
@@ -29,6 +34,14 @@ irqroutine:
 	move.w  #INTF_VERTB,$DFF000+intreq
 	movem.l	(sp)+,d0-a6
 	rte
+
+;;; Draw the vertical line but fast...
+;;; Input
+;;; A0=pointer to the Bitplaneinfo structure
+_draw_vline_fast:
+	move.l	bplinfo_bitplanedata(a0),d0
+	move.l	bplinfo_bitplanedata+4(a0),d0
+	rts
 
 	SECTION DATA,DATA
 _liberation_single_column_png:

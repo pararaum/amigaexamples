@@ -1,7 +1,7 @@
 #! /usr/bin/make -f
 
 FWDIR=../framework
-AFLAGS=-m68000 -opt-speed -DNDEBUG
+ASFLAGS=-m68000 -opt-speed -DNDEBUG
 CFLAGS=-c99 -speed -O3 -DNDEBUG
 AS=vasmm68k_mot -Fhunk -I$$HOME/include/ -I$(FWDIR)
 VLINKFLAGS=-s
