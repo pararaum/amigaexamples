@@ -108,8 +108,21 @@ static inline short int sinus(unsigned short int phi) {
 static void dvl_prepare_blitter(unsigned short bplwidth) {
   const int dmax = 15; // Pixels down.
   const int dmin = 0;
+  unsigned short bltcon1 =
+    ((0xf) << 12)
+    | (1 << 6) //  slope = (4 * dmin) - (2 * dmax) is negative, we have so set the sign bit...
+    | (3 << 2) // Get the octant [http://www.winnicki.net/amiga/memmap/LineMode.html]. For a line straight down, the octant is 0 (or maybe 2?).
+    | 1; // Bit0 = line drawing mode.
+  /* 
+   * The BSH? bits in BLTCON1 define where the line pattern starts
+   * (first bit). If we set this to the MSB (aka bit 15) then the line
+   * pattern will start immediately. This is what we want.
+   *
+   * See http://www.winnicki.net/amiga/memmap/LineMode.html.
+   */
 
   WAITBLIT;
+  custom.bltapt = (void *)((4 * dmin) - (2 * dmax));
   // Prepare the blitter first word and last word masks. They have to
   // be all set in order to draw the line fully.
   custom.bltafwm = -1;
@@ -127,37 +140,17 @@ static void dvl_prepare_blitter(unsigned short bplwidth) {
   // Bitplane width.
   custom.bltcmod = bplwidth/8;
   custom.bltdmod = bplwidth/8;
+  custom.bltcon1 = bltcon1;
 }
 
 static void draw_vline(Bitplaneinformation_t *bplptr, unsigned short pattern, int x1, int y1) {
   UBYTE *rowaddr;
   unsigned short deltarow;
-  unsigned short bltcon1 = ((0xf) << 12) | 1; // Bit0 = line drawing mode.
-  /* 
-   * The BSH? bits in BLTCON1 define where the line pattern starts
-   * (first bit). If we set this to the MSB (aka bit 15) then the line
-   * pattern will start immediately. This is what we want.
-   *
-   * See http://www.winnicki.net/amiga/memmap/LineMode.html.
-   */
-  const int dmax = 15; // Pixels down.
-  const int dmin = 0;
-  int slope;
-
-  // Get the octant [http://www.winnicki.net/amiga/memmap/LineMode.html].
-  // For a line straight down, the octant is 0 (or maybe 2?).
-  bltcon1 |= 3 << 2;
-  slope = (4 * dmin) - (2 * dmax);
   /* Calculate the position in the bitplane here.*/
   rowaddr = bplptr->row_addresses[bplptr->bplidx][y1]; // Get offset of row.
   deltarow = x1/8; // Advance to the corresponding byte (in X).
   rowaddr += deltarow & (-2); // We need the word.;
  WAITBLIT;
-  custom.bltapt = (void *)slope;
-  if(slope < 0) {
-    bltcon1 |= 1 << 6;
-  }
-  custom.bltcon1 = bltcon1;
   custom.bltbdat = pattern; // 16 bits for the line pattern.
   custom.bltcpt = rowaddr;
   custom.bltdpt = rowaddr;
@@ -177,7 +170,7 @@ static void draw_vline(Bitplaneinformation_t *bplptr, unsigned short pattern, in
     /* | 0x004a; /\* XOR *\/ */
     | 0x00CA; /* OR */
   custom.bltadat = 0x8000;
-  custom.bltsize = dmax * 64 + 66;
+  custom.bltsize = 15/*dmax*/ * 64 + 66;
 }
 
 
