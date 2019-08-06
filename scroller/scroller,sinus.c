@@ -95,6 +95,40 @@ static inline short int sinus(unsigned short int phi) {
   return long_sinusdat[phi & (sizeof(long_sinusdat) - 1)];
 }
 
+/*! \brief Draw vertical line, prepare blitter
+ *
+ * This function does all the one time preparations for the
+ * blitter. And it will wait for the blitter, before doing it...
+ *
+ * \warning Do not use anything else in-between as this may result in
+ * funny(?) results.
+ *
+ * \param bplwidth Width of the bitplane in pixels. 
+ */
+static void dvl_prepare_blitter(unsigned short bplwidth) {
+  const int dmax = 15; // Pixels down.
+  const int dmin = 0;
+
+  WAITBLIT;
+  // Prepare the blitter first word and last word masks. They have to
+  // be all set in order to draw the line fully.
+  custom.bltafwm = -1;
+  custom.bltalwm = -1;
+    /* The article in
+   * http://www.stashofcode.fr/coder-une-cracktro-sur-amiga-1/ has the
+   * right formula for bltamod, the text in
+   * http://www.winnicki.net/amiga/memmap/LineMode.html seems to be
+   * wrong! And
+   * http://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node0128.html
+   * has it right again...
+   */
+  custom.bltamod = 4 * (dmin - dmax);
+  custom.bltbmod = 4 * dmin;
+  // Bitplane width.
+  custom.bltcmod = bplwidth/8;
+  custom.bltdmod = bplwidth/8;
+}
+
 static void draw_vline(Bitplaneinformation_t *bplptr, unsigned short pattern, int x1, int y1) {
   UBYTE *rowaddr;
   unsigned short deltarow;
@@ -119,24 +153,12 @@ static void draw_vline(Bitplaneinformation_t *bplptr, unsigned short pattern, in
   deltarow = x1/8; // Advance to the corresponding byte (in X).
   rowaddr += deltarow & (-2); // We need the word.;
  WAITBLIT;
-  /* The article in
-   * http://www.stashofcode.fr/coder-une-cracktro-sur-amiga-1/ has the
-   * right formula for bltamod, the text in
-   * http://www.winnicki.net/amiga/memmap/LineMode.html seems to be
-   * wrong! And
-   * http://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node0128.html
-   * has it right again...
-   */
-  custom.bltamod = 4 * (dmin - dmax);
-  custom.bltbmod = 4 * dmin;
   custom.bltapt = (void *)slope;
   if(slope < 0) {
     bltcon1 |= 1 << 6;
   }
   custom.bltcon1 = bltcon1;
   custom.bltbdat = pattern; // 16 bits for the line pattern.
-  custom.bltcmod = BPLWIDTH/8;
-  custom.bltdmod = BPLWIDTH/8;
   custom.bltcpt = rowaddr;
   custom.bltdpt = rowaddr;
   /*
@@ -155,8 +177,6 @@ static void draw_vline(Bitplaneinformation_t *bplptr, unsigned short pattern, in
     /* | 0x004a; /\* XOR *\/ */
     | 0x00CA; /* OR */
   custom.bltadat = 0x8000;
-  custom.bltafwm = -1;
-  custom.bltalwm = -1;
   custom.bltsize = dmax * 64 + 66;
 }
 
@@ -186,7 +206,8 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   static unsigned short t = 0;
 
   custom.color[0] = 0x00ff;
-  for(i = 0; i < 110; i += 1) {
+  dvl_prepare_blitter(BPLWIDTH);
+  for(i = 0; i < 144; i += 1) {
     draw_vline(bplinfo, liberation_single_column_png[i], i, sinus(t+2*i) + 75);
   }
   t += 17;
