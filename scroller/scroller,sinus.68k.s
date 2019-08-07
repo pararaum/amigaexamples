@@ -51,11 +51,11 @@ irqroutine:
 ;;; D0=x1
 ;;; D1=y1
 _draw_vline_fast:
-	;; D4.w = y1
+	;; D4.w = x1
 	movem.l	d3-d4/a6,-(sp)
 	lea.l	$DFF000,a6	; Custom base
 	move.w	a1,bltbdat(a6)	; Store the pattern.
-	move.w	d1,d4
+	move.w	d0,d4
 	lea.l	bplinfo_row_addresses_0(a0),a1 ; Put row address pointer into A1
 	tst.w	bplinfo_bplidx(a0) ; Are we in the 0th or 1st bitplane?
 	beq.s	l1$
