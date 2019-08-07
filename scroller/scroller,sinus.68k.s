@@ -79,10 +79,36 @@ l1$:
 	movem.l	(sp)+,a6
 	rts
 
+_full_sinus_scroll:
+reg$:	REG	d0-d6/a0-a7
+	movem.l	reg$,-(sp)
+	moveq	#0,d7
+	move.l	a0,a6
+	lea.l	_liberation_single_column_png,a5
+l1$:	
+	move.l	a6,a0
+	move.w	#$ffff,a1
+	move.w	d7,d0
+	moveq	#35,d1
+ 	add.w	d7,d1
+	moveq	#120,d1
+	jsr	_draw_vline_fast
+	addq	#1,d7
+	cmp.w	#144,d7
+	bne	l1$
+	movem.l	(sp)+,reg$
+	rts
+;;;  for(i = 0; i < 144; i += 1) {
+;;;    draw_vline_fast(bplinfo, liberation_single_column_png[i], i, sinus(t+2*i) + 75);
+;;;  }
+;;;
+
+
+
 ;;; Draw the sinus but fast...
 ;;; Input
 ;;; A0=pointer to the Bitplaneinfo structure
-_full_sinus_scroll:
+_full_sinus_scrollZZZ:
 	;; A6=$DFF000
 	;; A5=bitplaneinfo
 	;; A4=sinus data ptr
@@ -93,7 +119,7 @@ reg$:	REG	a3-a6/d7
 	lea.l	$DFF000,a6
 	move.l	a0,a5
 	lea.l	_long_sinusdat,a4
-	lea.l	_liberation_single_column_png,a3
+	lea.l	_liberation_single_column_png+32,a3
 	moveq	#0,d7		; First column, set X to zero.
 xloop$:				; for(x = 0; x < MAX; ++i) {...}
 	lea.l	bplinfo_row_addresses_0(a5),a1 ; Put row address pointer into A1
@@ -110,6 +136,9 @@ l1$:
 	ext.w	d0		; Extend the sinus (in byte) to a word.
 	add.w	#75,d0		; Center the sinus
 	lsl.w	#2,d0		; Get index into the row table.
+	;;
+	moveq	#0,d0
+	;; 
 	move.l	(a1,d0.w),a1	; Get row address into A1
 	move.w	d7,d1		; D1=x
 	lsr.w	#3,d1		; Divide X-position by 8 to get the byte
@@ -126,8 +155,8 @@ wblt$:	btst	#6,dmaconr(a6)
 	ror.w	#4,d0		; Four right is equivalent to 12 left.
 	and.w	#$F000,d0	; If the lower bits are removed.
 	or.w	#$0bca,d0	; Channels and use an OR.
-	move.w	d0,bltcon0(a6)
 	move.w	#$8000,bltadat(a6)
+	move.w	d0,bltcon0(a6)
 	move.w	#15*64+66,bltsize(a6) ; Start the blit.
 	addq	#1,d7
 	cmp.w	#70,d7

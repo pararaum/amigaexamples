@@ -201,9 +201,9 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   static unsigned short t = 0;
 
   custom.color[0] = 0x00ff;
-  dvl_prepare_blitter(BPLWIDTH);
+  //dvl_prepare_blitter(BPLWIDTH);
   for(i = 0; i < 144; i += 1) {
-    draw_vline(bplinfo, liberation_single_column_png[i], i, sinus(t+2*i) + 75);
+    draw_vline_fast(bplinfo, liberation_single_column_png[i], i, sinus(t+2*i) + 75);
   }
   t += 17;
   custom.color[0] = 0x000f;
@@ -211,14 +211,14 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
 
 static void irqhandler(void) {
   custom.color[0] = 0x09f9;
-  //do_da_sinus(&bplinfo);
   dvl_prepare_blitter(BPLWIDTH);
+  //do_da_sinus(&bplinfo);
   full_sinus_scroll(&bplinfo);
   custom.color[0] = 0x000f;
   set_bitplane_ptr(&bplinfo);
   bplinfo.bplidx ^= 1; //Switch bitplane
   clear_bitplane(&(bplinfo.row_addresses[bplinfo.bplidx][9][0]),
-		 BPLWIDTH/8, 100);
+  		 BPLWIDTH/8/2, 150);
   custom.color[0] = 0x0faa;
 }
 
