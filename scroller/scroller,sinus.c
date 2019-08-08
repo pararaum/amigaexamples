@@ -39,21 +39,21 @@ static Bitplaneinformation_t bplinfo = {
 static UWORD __chip scroll_area[BPLWIDTH + 16];
 static char scrolltext[] =
   // 234567890123456789
-  "01234567890123456789\001"
-  "THIS IS A SIMPLE SCROLL TEXT BY PARARAUM / T7D... WITH EVERYTHING YOU NEED... !\"#$%&/()."
-  "  GREETINGS GO TO:  \001"
-  "  ABYSS CONNECTION  \001"
-  "  KYLEARAN/CLUSTER  \001"
-  "       LPCHIP       \001"
-  "       ZIONA        \001"
-  "    KRAXXULTIMA     \001"
-  "         BOZ        \001"
-  "         LEA        \001"
-  "                        "
+  "01234567890123456789\010"
+  "THIS IS A SIMPLE SCROLL TEXT BY PARARAUM / T7D... WITH EVERYTHING YOU NEED... \001!\"#$%&/().\002"
+  "  GREETINGS GO TO:  \010\003"
+  "  ABYSS CONNECTION  \010"
+  "  KYLEARAN/CLUSTER  \010"
+  "       LPCHIP       \010"
+  "       ZIONA        \010"
+  "    KRAXXULTIMA     \010"
+  "         BOZ        \010"
+  "         LEA        \010"
+  "                        \002"
   ;
 static char *scrolltext_ptr = scrolltext;
 static short int scrolltext_counter = 0;
-
+static unsigned short int scrolltext_speed = 2;
 /*
 GHCI:
 let angles = [i*2*pi/4096 | i <- [0..4095]]
@@ -244,7 +244,7 @@ static void scroll_scrarea_blitter(void) {
   /* A last word mask */
   custom.bltalwm = -1;
   /* channel D pointer */
-  custom.bltapt = scroll_area + 1;
+  custom.bltapt = scroll_area + scrolltext_speed;
   custom.bltdpt = scroll_area;
   custom.bltamod = 0; // No modulo.
   custom.bltdmod = 0;
@@ -262,14 +262,26 @@ static void copy_char(void) {
   unsigned char c;
 
   if(--scrolltext_counter < 0) {
-    scrolltext_counter = 16 - 1;
+    scrolltext_counter = 16/scrolltext_speed - 1;
     switch(c = *scrolltext_ptr++) {
     case 0:
       // Restart the scroll text.
       scrolltext_ptr = scrolltext;
       c = ' ';
       break;
-    case 1:
+    case '\001':
+      scrolltext_speed = 1;
+      c = ' ';
+      break;
+    case '\002':
+      scrolltext_speed = 2;
+      c = ' ';
+      break;
+    case '\003':
+      scrolltext_speed = 4;
+      c = ' ';
+      break;
+    case '\010':
       // Wait just a little while...
       scrolltext_counter = -103;
       c = ' ';
