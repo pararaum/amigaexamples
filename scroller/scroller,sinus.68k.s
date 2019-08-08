@@ -88,8 +88,9 @@ _full_sinus_scroll:
 	;; A4=sinus data ptr
 	;; A3=source data ptr
 	;; A2=row address array (ptr)
+	;; D7=X coordinate (or running index)
 	lea.l	$DFF000,a6
-reg$:	REG	d0-d6/a0-a7
+reg$:	REG	d2-d6/a2-a6
 	movem.l	reg$,-(sp)
 	moveq	#0,d7		; First column, set X to zero.
 	move.l	a0,a5		; Save bitplaneinfo into A5
@@ -110,84 +111,30 @@ l1$:
 	move.b	(a4,d1.w),d1	; sin()
 	ext.w	d1		; Extend the sinus (in byte) to a word.
 	add.w	#75,d1		; Center the sinus, now D1=Y
-	;;lsl.w	#2,d1		; Get index into the row table.
-	;; 
- 	move.w	d7,d0		; D0=X
-	jsr	_draw_vline_fast
-	addq	#1,d7
-	cmp.w	#246,d7
-	bne	l1$
-	add.w	#17,phase$
-	movem.l	(sp)+,reg$
-	rts
-;;;  for(i = 0; i < 144; i += 1) {
-;;;    draw_vline_fast(bplinfo, liberation_single_column_png[i], i, sinus(t+2*i) + 75);
-;;;  }
-;;;
-phase$:	dc.w	0
-
-
-
-;;; Draw the sinus but fast...
-;;; Input
-;;; A0=pointer to the Bitplaneinfo structure
-_full_sinus_scrollZZZ:
-	;; A6=$DFF000
-	;; A5=bitplaneinfo
-	;; A4=sinus data ptr
-	;; A3=source data ptr
-	;; D7=X coordinate
-reg$:	REG	a3-a6/d7
-	movem.l	reg$,-(sp)
-	lea.l	$DFF000,a6
-	move.l	a0,a5
-	lea.l	_long_sinusdat,a4
-	lea.l	_liberation_single_column_png+32,a3
-	moveq	#0,d7		; First column, set X to zero.
-xloop$:				; for(x = 0; x < MAX; ++i) {...}
-	lea.l	bplinfo_row_addresses_0(a5),a1 ; Put row address pointer into A1
-	tst.w	bplinfo_bplidx(a5) ; Are we in the 0th or 1st bitplane?
-	beq.s	l1$
-	lea.l	bplinfo_row_addresses_1(a5),a1 ; Advance to the secondary plane.
-l1$:
-	;; Calculate the sinus
-	move.w	d7,d0		; D0=X
-	lsl.w	#1,d0		; D0*=2
-	add.w	phase$(pc),d0	; Add phase
-	and.w	#4096-1,d0	; Length of table, DANGER!
-	move.b	(a4,d0.w),d0	; sin()
-	ext.w	d0		; Extend the sinus (in byte) to a word.
-	add.w	#75,d0		; Center the sinus
-	lsl.w	#2,d0		; Get index into the row table.
-	;;
-	moveq	#0,d0
-	;; 
-	move.l	(a1,d0.w),a1	; Get row address into A1
+	move.w	(a3)+,bltbdat(a6)	; Store the pattern.
+	lsl.w	#2,d1		; Get index into the row table.
+	move.l	(a2,d1.w),a1	; Get address into A1
 	move.w	d7,d1		; D1=x
 	lsr.w	#3,d1		; Divide X-position by 8 to get the byte
 	and.w	#$FFFE,d1	; Must be even.
 	add.w	d1,a1		; Adjust plane pointer
-	;; WAITBLIT BEGIN
-wblt$:	btst	#6,dmaconr(a6)
-	bne.s	wblt$
-	;; WAITBLIT END
 	move.l	a1,bltcpt(a6)
 	move.l	a1,bltdpt(a6)
-	move.w	(a3)+,bltbdat(a6)	; Store the pattern.
+	move.w	#$8000,bltadat(a6)
 	move.w	d7,d0		; D0=X
 	ror.w	#4,d0		; Four right is equivalent to 12 left.
 	and.w	#$F000,d0	; If the lower bits are removed.
 	or.w	#$0bca,d0	; Channels and use an OR.
-	move.w	#$8000,bltadat(a6)
 	move.w	d0,bltcon0(a6)
 	move.w	#15*64+66,bltsize(a6) ; Start the blit.
 	addq	#1,d7
-	cmp.w	#70,d7
-	bne.s	xloop$
-	add.w	#17,phase$	;?
+	cmp.w	#319,d7
+	ble.s	l1$
+	add.w	#17,phase$
 	movem.l	(sp)+,reg$
 	rts
 phase$:	dc.w	0
+
 
 	SECTION DATA,DATA
 _liberation_single_column_png:
