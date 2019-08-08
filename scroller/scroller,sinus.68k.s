@@ -82,6 +82,7 @@ l1$:
 ;;; Draw the sinus scroll -- but fast...
 ;;; Input
 ;;; A0=pointer to the Bitplaneinfo structure
+;;; A1=pointer to the source area (this can even be in FAST RAM)
 _full_sinus_scroll:
 	;; A6=$DFF000
 	;; A5=bitplaneinfo
@@ -95,7 +96,7 @@ reg$:	REG	d2-d6/a2-a6
 	moveq	#0,d7		; First column, set X to zero.
 	move.l	a0,a5		; Save bitplaneinfo into A5
 	lea.l	_long_sinusdat,a4
-	lea.l	_liberation_single_column_png,a3
+	lea.l	(a1),a3
 	lea.l	bplinfo_row_addresses_0(a5),a2 ; Put row address pointer into A1
 	tst.w	bplinfo_bplidx(a5) ; Are we in the 0th or 1st bitplane?
 	beq.s	l1$

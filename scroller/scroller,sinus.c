@@ -19,7 +19,7 @@ typedef struct Bitplaneinformation {
 extern void set_irq(__reg("a0") void (*irqhandler)(void));
 extern UWORD liberation_single_column_png[];
 extern void draw_vline_fast(__reg("a0") Bitplaneinformation_t *bplptr, __reg("a1") unsigned short pattern, __reg("d0") int x1, __reg("d1") int y1);
-extern void full_sinus_scroll(__reg("a0") Bitplaneinformation_t *bplptr);
+extern void full_sinus_scroll(__reg("a0") Bitplaneinformation_t *bplptr, __reg("a1") UWORD *src);
 extern volatile struct Custom custom;
 
 static UWORD __chip very_simple_copperlist[] = {
@@ -36,6 +36,7 @@ static unsigned char __chip bitplanedata2[BPLWIDTH/8 * BPLHEIGHT * BPLNO];
 static Bitplaneinformation_t bplinfo = {
   { &bitplanedata1[0], &bitplanedata2[0] }
 };
+static UWORD __chip scroll_area[BPLWIDTH];
 
 
 /*
@@ -209,17 +210,28 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
   custom.color[0] = 0x000f;
 }
 
+static void scroll_scrarea(void) {
+  UWORD *dst = scroll_area;
+  UWORD *src = scroll_area + 1;
+  for(register int i = 0; i < BPLWIDTH - 1; ++i) {
+    //scroll_area[i] = scroll_area[i + 1];
+    *dst++ = *src++;
+  }
+}
+
 static void irqhandler(void) {
   custom.color[0] = 0x0bfb;
   dvl_prepare_blitter(BPLWIDTH);
   //do_da_sinus(&bplinfo);
-  full_sinus_scroll(&bplinfo);
+  full_sinus_scroll(&bplinfo, scroll_area);
   custom.color[0] = 0x0bbf;
   set_bitplane_ptr(&bplinfo);
   bplinfo.bplidx ^= 1; //Switch bitplane
   //while((custom.vhposr & 0xff00) < 0xb000) {}
   clear_bitplane(&(bplinfo.row_addresses[bplinfo.bplidx][9][0]),
   		 BPLWIDTH/8/2, 150);
+  scroll_scrarea();
+  scroll_area[319]++;
   custom.color[0] = 0x0fcc;
 }
 
@@ -234,6 +246,7 @@ int main(int argc, char **argv) {
   for(int i = 0; i < BPLHEIGHT; ++i) {
     bplinfo.row_addresses[0][i] = bplinfo.bitplanedata[0] + i * BPLWIDTH/8;
     bplinfo.row_addresses[1][i] = bplinfo.bitplanedata[1] + i * BPLWIDTH/8;
+    scroll_area[i] = ~i;
   }
   own_machine(OWN_libraries|OWN_view|OWN_trap|OWN_interrupt);
   custom.dmacon = DMAF_SETCLR | DMAF_MASTER | DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER;
