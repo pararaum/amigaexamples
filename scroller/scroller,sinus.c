@@ -36,8 +36,23 @@ static unsigned char __chip bitplanedata2[BPLWIDTH/8 * BPLHEIGHT * BPLNO];
 static Bitplaneinformation_t bplinfo = {
   { &bitplanedata1[0], &bitplanedata2[0] }
 };
-static UWORD __chip scroll_area[BPLWIDTH];
-
+static UWORD __chip scroll_area[BPLWIDTH + 16];
+static char scrolltext[] =
+  // 234567890123456789
+  "01234567890123456789\001"
+  "THIS IS A SIMPLE SCROLL TEXT BY PARARAUM / T7D... WITH EVERYTHING YOU NEED... !\"#$%&/()."
+  "  GREETINGS GO TO:  \001"
+  "  ABYSS CONNECTION  \001"
+  "  KYLEARAN/CLUSTER  \001"
+  "       LPCHIP       \001"
+  "       ZIONA        \001"
+  "    KRAXXULTIMA     \001"
+  "         BOZ        \001"
+  "         LEA        \001"
+  "                        "
+  ;
+static char *scrolltext_ptr = scrolltext;
+static short int scrolltext_counter = 0;
 
 /*
 GHCI:
@@ -219,6 +234,56 @@ static void scroll_scrarea(void) {
   }
 }
 
+static void scroll_scrarea_blitter(void) {
+  WAITBLIT;
+  custom.bltcon0 = 0x09f0; // AD channel, D=A logic function!
+  custom.bltcon1 = 0x0000; // No B shift, normal mode.
+  /* A first word mask; The first word in a line a seen by the
+     blitter. */
+  custom.bltafwm = -1;
+  /* A last word mask */
+  custom.bltalwm = -1;
+  /* channel D pointer */
+  custom.bltapt = scroll_area + 1;
+  custom.bltdpt = scroll_area;
+  custom.bltamod = 0; // No modulo.
+  custom.bltdmod = 0;
+  /* H9-H0, W5-W0; width is in words. By writing the size into the
+     custom chip register the blit begins and continues while the cpu
+     is still running. */
+  custom.bltsize = ((BPLWIDTH + 16 - 1) << 6) | 1;
+}
+
+
+static void copy_char(void) {
+  int i;
+  UWORD *src;
+  UWORD *dst;
+  unsigned char c;
+
+  if(--scrolltext_counter < 0) {
+    scrolltext_counter = 16 - 1;
+    switch(c = *scrolltext_ptr++) {
+    case 0:
+      // Restart the scroll text.
+      scrolltext_ptr = scrolltext;
+      c = ' ';
+      break;
+    case 1:
+      // Wait just a little while...
+      scrolltext_counter = -103;
+      c = ' ';
+      break;
+    }
+    src = liberation_single_column_png + 16 * (c - ' ');
+    dst = scroll_area + BPLWIDTH;
+    for(i = 0; i < 16; ++i) {
+      *dst++ = *src++;
+    }
+  }
+}
+
+
 static void irqhandler(void) {
   custom.color[0] = 0x0bfb;
   dvl_prepare_blitter(BPLWIDTH);
@@ -230,8 +295,15 @@ static void irqhandler(void) {
   //while((custom.vhposr & 0xff00) < 0xb000) {}
   clear_bitplane(&(bplinfo.row_addresses[bplinfo.bplidx][9][0]),
   		 BPLWIDTH/8/2, 150);
-  scroll_scrarea();
-  scroll_area[319]++;
+  if(scrolltext_counter < 0) {
+    if(++scrolltext_counter == 0) {
+      //scrolltext_counter = 16 - 1;
+    }
+  } else {
+    copy_char();
+    scroll_scrarea_blitter();
+  }
+  //scroll_area[319]++;
   custom.color[0] = 0x0fcc;
 }
 
