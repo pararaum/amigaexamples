@@ -217,6 +217,7 @@ static void irqhandler(void) {
   custom.color[0] = 0x000f;
   set_bitplane_ptr(&bplinfo);
   bplinfo.bplidx ^= 1; //Switch bitplane
+  while((custom.vhposr & 0xff00) < 0xb000) {}
   clear_bitplane(&(bplinfo.row_addresses[bplinfo.bplidx][9][0]),
   		 BPLWIDTH/8/2, 150);
   custom.color[0] = 0x0faa;

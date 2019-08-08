@@ -79,29 +79,52 @@ l1$:
 	movem.l	(sp)+,a6
 	rts
 
+;;; Draw the sinus scroll -- but fast...
+;;; Input
+;;; A0=pointer to the Bitplaneinfo structure
 _full_sinus_scroll:
+	;; A6=$DFF000
+	;; A5=bitplaneinfo
+	;; A4=sinus data ptr
+	;; A3=source data ptr
+	;; A2=row address array (ptr)
+	lea.l	$DFF000,a6
 reg$:	REG	d0-d6/a0-a7
 	movem.l	reg$,-(sp)
-	moveq	#0,d7
-	move.l	a0,a6
-	lea.l	_liberation_single_column_png,a5
+	moveq	#0,d7		; First column, set X to zero.
+	move.l	a0,a5		; Save bitplaneinfo into A5
+	lea.l	_long_sinusdat,a4
+	lea.l	_liberation_single_column_png,a3
+	lea.l	bplinfo_row_addresses_0(a5),a2 ; Put row address pointer into A1
+	tst.w	bplinfo_bplidx(a5) ; Are we in the 0th or 1st bitplane?
+	beq.s	l1$
+	lea.l	bplinfo_row_addresses_1(a5),a2 ; Advance to the secondary plane.
 l1$:	
-	move.l	a6,a0
+	move.l	a5,a0
 	move.w	#$ffff,a1
-	move.w	d7,d0
-	moveq	#35,d1
- 	add.w	d7,d1
-	moveq	#120,d1
+	;; Calculate the sinus
+	move.w	d7,d1		; D1=X
+	lsl.w	#1,d1		; D1*=2
+	add.w	phase$(pc),d1	; Add phase
+	and.w	#4096-1,d1	; Length of table, DANGER!
+	move.b	(a4,d1.w),d1	; sin()
+	ext.w	d1		; Extend the sinus (in byte) to a word.
+	add.w	#75,d1		; Center the sinus, now D1=Y
+	;;lsl.w	#2,d1		; Get index into the row table.
+	;; 
+ 	move.w	d7,d0		; D0=X
 	jsr	_draw_vline_fast
 	addq	#1,d7
-	cmp.w	#144,d7
+	cmp.w	#246,d7
 	bne	l1$
+	add.w	#17,phase$
 	movem.l	(sp)+,reg$
 	rts
 ;;;  for(i = 0; i < 144; i += 1) {
 ;;;    draw_vline_fast(bplinfo, liberation_single_column_png[i], i, sinus(t+2*i) + 75);
 ;;;  }
 ;;;
+phase$:	dc.w	0
 
 
 
