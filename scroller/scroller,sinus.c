@@ -210,17 +210,17 @@ static void do_da_sinus(Bitplaneinformation_t *bplinfo) {
 }
 
 static void irqhandler(void) {
-  custom.color[0] = 0x09f9;
+  custom.color[0] = 0x0bfb;
   dvl_prepare_blitter(BPLWIDTH);
   //do_da_sinus(&bplinfo);
   full_sinus_scroll(&bplinfo);
-  custom.color[0] = 0x000f;
+  custom.color[0] = 0x0bbf;
   set_bitplane_ptr(&bplinfo);
   bplinfo.bplidx ^= 1; //Switch bitplane
-  while((custom.vhposr & 0xff00) < 0xb000) {}
+  //while((custom.vhposr & 0xff00) < 0xb000) {}
   clear_bitplane(&(bplinfo.row_addresses[bplinfo.bplidx][9][0]),
   		 BPLWIDTH/8/2, 150);
-  custom.color[0] = 0x0faa;
+  custom.color[0] = 0x0fcc;
 }
 
 int main(int argc, char **argv) {
