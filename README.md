@@ -26,3 +26,12 @@ Copper/Plasma
 
  * http://eab.abime.net/showthread.php?t=29570
  * http://www.stashofcode.fr/wait-skip-copjmpx-usage-avance-copper-1/
+
+Detecting Hardware
+------------------
+
+ * http://www.winnicki.net/amiga/memmap/LISAID.html
+ * http://www.easy68k.com/EASy68Kforum/viewtopic.php?f=6&t=353
+ * http://aminet.net/package/util/moni/WhichAmiga
+ * http://romanworkshop.blutu.pl/asm68/proc.htm
+ * http://eab.abime.net/showthread.php?t=72300
