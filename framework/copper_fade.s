@@ -115,16 +115,20 @@ azero$:	addq	#4,a0		; Go to the next colour code
 	;; Input
 	;; A0: pointer to the colour list
 	;; D0: Number of colours
+	;; D1: Modulo to add after each colour
 	;; Output:
 	;; D0: Number of non-black colours
 	;; Destroys: D0/D1,A0
 _fade_out_colour_table:
 	;; D2: Number of non-zero values.
 	;; D3=D0: Number of colours
+	;; D4: Modulo to add after each colour
 	movem.l	d2/d3,-(sp)
 	moveq	#0,d2		; number of non-zero values
 	move.l	d0,d3		; Store number of colours in D3
-	bra.s	azero$		; Trick to jump into loop with D3-1
+	move.l	d1,d4		; Move modulo into d4
+	addq.l	#2,d4		; Advance one word to skip colour value (as move into (a0) and not (a0)+ is used.
+	bra.s	trick$		; Trick to jump into loop with D3-1
 l1$:	move.w	(a0),d0		; Colour value into d0
 	beq.s	azero$		; Is it zero? Then skip!
 	addq	#1,d2		; If we are here a non-zero colour was found.
@@ -141,8 +145,8 @@ noG$:	move.w	d0,d1		; Again copy colour into d1
 	beq.s	noB$		; No blue.
 	sub.w	#$0001,d0	; Subtract from blue
 noB$:	move.w	d0,(a0)		; Write colour back.
-azero$:	addq	#2,a0		; Next colour
-	dbf	d3,l1$
+azero$:	add.w	d4,a0		; Next colour
+trick$:	dbf	d3,l1$
 	move.l	d2,d0		; Return number of non-black colours
 	movem.l	(sp)+,d2/d3
 	rts

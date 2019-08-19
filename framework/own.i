@@ -2,7 +2,7 @@
 
 	XREF	own_machine
 	XREF	disown_machine
-	XREF	gfxbase
+	XREF	_gfxbase
 
 OWN_libraries:	equ	1
 OWN_view:	equ	2

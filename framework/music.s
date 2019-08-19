@@ -105,22 +105,33 @@ pt_lop3 MOVE.L	A2,(A1)+
 	MOVE.W	D0,$B8(A0)
 	MOVE.W	D0,$C8(A0)
 	MOVE.W	D0,$D8(A0)
-	CLR.B	pt_SongPos
-	CLR.B	pt_Counter
-	CLR.B	pt_PattPos
+	CLR.l	pt_SongPosition
+	CLR.l	pt_Counter
+	CLR.l	pt_PatternPosition
 	MOVEM.L	(SP)+,D0-D3/A0-A2
 	RTS
 
 _pt_StopMusic:
-	MOVEM.L	D0/A0,-(SP)
+	MOVEM.L	D0/A0-a1,-(SP)
 	MOVEQ	#0,D0
 	LEA	$DFF000,A0
 	MOVE.W	D0,$A8(A0)
 	MOVE.W	D0,$B8(A0)
 	MOVE.W	D0,$C8(A0)
 	MOVE.W	D0,$D8(A0)
+	moveq	#1,d0		; A single sample
+	MOVE.W	D0,$A4(A0)
+	MOVE.W	D0,$B4(A0)
+	MOVE.W	D0,$C4(A0)
+	MOVE.W	D0,$D4(A0)
+	lea.l	an_empty_sample,a1
+	clr.l	(a1)
+	move.l	a1,$a0(a0)
+	move.l	a1,$b0(a0)
+	move.l	a1,$c0(a0)
+	move.l	a1,$d0(a0)
 	MOVE.W	#$000F,$DFF096		;stop AudioDMA activity
-	MOVEM.L	(SP)+,D0/A0
+	MOVEM.L	(SP)+,D0/A0-a1
 	RTS
 
 _pt_PlayMusic:
@@ -1244,7 +1255,6 @@ pt_SampleStarts	dcb.l	31,0
 pt_timeout	dc.w	330		;CIA-B timeout-value
 pt_Counter	dc.l	0
 pt_CurrSpeed	dc.l	6
-pt_PattPos	dc.w	0
 pt_DMACONtemp	dc.w	0
 pt_ActiveChannels
 		dc.w	%00001111
@@ -1256,7 +1266,6 @@ pt_SongDataPtr	dc.l	0
 pt_MetroSpeed	dc.b	0
 pt_MetroChannel	dc.b	0
 pt_Speed	dc.b	6
-pt_SongPos	dc.b	0
 pt_PBreakPosition
 		dc.b	0
 pt_PosJumpAssert
@@ -1268,3 +1277,6 @@ pt_PattDelayTime
 pt_PattDelayTime2
 		dc.b	0
 	even
+
+	SECTION	musicbss,bss_c
+an_empty_sample:	ds.l	1

@@ -3,7 +3,9 @@
 
 	XDEF	uncompress_body_continous
 	XDEF	uncompress_body_interleaved
+	XDEF	_uncompress_body_interleaved
 	XDEF	find_iff_chunk
+	XDEF	_find_iff_chunk
 	XDEF	copy_cmap_chunk
 	XDEF	interpret_bmhd
 
@@ -13,6 +15,8 @@
 	;; A1: pointer to the area where the data is uncompressed into
 	;; D0: number of compressed bytes
 uncompress_body_interleaved:
+;;; void uncompress_body_interleaved(__reg("a0") void*compressed_data, __reg("d0") ULONG compressed_bytes, __reg("a1") void *target);
+_uncompress_body_interleaved:
 	;; A2: pointer the end of the compressed data
 	move.l	a2,-(sp)
 	move.l	a0,a2		;Copy compressed data pointer to a2
@@ -81,7 +85,11 @@ end$:	cmp.l	a3,a2
 	blt	loop$
 	rts
 
-
+;;; signed long find_iff_chunk(__reg("d0") ULONG chunk, __reg("a0") void *iffdata, __reg("a1") void **call_by_reference_ptr_iff_data);
+_find_iff_chunk:
+	bsr	find_iff_chunk
+	move.l	a0,(a1)
+	rts
 ;;; Fast method to find a chunk in an iff file.
 	;; Input
 	;; A0: Pointer to IFF data.

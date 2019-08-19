@@ -13,7 +13,7 @@
 	XDEF	_disown_machine
 	XDEF	_own_supervisor
 	XDEF	_disown_supervisor
-	XDEF	gfxbase
+	XDEF	_gfxbase
 
 COP1LCH	EQU	$dff080
 	
@@ -21,7 +21,7 @@ COP1LCH	EQU	$dff080
 	;; deb_noforbid equ 1
 	section framework,code
 	
-;;; Convenience function for C call. Parameters see below and are read from the integer from the stack. Output: D0: gfxbase
+;;; Convenience function for C call. Parameters see below and are read from the integer from the stack. Output: D0: _gfxbase
 _own_machine:
 	move.l	4(a7),d0
 	bsr.s	own_machine
@@ -39,7 +39,7 @@ _own_machine:
 	;; IN
 	;; d0: Bits set initialise something
 	;; OUT
-	;; a0: gfxbase
+	;; a0: _gfxbase
 own_machine:
 	;; d7: stores the initialisation bits.
 	;; d6: current bit for actions
@@ -64,28 +64,31 @@ nodo$:	addq	#1,d6		; Increment current bit.
 	ifnd	deb_noforbid
 	jsr _LVOForbid(a6)	; Forbid
 	endif
-	move.l	gfxbase,a0	; GfxBase is returned in A0.
+	move.l	_gfxbase,a0	; GfxBase is returned in A0.
 	movem.l	(sp)+,d2-d7/a2-a6	; Restore registers.
 	rts
 
 clear_view:
-	move.l 	gfxbase,a6
+	move.l 	_gfxbase,a6
         move.l  34(a6),oldgfxbaseview
         move.l  38(a6),oldcopperlistptr
 	move.l	#0,a1		; No view
 	;; http://amigadev.elowar.com/read/ADCD_2.1/Includes_and_Autodocs_2._guide/node0459.html
-	jsr _LVOLoadView(a6)	; LoadView
-	jsr _LVOWaitTOF(a6)	; WaitTOF
-	jsr _LVOWaitTOF(a6)	; WaitTOF
+	jsr	_LVOLoadView(a6)	; LoadView
+	jsr	_LVOWaitTOF(a6)	; WaitTOF
+	jsr	_LVOWaitTOF(a6)	; WaitTOF
+	jsr	_LVOOwnBlitter(a6)
+	jsr	_LVOWaitBlit(a6)
 	rts
 
 restore_view:
-	move.l 	gfxbase,a6
+	move.l 	_gfxbase,a6
 	move.l  oldcopperlistptr,COP1LCH
 	move.l 	oldgfxbaseview,a1	;Old default View
-	jsr _LVOLoadView(a6)	; LoadView
-	jsr _LVOWaitTOF(a6)	; WaitTOF
-	jsr _LVOWaitTOF(a6)	; WaitTOF
+	jsr	_LVOLoadView(a6)	; LoadView
+	jsr	_LVOWaitTOF(a6)	; WaitTOF
+	jsr	_LVOWaitTOF(a6)	; WaitTOF
+	jsr	_LVODisownBlitter(a6)
 	rts
 
 _disown_machine:
@@ -115,11 +118,11 @@ init_libraries:
 	tst.l	d0
 	bne.s	ok$
 	bsr	kill_program	; Yes, we kill the program!
-ok$:	move.l	d0,gfxbase	    ;Store gfxbase, updates condition codes.
+ok$:	move.l	d0,_gfxbase	    ;Store gfxbase, updates condition codes.
 	rts
 
 shutdown_libraries:
-	move.l 	gfxbase,a1
+	move.l 	_gfxbase,a1
 	move.l	$4.w,a6
 	jsr	_LVOCloseLibrary(a6)
 	rts
@@ -273,10 +276,10 @@ jump_table:
 gfxname:
 	dc.b	"graphics.library",0
 	even
-	dc.b	"Where are my zero bytes?",0
+	dc.l	"ZERO"
 
 	section framework_bss,bss
-gfxbase:	ds.l	1
+_gfxbase:	ds.l	1
 oldcopperlistptr:	ds.l	1
 oldgfxbaseview:		ds.l	1
 registerspace:	ds.w	4
