@@ -7,8 +7,8 @@ ASFLAGS=-m68000
 CFLAGS=-c99 -speed -O3 -DNDEBUG
 LD=vlink
 VLINKFLAGS=-s
-#TARGET=sprite_example
-OBJS=own.o iff.o copper_fade.o music.o circallator.o textmonochrome.o inflate.o sprite_multiplexer.o xoroshiro.o
+
+OBJS=own.o iff.o copper_fade.o music.o circallator.o textmonochrome.o inflate.o sprite_multiplexer.o xoroshiro.o default_irq_routine.o
 
 all:	$(OBJS)
 
@@ -21,5 +21,4 @@ $(TARGET):	$(TARGET).o $(OBJS)
 .PHONY: clean
 clean:
 	rm *.o
-	rm -f $(TARGET)
 
