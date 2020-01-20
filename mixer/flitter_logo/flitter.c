@@ -151,10 +151,7 @@ static void flitter_effect(void) {
   unsigned long old;
 
   do {
-    old = framecounter;
-    while(framecounter == old) {
-    }
-    blit_da_noise(&bitplanememory[(framecounter % 2) * BPLWIDTH * BPLHEIGHT / 8]);
+    old++;
   } while(1);
 }
 
@@ -175,6 +172,9 @@ static void entrypoint(void) {
   flitter_effect();
 }
 
+void interrupt_tasks(void) {
+  blit_da_noise(&bitplanememory[(framecounter % 2) * BPLWIDTH * BPLHEIGHT / 8]);
+}
 
 int main(int argc, char **argv) {
   int i;
@@ -190,7 +190,7 @@ int main(int argc, char **argv) {
   }
 #endif
   setup_amiga();
-  set_irq_routine(NULL, &entrypoint);
+  set_irq_routine(NULL, &entrypoint, &interrupt_tasks);
   custom.intena = 0x7fff;
   custom.dmacon = (1<<15)|(1<<9)|(1<<6); //Reenable for wait.
   //WAITBLIT;
