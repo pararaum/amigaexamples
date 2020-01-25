@@ -8,7 +8,7 @@ CFLAGS=-c99 -speed -O3 -DNDEBUG
 LD=vlink
 VLINKFLAGS=-s
 
-OBJS=own.o iff.o copper_fade.o music.o circallator.o textmonochrome.o inflate.o sprite_multiplexer.o xoroshiro.o default_irq_routine.o
+OBJS=own.o iff.o copper_fade.o music.o circallator.o textmonochrome.o inflate.o sprite_multiplexer.o xoroshiro.o default_irq_routine.o lz4_uncrunch.o
 
 all:	$(OBJS)
 
