@@ -24,7 +24,7 @@
 
 _lz4_uncrunch:
 	movem.l	d2-d7/a2-a6,-(sp)
-	jsr	lz4_uncrunch_no_reg_save(pc)
+	jsr	_lz4_uncrunch_no_reg_save(pc)
 	movem.l	(sp)+,d2-d7/a2-a6
 	rts
 	
