@@ -21,6 +21,15 @@ Links
  * https://amigasourcecodepreservation.gitlab.io/total-amiga-assembler/
  * https://github.com/Ozzyboshi/AmigaDemo_the_crows
 
+Compression
+-----------
+
+ * https://github.com/steve-chamberlin/fc8-compression
+ * https://github.com/arnaud-carre/lz4-68k
+ * http://aminet.net/package/util/pack/cranker
+ * https://github.com/Stephane-D/SGDK/blob/master/bin/lz4w.txt
+ * http://www.cpcwiki.eu/forum/programming/ucl-compressor/
+
 Copper/Plasma
 -------------
 
