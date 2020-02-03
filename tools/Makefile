@@ -1,6 +1,6 @@
 #! /usr/bin/make -f
 
-CXXFLAGS=-std=c++11 -O2 -Wall -Wextra -g -DNDEBUG
+CXXFLAGS=-std=c++14 -O2 -Wall -Wextra -g -DNDEBUG
 
 #
 
