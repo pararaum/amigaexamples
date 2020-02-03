@@ -559,7 +559,7 @@ int main(int argc, char **argv) {
     return CLIRET_not_enough_files;
   }
   try {
-    if(SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if(SDL_Init(0) != 0) {
       SDL_Log("Intitialisation failed: %s", SDL_GetError());
       throw std::runtime_error(SDL_GetError());
     }
