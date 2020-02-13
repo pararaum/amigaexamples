@@ -21,6 +21,13 @@ Links
  * https://amigasourcecodepreservation.gitlab.io/total-amiga-assembler/
  * https://github.com/Ozzyboshi/AmigaDemo_the_crows
 
+Tool Links
+==========
+
+ * http://www.compilers.de/vbcc.html
+ * http://xi6.com/projects/asmx/
+ * https://github.com/asmotor/asmotor
+
 Graphics
 --------
 
