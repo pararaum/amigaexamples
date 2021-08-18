@@ -42,6 +42,7 @@ Compression
  * http://aminet.net/package/util/pack/cranker
  * https://github.com/Stephane-D/SGDK/blob/master/bin/lz4w.txt
  * http://www.cpcwiki.eu/forum/programming/ucl-compressor/
+ * https://www.amiga-stuff.com/crunchers-download.html
 
 Copper/Plasma
 -------------
