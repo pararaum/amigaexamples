@@ -1,8 +1,7 @@
 ; -*- mode: asm-mode; -*-
 
 	;; 	incdir	"Sources:include/"
-	include "LVO/exec_lib.i"
-	include "LVO/graphics_lib.i"
+	include "exec/exec.i"
         include "hardware/custom.i"
         include "hardware/dmabits.i"
 	include "own.i"

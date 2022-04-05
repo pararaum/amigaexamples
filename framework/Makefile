@@ -1,7 +1,12 @@
 #! /usr/bin/make -f
 
-AS=vasmm68k_mot -Fhunk -I$$HOME/include/
-CC=vc
+# The environment variable $NDK39_ASMINC should contain the assembler
+# includes from the NDK3.9. The "-Iasminc" is used to get the
+# framework include files.
+AS=vasmm68k_mot -Fhunk -I$$NDK39_ASMINC -Iasminc
+# We use the 68000 configuration and with "-Iinclude" the frameworks
+# header files are accessible.
+CC=vc +kick13 -Iinclude
 #ASFLAGS=-m68000 -L /dev/stdout -Lnf
 ASFLAGS=-m68000
 CFLAGS=-c99 -speed -O3 -DNDEBUG
@@ -9,16 +14,15 @@ LD=vlink
 VLINKFLAGS=-s
 
 OBJS=own.o iff.o copper_fade.o music.o circallator.o textmonochrome.o inflate.o sprite_multiplexer.o xoroshiro.o default_irq_routine.o lz4_uncrunch.o
+VPATH=src
+T7DLIB=t7d.lib
 
-all:	$(OBJS)
+all:	$(T7DLIB)
 
-$(TARGET):	$(TARGET).o $(OBJS)
-	$(LD) $(VLINKFLAGS) -o $@ $+
+$(T7DLIB):	$(OBJS)
+	cat $+ > $@
 
-%.o:	%.s
-	$(AS) $(ASFLAGS) -o $@ $+
-
-.PHONY: clean
+.PHONY: all clean
 clean:
-	rm *.o
+	rm -f *.o $(T7DLIB)
 
