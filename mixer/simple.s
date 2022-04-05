@@ -1,7 +1,6 @@
 
 	XDEF main
-	INCLUDE	"LVO/exec_lib.i"
-	INCLUDE	"LVO/dos_lib.i"
+	INCLUDE	"exec/exec.i"
 	
 	section	text,code
 
