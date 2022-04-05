@@ -1,5 +1,8 @@
 #! /usr/bin/make -f
 
+# Possible call:
+# docker run -e T7D=/opt/t7d -u 1000:uucp -v "$PWD/../framework":/opt/t7d -v "$PWD":/host -w /host --rm  vintagecomputingcarinthia/vbcc4vcc make
+
 AS=vasmm68k_mot -Fhunk -I$$NDK39_ASMINC -I$$T7D/asminc
 VLINKFLAGS=-s -L$$NDK39/Include/linker_libs
 LIBS=-L$$T7D -lamiga -lt7d
