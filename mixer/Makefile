@@ -10,6 +10,7 @@ all:	simple mix
 	make -C dual_playfield
 	make -C image_fader
 	make -C intuition_screen_grab
+	make -C lfsr_screen_fill
 
 simple:	simple.o
 	vlink $(VLINKFLAGS) $(LIBS) -o $@ $+
@@ -25,3 +26,4 @@ clean:
 	make -C dual_playfield clean
 	make -C image_fader clean
 	make -C intuition_screen_grab clean
+	make -C lfsr_screen_fill clean
