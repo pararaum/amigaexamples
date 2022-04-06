@@ -8,6 +8,8 @@ include config.mk
 all:	simple mix
 	make -C flitter_logo
 	make -C dual_playfield
+	make -C image_fader
+	make -C intuition_screen_grab
 
 simple:	simple.o
 	vlink $(VLINKFLAGS) $(LIBS) -o $@ $+
@@ -21,3 +23,5 @@ clean:
 	rm -f simple mix
 	make -C flitter_logo clean
 	make -C dual_playfield clean
+	make -C image_fader clean
+	make -C intuition_screen_grab clean

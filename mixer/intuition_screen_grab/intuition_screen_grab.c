@@ -2,6 +2,9 @@
 /* Include appropiate header*/
 #include <proto/intuition.h>
 #include <intuition/screens.h>
+#include <clib/dos_protos.h>
+#include <clib/exec_protos.h>
+
 /* 
  * http://www.pjhutchison.org/tutorial/amiga_c.html
  */

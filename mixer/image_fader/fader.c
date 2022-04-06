@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <hardware/custom.h>
 #include <hardware/dmabits.h>
+#include <own.h>
 
 #define IMAGE_WIDTH 320
 #define IMAGE_HEIGHT 256
 #define IMAGE_BITPLANES 5
 
-extern unsigned long own_machine();
-extern void disown_machine();
 extern unsigned long set_interrupt();
 
 extern struct Custom custom;
@@ -222,7 +221,7 @@ void run_demo(void) {
 #ifndef NDEBUG
   for(ul = 0; ul < 150000; ul++) ;
 #endif
-  if(own_machine() != 0) {
+  if(own_machine(OWN_libraries|OWN_view|OWN_trap|OWN_interrupt) != 0) {
     ul = all_black();
     fadeloop();
 #if 0
