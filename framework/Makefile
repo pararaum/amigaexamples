@@ -13,16 +13,27 @@ CFLAGS=-c99 -speed -O3 -DNDEBUG
 LD=vlink
 VLINKFLAGS=-s
 
+# Set this to the directory where the T7D stuff will be put.
+T7DDIR=/opt/t7d
+
 OBJS=own.o iff.o copper_fade.o music.o circallator.o textmonochrome.o inflate.o sprite_multiplexer.o xoroshiro.o default_irq_routine.o lz4_uncrunch.o
 VPATH=src
 T7DLIB=t7d.lib
 
 all:	$(T7DLIB)
 
+install:	$(T7DLIB)
+	install -d $(T7DDIR)
+	install -d $(T7DDIR)/include
+	install -d $(T7DDIR)/asminc
+	cp *.lib $(T7DDIR)
+	cp include/*.h $(T7DDIR)/include
+	cp asminc/*.i $(T7DDIR)/asminc
+
 $(T7DLIB):	$(OBJS)
 	cat $+ > $@
 
-.PHONY: all clean
+.PHONY: all clean install
 clean:
 	rm -f *.o $(T7DLIB)
 
