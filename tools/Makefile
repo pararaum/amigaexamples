@@ -9,6 +9,10 @@ BIN=convert_img2raw
 
 all:	$(BIN)
 
+install:
+	install -d $(DESTDIR)/usr/local/bin
+	install -s -t $(DESTDIR)/usr/local/bin $(BIN)
+
 convert_img2raw: cli_parser.o convert_img2raw.o
 	g++ -o $@ $+ $(LIBS)
 

@@ -2,28 +2,11 @@
 	INCLUDE	"hardware/custom.i"
 	INCLUDE	"hardware/intbits.i"
 	INCLUDE	"own.i"
-	XDEF	_own_machine
-	XDEF	_disown_machine
 	XDEF	_set_interrupt
 
 	XDEF	_framecounter
 	XDEF	_mousebutton
 	XDEF	_vertical_blank_irqfun
-
-;;; Set up everything to control the machine fully. And store the current stack pointer for the stack trick.
-;;; O: D0: pointer to gfx library or zero if in finished mode
-_own_machine:
-	;; Now store the current stack pointer for later use.
-	move.l	a7,stack_on_own_machine
-	moveq	#OWN_libraries|OWN_view|OWN_trap|OWN_interrupt,d0
-	jsr	own_machine
-	move.l	a0,d0
-	rts
-
-;;; Relent control over machine.
-_disown_machine:
-	jsr	disown_machine
-	rts
 
 ;;; Set the interrupt for vertical blanking. (Level 3)
 	;; Output: D0: interrupt routine address

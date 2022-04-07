@@ -26,7 +26,7 @@ extern void shutdown_framework(void);
 extern void wait_for_mouse(void);
 extern void text_monochrome(char __reg("a0") *text, unsigned char __reg("a1") *font, unsigned char __reg("a2") *target, unsigned int __reg("d0") modulo);
 extern void fade_rasterbars(unsigned short __reg("a0") *rasterbarptr);
-extern struct Custom custom;
+extern volatile struct Custom custom;
 
 
 /*! \brief scroller text to display
@@ -899,6 +899,7 @@ int main(int argc, char **argv) {
   printf("coplist = %08lX\n", (ULONG)coplist);
   printf("textoutput() = %08lX\n", (ULONG)(&textoutput));
   printf("text_monochrome() = %08lX\n", (ULONG)(&text_monochrome));
+  printf("main = %08lx\n", (ULONG)&main);
   /* Initialise scroll pointer to the beginning of the text. */
   scroller_text_pointer = scroller_text;
   rasterbar = init_copper(logo_xpm, bitplanedata);
