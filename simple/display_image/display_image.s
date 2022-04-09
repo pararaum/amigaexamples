@@ -7,7 +7,7 @@ main:
 	move.l	4.w,a6		; Get base of exec lib
 	lea	gfxlib,a1	; Adress of gfxlib string to a1
 	moveq	#0,d0		; any version is ok
-	jsr	-408(a6)	; Call OpenLibrary()
+	jsr	_LVOOpenLibrary(a6)	; Call OpenLibrary()
 	tst.l	d0
 	bne.s	.libok
 	moveq	#-1,d0		; user should know something went wrong
@@ -24,16 +24,16 @@ setbpls:move.l	a0,d0		; Picture-Rawdata address to d0
 	addq.l	#8,a1		; Next Bitplaneptr in copperlist
 	dbf	d1,setbpls
 
-	jsr	-132(a6)	; Forbid task switching
+	jsr	_LVOForbid(a6)	; Forbid task switching
 	;; see: http://amiga.sourceforge.net/amidevhelp/phpwebdev.php?keyword=Forbid&funcgroup=AmigaOS&action=Search
-	move.l #cop,$dff080	; Set new copperlist
-mouse:	btst #6,$bfe001		; Left mouse clicked?
-	bne.b mouse		; No, continue loop!
-	move.l gfxbase,a1	; Base of graphics.library to a1
-	move.l 38(a1),$dff080	; Restore old copperlist
-	jsr	-138(a6)	; Permit task switching
+	move.l	#cop,$dff080	; Set new copperlist
+mouse:	btst	#6,$bfe001	; Left mouse clicked?
+	bne.b	mouse		; No, continue loop!
+	move.l	gfxbase,a1	; Base of graphics.library to a1
+	move.l	38(a1),$dff080	; Restore old copperlist
+	jsr	_LVOPermit(a6)	; Permit task switching
 	;; http://amiga.sourceforge.net/amidevhelp/phpwebdev.php?keyword=Permit&funcgroup=AmigaOS&action=Search
-	jsr -414(a6)		; Call CloseLibrary()
+	jsr	_LVOCloseLibrary(a6)		; Call CloseLibrary()
 	moveq #0,d0		; Status = OK
 	rts			; Bye, Bye!
 
