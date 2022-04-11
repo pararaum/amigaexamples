@@ -38,12 +38,12 @@ bootcode:
 	;; Turn display on.
 	lea.l	coplist(pc),a0
 	move.l	a0,cop1lc(a5)	; Point copper to the Copperlist.
-	;; Enable display and copper.
-	move.w	#DMAF_SETCLR|DMAF_COPPER|DMAF_RASTER|DMAF_MASTER,dmacon(a5)
+	;; Enable display and copper and, of course, disk dma.
+	move.w	#DMAF_SETCLR|DMAF_COPPER|DMAF_RASTER|DMAF_MASTER|DMAF_DISK,dmacon(a5)
 	;; Now activate vblank interrupt.
 	lea.l	vblank_handler(pc),a0
 	move.l	a0,$6c.w	; Level 3 interrupt.
-	; Enable vblank interrupt.
+	; Enable vblank interrupt. This is used for counting frames (wait time).
 	move.w	#INTF_SETCLR|INTF_INTEN|INTF_VERTB,intena(a5)
 	moveq	#120,d0		; Wait
 	bsr	waitframes
@@ -68,7 +68,6 @@ bootcode:
 ENDLESS:
 	;; Now start the read.
 	move.w	#$4489,dsksync(a5) ; Disk synchronisation word, default.
-	move.w	#DMAF_SETCLR|DMAF_DISK,dmacon(a5)
 	move.w	#$4000,dsklen(a5)  ; Erase disk length, is disable DMA.
 	;; See http://www.winnicki.net/amiga/memmap/ADKCON.html
 	move.w	#$7f00,adkcon(a5)  ; Clear: MFMPREC, WORDSYNC, FAST and UARTBRK?, MSBSYNC?
