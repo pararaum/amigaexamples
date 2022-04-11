@@ -67,17 +67,8 @@ bootcode:
 	bsr	waitframes
 ENDLESS:
 	;; Now start the read.
-	move.w	#$4489,dsksync(a5) ; Disk synchronisation word, default.
-	move.w	#$4000,dsklen(a5)  ; Erase disk length, is disable DMA.
-	;; See http://www.winnicki.net/amiga/memmap/ADKCON.html
-	move.w	#$7f00,adkcon(a5)  ; Clear: MFMPREC, WORDSYNC, FAST and UARTBRK?, MSBSYNC?
-	;move.w	#ADKF_SETCLR|ADKF_FAST|ADKF_WORDSYNC,adkcon(a5)
-	move.w	#$9500,adkcon(a5)
 	lea.l	$1000.w,a0	; Disk buffer MFM
-	move.l	a0,dskpt(a5)
-	move.w	#$9900,dsklen(a5) ; Lenght of a track?
-	move.w	#$9900,dsklen(a5) ; Why two times?
-	move.w	#INTF_DSKBLK,intreq(a5) ; Clear disk interrupt.
+	bsr	read_current_track
 	bsr	wait_for_diskdma_done
 	move	#2000/20,d0		; Wait 2000 ms.
 	bsr	waitframes
@@ -86,6 +77,20 @@ ENDLESS:
 	move	#5000/20,d0		; Wait 5000 ms.
 	bsr	waitframes
 	bra	ENDLESS		; Stay a while! Stay forever!
+
+;;; Input: A0=pointer to mfm buffer, A5=$Dff000
+read_current_track:
+	move.w	#$4489,dsksync(a5) ; Disk synchronisation word, default.
+	move.w	#$4000,dsklen(a5)  ; Erase disk length, is disable DMA.
+	;; See http://www.winnicki.net/amiga/memmap/ADKCON.html
+	move.w	#$7f00,adkcon(a5)  ; Clear: MFMPREC, WORDSYNC, FAST and UARTBRK?, MSBSYNC?
+	;move.w	#ADKF_SETCLR|ADKF_FAST|ADKF_WORDSYNC,adkcon(a5)
+	move.w	#$9500,adkcon(a5)
+	move.l	a0,dskpt(a5)
+	move.w	#$9900,dsklen(a5) ; Lenght of a track?
+	move.w	#$9900,dsklen(a5) ; Why two times?
+	move.w	#INTF_DSKBLK,intreq(a5) ; Clear disk interrupt.
+	rts
 
 ;;; Input: a0=MFM buffer pointer.
 decode_MFM_inplace:
