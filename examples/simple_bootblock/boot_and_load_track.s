@@ -100,6 +100,17 @@ decode_MFM_inplace:
 	lsl.l	#1,d0
 	or.l	d1,d0
 	move.l	d0,(a0)+
+	lea.l	48(a6),a6	; Move A6 to pointer of odd bits
+	lea.l	512(a6),a5	; Move A5 to pointer of even bits
+	move.w	#512/2-1,d2	; 256 Words
+.loop:	move.w	(a5)+,d1
+	move.w	(a6)+,d0
+	and.w	d7,d0
+	and.w	d7,d1
+	lsl.w	#1,d0
+	or.w	d1,d0
+	move.w	d0,(a0)+
+	dbf	d2,.loop
 	movem.l	(sp)+,d0-d7/a1-a6
 	rts
 
