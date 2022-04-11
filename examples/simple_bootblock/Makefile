@@ -9,6 +9,9 @@ boot_and_do_nothing.adf: boot_and_do_nothing.o
 	xdftool boot_and_do_nothing.adf format "BootDisk"
 	xdftool boot_and_do_nothing.adf boot write boot_and_do_nothing.bootblock
 
-.PHONY: clean
+run:
+	fs-uae --console_debugger=1 --floppy_drive_0=boot_and_do_nothing.adf
+
+.PHONY: clean run
 clean:
 	rm -f *.o *.adf *.bootblock

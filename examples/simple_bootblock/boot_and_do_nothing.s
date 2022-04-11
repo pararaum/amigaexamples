@@ -10,7 +10,7 @@
 	;; A5 = $DFF000
 
 	;; In A6 we have the Exec base.
-	; jsr	_LVOForbid(a6)	  ; No more task switching.
+	jsr	_LVOForbid(a6)	  ; No more task switching.
 	lea	$DFF000,a5	; Custom base in A5.
 	move.w	#$7fff,intena(a5) ; Disable interrupts
 	move.w	#$7fff,intreq(a5) ; Disable interrupt requests
