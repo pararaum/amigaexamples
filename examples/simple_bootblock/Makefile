@@ -1,13 +1,19 @@
 #! /usr/bin/make -f
 
+TARGETS = boot_and_do_nothing.adf
+# CURRENT is only used for run, which of the TARGETS is actually run?
+CURRENT = boot_and_do_nothing.adf
+
 include ../config.mk
 
-all:	boot_and_do_nothing.adf
+all:	$(TARGETS)
 
-boot_and_do_nothing.adf: boot_and_do_nothing.o
-	vlink $(VLINKFLAGS) -nostdlib -b rawbin1 $+ -o boot_and_do_nothing.bootblock $(LIBS)
-	xdftool boot_and_do_nothing.adf format "BootDisk"
-	xdftool boot_and_do_nothing.adf boot write boot_and_do_nothing.bootblock
+%.bootblock: %.o
+	vlink $(VLINKFLAGS) -nostdlib -b rawbin1 $^ -o $@ $(LIBS)
+
+boot_and_do_nothing.adf: boot_and_do_nothing.bootblock
+	xdftool $@ format "BootDisk"
+	xdftool $@ boot write $(basename $@).bootblock
 
 run:
 	fs-uae --console_debugger=1 --floppy_drive_0=boot_and_do_nothing.adf
