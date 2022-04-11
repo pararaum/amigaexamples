@@ -1,7 +1,10 @@
 
 	include	hardware/custom.i
 	include	hardware/dmabits.i
-	
+
+BOOTCODEADDRESS = $100
+
+	;; The following are added by  xdftool.
 	;dc.b	"DOS",0		; Header of a bootable disk.
 	;dc.l	0		; Checksum, will be added by xdftool.
 	;dc.l	880		; Root block number (default).
@@ -15,13 +18,16 @@
 	move.w	#$7fff,intena(a5) ; Disable interrupts.
 	move.w	#$7fff,intreq(a5) ; Disable interrupt requests.
 	move.w	#$7fff,dmacon(a5) ; Disable DMA.
+	;; Now we will copy the code and everything to the area at $100 which are "user vectors" and unused(?). This will assure that the copperlist is in chip mem.
+	move.w	#$100/4-1,d0	; Number of long words to copy.
+	lea.l	bootcode(pc),a0
+	lea.l	BOOTCODEADDRESS.w,a1
+.cloop:	move.l	(a0)+,(a1)+
+	dbf	d0,.cloop
+	jmp	BOOTCODEADDRESS.w ; Now continue below:
 
+bootcode:
 	lea.l	coplist(pc),a0
-	lea.l	$100.w,a1
-	moveq	#$100/4,d1
-.l1:	move.l	(a0)+,(a1)+
-	dbf	d1,.l1
-	lea.l	$100.w,a0
 	move.l	a0,cop1lc(a5)	; Point copper to the Copperlist.
 	;; Enable display and copper.
 	move.w	#DMAF_SETCLR|DMAF_COPPER|DMAF_RASTER|DMAF_MASTER,dmacon(a5)
