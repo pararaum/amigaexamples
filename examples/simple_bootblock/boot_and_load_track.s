@@ -2,6 +2,7 @@
 	include	hardware/custom.i
 	include	hardware/dmabits.i
 	include	hardware/intbits.i
+	include	hardware/adkbits.i
 	include	hardware/cia.i
 
 BOOTCODEADDRESS = $100
@@ -26,7 +27,7 @@ CIAF_DSKSELx	EQU	(CIAF_DSKSEL3|CIAF_DSKSEL2|CIAF_DSKSEL1|CIAF_DSKSEL0)
 	move.w	#$7fff,intreq(a5) ; Disable interrupt requests.
 	move.w	#$7fff,dmacon(a5) ; Disable DMA.
 	;; Now we will copy the code and everything to the area at $100 which are "user vectors" and unused(?). This will assure that the copperlist is in chip mem.
-	move.w	#$100/4-1,d0	; Number of long words to copy.
+	move.w	#$400/4-1,d0	; Number of long words to copy.
 	lea.l	bootcode(pc),a0
 	lea.l	BOOTCODEADDRESS.w,a1
 .cloop:	move.l	(a0)+,(a1)+
@@ -46,6 +47,11 @@ bootcode:
 	move.w	#INTF_SETCLR|INTF_INTEN|INTF_VERTB,intena(a5)
 	moveq	#120,d0		; Wait
 	bsr	waitframes
+	move.w	#$7000,d0
+	lea.l	$1000.w,a0
+.killloop:
+	clr.l	(a0)+
+	dbf	d0,.killloop
 	;; Check if on track zero otherwise: kaputt!
 	;; http://cyberpingui.free.fr/tuto_trackloader.htm
 	;; Bit 4 = TRACK0
@@ -59,8 +65,48 @@ bootcode:
 	bclr.b	#CIAB_DSKSEL0,(a4)	; select drive 0
 	move	#500/20,d0		; Wait 500 ms.
 	bsr	waitframes
-	bra	*		; Stay a while! Stay forever!
+ENDLESS:
+	;; Now start the read.
+	move.w	#$4489,dsksync(a5) ; Disk synchronisation word, default.
+	move.w	#DMAF_SETCLR|DMAF_DISK,dmacon(a5)
+	move.w	#$4000,dsklen(a5)  ; Erase disk length, is disable DMA.
+	;; See http://www.winnicki.net/amiga/memmap/ADKCON.html
+	move.w	#$7f00,adkcon(a5)  ; Clear: MFMPREC, WORDSYNC, FAST and UARTBRK?, MSBSYNC?
+	;move.w	#ADKF_SETCLR|ADKF_FAST|ADKF_WORDSYNC,adkcon(a5)
+	move.w	#$9500,adkcon(a5)
+	lea.l	$1000.w,a0	; Disk buffer MFM
+	move.l	a0,dskpt(a5)
+	move.w	#$9900,dsklen(a5) ; Lenght of a track?
+	move.w	#$9900,dsklen(a5) ; Why two times?
+	move.w	#INTF_DSKBLK,intreq(a5) ; Clear disk interrupt.
+	bsr	wait_for_diskdma_done
+	move	#2000/20,d0		; Wait 2000 ms.
+	bsr	waitframes
+	lea.l	$1000.w,a0	; Decode pointer to our buffer.
+	bsr	decode_MFM_inplace
+	move	#5000/20,d0		; Wait 5000 ms.
+	bsr	waitframes
+	bra	ENDLESS		; Stay a while! Stay forever!
 
+;;; Input: a0=MFM buffer pointer.
+decode_MFM_inplace:
+	movem.l	d0-d7/a1-a6,-(sp)
+	lea.l	2(a0),a6	; A6=pointer to MFM buffer (skip sync)
+	move.l	#$55555555,d7	; D7=MFM mask
+	move.l	(a6)+,d0	; even bits
+	move.l	(a6)+,d1	; odd bits
+	and.l	d7,d0		; Mask MFM bits out.
+	and.l	d7,d1
+	lsl.l	#1,d0
+	or.l	d1,d0
+	move.l	d0,(a0)+
+	movem.l	(sp)+,d0-d7/a1-a6
+	rts
+
+wait_for_diskdma_done:
+	btst.b	#1,$1f(a5)	; Actually $1e is INTREQ, and 1 in $1f is DSKBLK.
+	beq.s	wait_for_diskdma_done
+	rts
 ;;; Input: d0=frames to wait.
 waitframes:
 	lea.l	framecounter(pc),a0
@@ -74,7 +120,7 @@ vblank_handler:
 	lea	$Dff000,a5
 	lea.l	framecounter(pc),a0
 	subq.w	#1,(a0)
-	move	framecounter(pc),color(a5)
+	;move	framecounter(pc),color(a5)
 	move.w	#INTF_VERTB,intreq(a5) ; Acknowledge interrupt.
 	movem.l	(sp)+,d0-a6
 	rte
