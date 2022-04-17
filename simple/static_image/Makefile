@@ -1,19 +1,19 @@
 #! /usr/bin/make -f
 
-AS=vasmm68k_mot -Lnf -Fhunk -I$$HOME/include/ -I../../framework
+include ../../examples/config.mk
+
+AS+=-Lnf
 LD=vlink
-VLINKFLAGS=-s
 TARGET=static_image
 OBJS=draw_font.o music.o
-LIB=../../framework/own.o ../../framework/iff.o
 
 all:	$(TARGET) static2
 
 static2:	static2.o draw_font.o
-	$(LD) -e _start $(VLINKFLAGS) -o $@ $+ $(LIB)
+	$(LD) -e _start $(VLINKFLAGS) -o $@ $+ $(LIBS)
 
 $(TARGET):	$(TARGET).o $(OBJS)
-	$(LD)-e _start $(VLINKFLAGS) -o $@ $+ $(LIB)
+	$(LD) -e _start $(VLINKFLAGS) -o $@ $+ $(LIBS)
 
 %.o:	%.s
 	$(AS)  -L $@.lst -o $@ $+
