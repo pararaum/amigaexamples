@@ -40,6 +40,7 @@ Compression
  * https://github.com/steve-chamberlin/fc8-compression
  * https://github.com/arnaud-carre/lz4-68k
  * http://aminet.net/package/util/pack/cranker
+ * https://github.com/askeksa/Shrinkler
  * https://github.com/Stephane-D/SGDK/blob/master/bin/lz4w.txt
  * http://www.cpcwiki.eu/forum/programming/ucl-compressor/
  * https://www.amiga-stuff.com/crunchers-download.html
