@@ -51,6 +51,11 @@ Copper/Plasma
  * http://eab.abime.net/showthread.php?t=29570
  * http://www.stashofcode.fr/wait-skip-copjmpx-usage-avance-copper-1/
 
+Blitter
+-------
+
+ * http://aminet.net/package/dev/misc/CharMode Using Blitter to program copper list to program blitter.
+
 Detecting Hardware
 ------------------
 
