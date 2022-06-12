@@ -5,9 +5,10 @@ does not like long and boring(?) demos. It should be snappy.
 
 ## Credits ##
 
-Code: Pararaum
-Font: DamienG
-Graphics: ipok / VCC
+ * Code: Pararaum, Wil
+ * Font: DamienG
+ * Graphics: ipok, Logiker
+ * Music: Ancient `?`
 
 # Parts #
 
@@ -44,4 +45,16 @@ be seen again.
 
 ## Part 3 ##
 
-Swooshing effect...
+Wil wrote a nice routine which looks like somebody is painting with a
+bruch in long brush strokes. The blitter is used to or the mask into
+all bitplanes and the last colour is black having nice contrast to the
+image. See above.
+
+# Release #
+
+This demo was released at the Shadow Party 2022 and achieved the third
+place in the Oldschool Intro Competition.
+
+## Links ##
+
+ * https://demozoo.org/productions/309118/
