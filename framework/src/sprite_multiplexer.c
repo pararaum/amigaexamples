@@ -1,4 +1,4 @@
-#include "sprite_multiplexer.h"
+#include "t7d/sprite_multiplexer.h"
 
 void multiplex_sprites(unsigned short *phases, unsigned int num, unsigned int height, unsigned short *positions, struct Multiplexer *multiplex) {
   unsigned int j;

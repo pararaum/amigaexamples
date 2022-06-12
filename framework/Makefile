@@ -16,7 +16,7 @@ VLINKFLAGS=-s
 # Set this to the directory where the T7D stuff will be put.
 T7DDIR=/opt/t7d
 
-OBJS=own.o iff.o copper_fade.o music.o circallator.o textmonochrome.o inflate.o sprite_multiplexer.o xoroshiro.o default_irq_routine.o lz4_uncrunch.o
+OBJS=own.o iff.o copper_fade.o music.o circallator.o textmonochrome.o inflate.o sprite_multiplexer.o xoroshiro.o default_irq_routine.o lz4_uncrunch.o blitter.linear_copy.o copper.create_bitplanepointers.o
 VPATH=src
 T7DLIB=t7d.lib
 

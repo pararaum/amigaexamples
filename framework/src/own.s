@@ -4,7 +4,7 @@
 	include "exec/exec.i"
         include "hardware/custom.i"
         include "hardware/dmabits.i"
-	include "own.i"
+	include "t7d/own.i"
 
 	XDEF	own_machine
 	XDEF	disown_machine

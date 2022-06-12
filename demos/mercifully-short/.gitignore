@@ -1,0 +1,12 @@
+globals.i
+globals.h
+*.inc
+*.lst
+*.adf
+*.raw
+*.sprite
+mshort
+mshort.x
+infotext
+test_swoosh
+croppedsprite.*.png

@@ -20,6 +20,7 @@ Links
  * http://www.stashofcode.fr/tag/amiga/
  * https://amigasourcecodepreservation.gitlab.io/total-amiga-assembler/
  * https://github.com/Ozzyboshi/AmigaDemo_the_crows
+ *  http://www.powerprograms.nl/amiga/spr-layer.html
 
 Tool Links
 ==========
