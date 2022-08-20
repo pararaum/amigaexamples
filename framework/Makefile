@@ -27,8 +27,8 @@ install:	$(T7DLIB)
 	install -d $(T7DDIR)/include
 	install -d $(T7DDIR)/asminc
 	cp *.lib $(T7DDIR)
-	cp include/*.h $(T7DDIR)/include
-	cp asminc/*.i $(T7DDIR)/asminc
+	cp -r include/* $(T7DDIR)/include
+	cp -r asminc/* $(T7DDIR)/asminc
 
 $(T7DLIB):	$(OBJS)
 	cat $+ > $@
