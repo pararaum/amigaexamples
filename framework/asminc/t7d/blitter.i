@@ -13,12 +13,21 @@ __FRAMEWORK_BLITTER_i__ equ 1
 	bne	.l\@
 	endm
 
-;;; Wait for the blitter to finish. A5 must contain _custom!
+;;; Wait until blitter finishes. A5 must contain _custom!
 	macro	WAITBLITA5
 	.l\@:
 	btst.b	#(DMAB_BLTDONE-8),dmaconr(a5)
 	bne	.l\@
 	endm
+
+;;; Wait until blitter finishes. A6 must contain _custom!
+;;; Input: A6=$DFF000
+	MACRO	WAITBLITA6
+	.l\@$:
+	btst.b	#6,dmaconr(a6)
+	bne.s	.l\@$
+	ENDM
+
 
 ;;; Blit memory linearly from src to dest.
 ;;; The blitting is done linearly (modulus = 0) and plainly D=A.
