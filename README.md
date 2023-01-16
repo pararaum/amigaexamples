@@ -20,7 +20,7 @@ Links
  * http://www.stashofcode.fr/tag/amiga/
  * https://amigasourcecodepreservation.gitlab.io/total-amiga-assembler/
  * https://github.com/Ozzyboshi/AmigaDemo_the_crows
- *  http://www.powerprograms.nl/amiga/spr-layer.html
+ * http://www.powerprograms.nl/amiga/spr-layer.html
 
 Tool Links
 ==========
@@ -28,6 +28,7 @@ Tool Links
  * http://www.compilers.de/vbcc.html
  * http://xi6.com/projects/asmx/
  * https://github.com/asmotor/asmotor
+ * https://github.com/arnaud-carre/ldos
 
 Graphics
 --------
@@ -45,6 +46,7 @@ Compression
  * https://github.com/Stephane-D/SGDK/blob/master/bin/lz4w.txt
  * http://www.cpcwiki.eu/forum/programming/ucl-compressor/
  * https://www.amiga-stuff.com/crunchers-download.html
+ * https://github.com/exoticorn/upkr/
 
 Copper/Plasma
 -------------
