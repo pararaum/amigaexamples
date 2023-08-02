@@ -2,6 +2,7 @@
 * compatible to my framework.
 * See https://github.com/arnaud-carre/lz4-68k
 	XDEF	_lz4_uncrunch
+	XDEF	_lz4_uncrunch_header
 	XDEF	_lz4_uncrunch_no_reg_save
 ;---------------------------------------------------------
 ;
@@ -16,19 +17,32 @@
 ; Fastest version: 3722 bytes ( 2.36 times faster than lz4_smallest.asm )
 ;
 ; input: a0.l : packed buffer
-;		 a1.l : output buffer
-;		 d0.l : LZ4 packed block size (in bytes)
+;	 a1.l : output buffer
+;	 d0.l : LZ4 packed block size (in bytes)
 ;
 ; output: none
 ;
 
-_lz4_uncrunch:
+_lz4_uncrunch_header:
 	movem.l	d2-d7/a2-a6,-(sp)
 	jsr	_lz4_uncrunch_no_reg_save(pc)
 	movem.l	(sp)+,d2-d7/a2-a6
 	rts
 	
+_lz4_uncrunch:
+	movem.l	d2-d7/a2-a6,-(sp)
+	jsr	_lz4_uncrunch_no_header(pc)
+	movem.l	(sp)+,d2-d7/a2-a6
+	rts
+	
 _lz4_uncrunch_no_reg_save:
+	;; Only check for the magic header.
+	cmp.l	#$04224d18,(a0)+
+	beq.s	.ok
+	illegal
+.ok:	lea.l	7(a0),a0	; Skip to data.
+	subq.l	#7,d0		; Seven bytes less.
+_lz4_uncrunch_no_header:
 	lea	0(a0,d0.l),a4	; packed buffer end
 	moveq	#0,d1
 	moveq	#0,d2

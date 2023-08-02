@@ -4,8 +4,15 @@
 	XDEF	_framecounter
 	XDEF	_set_irq_routine
 	XDEF	_irq_routine_funpointer
+	XDEF	_set_irq_routine_funpointer
 
 	SECTION	CODE
+
+_set_irq_routine_funpointer:
+	move.l	_irq_routine_funpointer,d0
+	move.l	a0,_irq_routine_funpointer
+	rts
+
 _set_irq_routine:
 	move.w  #INTF_INTEN|INTF_VERTB,$DFF000+intena ; Disable irqs
 	move.l	a7,stack_trick_stackpointer ; Store stack pointer for stack trick

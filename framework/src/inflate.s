@@ -1,6 +1,7 @@
 ;;; This code was ripped from https://github.com/keirf/Amiga-Stuff where it was put into the public domain. It will be used for tests, unpacking, etc.
 
 	XDEF	_inflate
+	XDEF	inflate
 
 ;;; extern void inflate(void *output_buffer, void *input_stream);
 _inflate:
