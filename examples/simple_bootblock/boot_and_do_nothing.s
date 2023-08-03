@@ -12,6 +12,8 @@ BOOTCODEADDRESS = $100
 ;;; Registers:
 	;; A5 = $DFF000
 
+
+BOOTSTART:
 	;; In A6 we have the Exec base.
 	jsr	_LVOForbid(a6)	  ; No more task switching.
 	lea	$DFF000,a5	; Custom base in A5.
@@ -20,11 +22,12 @@ BOOTCODEADDRESS = $100
 	move.w	#$7fff,dmacon(a5) ; Disable DMA.
 	;; Now we will copy the code and everything to the area at $100 which are "user vectors" and unused(?). This will assure that the copperlist is in chip mem.
 	move.w	#$100/4-1,d0	; Number of long words to copy.
-	lea.l	bootcode(pc),a0
-	lea.l	BOOTCODEADDRESS.w,a1
+	lea.l	bootcode(pc),a0	; Get address of boot code.
+	lea.l	BOOTCODEADDRESS.w,a1 ; Destination for the bootcode.
+	move.l	a1,$20.w	; Prepare the priviledge violation vector.
 .cloop:	move.l	(a0)+,(a1)+
 	dbf	d0,.cloop
-	jmp	BOOTCODEADDRESS.w ; Now continue below:
+	stop	#$0200		; Now continue below:
 
 bootcode:
 	lea.l	coplist(pc),a0
@@ -50,3 +53,5 @@ coplist:
 	dc.l	-2		; Wait forever: $FFFF,$FFFE
 	dc.b	"Pararaum/T7D",0
 	even
+BOOTEND:
+	printv	BOOTEND-BOOTSTART

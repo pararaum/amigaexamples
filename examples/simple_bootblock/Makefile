@@ -20,4 +20,4 @@ run:
 
 .PHONY: clean run
 clean:
-	rm -f *.o *.adf *.bootblock
+	rm -f *.o *.adf *.bootblock *.lst
