@@ -1,8 +1,8 @@
 ; -*- mode: asm; -*-
 
-	XREF	own_machine
-	XREF	disown_machine
-	XREF	_gfxbase
+	PUBLIC	own_machine
+	PUBLIC	disown_machine
+	PUBLIC	_gfxbase
 
 OWN_libraries:	equ	1
 OWN_view:	equ	2

@@ -33,7 +33,7 @@ __FRAMEWORK_BLITTER_i__ equ 1
 ;;; The blitting is done linearly (modulus = 0) and plainly D=A.
 ;;; Input: A0=src, A1=dest, d0=width (bytes), d1=height
 ;;; Modifies: A0-A1/D0-D1
-	XREF	_blitter_linear_copy
+	PUBLIC	_blitter_linear_copy
 
 *
 	endif
