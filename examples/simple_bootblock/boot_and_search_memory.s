@@ -49,6 +49,8 @@ bootcode:
 	move.l	a2,a0
 	cmp.l	#$800000,a0
 	dbhi	d2,.bootloop	; if A0>$800000 is false (if true leave loop) then D2-=1, loop if D2 >= 0!
+	stop	#$2704
+	illegal
 	bra	*		; Stay a while! Stay forever!
 
 ;;; Decode a track
