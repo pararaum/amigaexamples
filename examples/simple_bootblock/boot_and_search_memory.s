@@ -4,16 +4,14 @@
 
 BOOTCODEADDRESS = $100
 
-	;; The following are added by  xdftool.
-	;dc.b	"DOS",0		; Header of a bootable disk.
-	;dc.l	0		; Checksum, will be added by xdftool.
-	;dc.l	880		; Root block number (default).
+BOOTSTART:
+	dc.b	"DOS",0		; Header of a bootable disk.
+	dc.l	0		; Checksum, will be added later.
+	dc.l	880		; Root block number (default).
 
 ;;; Registers:
 	;; A5 = $DFF000
 
-
-BOOTSTART:
 	;; In A6 we have the Exec base.
 	jsr	_LVOForbid(a6)	  ; No more task switching.
 	lea	$DFF000,a5	; Custom base in A5.
@@ -117,4 +115,7 @@ coplist:
 	even
 BOOTEND:
 	printv	BOOTEND-BOOTSTART
-
+	dcb.b	512-(BOOTEND-BOOTSTART)
+	REPT	(880*512*2-512)/4
+	dc.l	REPTN
+	ENDR

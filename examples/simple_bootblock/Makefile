@@ -8,6 +8,10 @@ include ../config.mk
 
 all:	$(TARGETS)
 
+boot_and_search_memory.adf: boot_and_search_memory.o
+	vlink $(VLINKFLAGS) -nostdlib -b rawbin1 $^ -o $@ $(LIBS)
+	#./fix-bb.py $@
+
 %.bootblock: %.o
 	vlink $(VLINKFLAGS) -nostdlib -b rawbin1 $^ -o $@ $(LIBS)
 
