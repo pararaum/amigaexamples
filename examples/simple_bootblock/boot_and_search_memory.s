@@ -36,7 +36,7 @@ bootcode:
 	move.w	#DMAF_SETCLR|DMAF_COPPER|DMAF_RASTER|DMAF_MASTER,dmacon(a5)
 	;; Search for tracks in memory
 	move.l	a2,a0
-	moveq	#22-1,d2
+	moveq	#11-1,d2
 .bootloop:
 	bsr.s	search_track
 	move.l	$4.w,$4.w
@@ -47,7 +47,8 @@ bootcode:
 	move.l	d0,a0
 	bsr.s	decode_trackA1A0
 	move.l	a2,a0
-	dbf	d2,.bootloop
+	cmp.l	#$800000,a0
+	dbhi	d2,.bootloop	; if A0>$800000 is false (if true leave loop) then D2-=1, loop if D2 >= 0!
 	bra	*		; Stay a while! Stay forever!
 
 ;;; Decode a track
