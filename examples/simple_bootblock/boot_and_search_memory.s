@@ -52,19 +52,29 @@ bootcode:
 	dbf	d2,.bootloop
 	bra	*		; Stay a while! Stay forever!
 
+;;; Decode a track
+;;; Input: A0=destination to write decoded data to, A1=source MFM data
+;;; Output: -
+;;; Modifies: D0-D1,A0-A1
 decode_trackA1A0:
-	move.l	d2,-(sp)
+.src:		equr	A1
+.dest:		equr	A0
+.counter:	equr	D2
+.oddmfm:	equr	A3
+.regs:	reg	.counter/.oddmfm
+	movem.l	.regs,-(sp)
+	lea.l	512(.src),.oddmfm
 	move.w	#$100-1,d2
 	move.l	#$55555555,d0
-.loop:	move.l	(a1)+,d1
+.loop:	move.l	(.src)+,d1
 	and.l	d0,d1
 	asl.l	#1,d1
-	move.l	d1,(a0)
-	move.l	(a1)+,d1
+	move.l	d1,(.dest)
+	move.l	(.oddmfm)+,d1
 	and.l	d0,d1
-	or.l	d1,(a0)+
+	or.l	d1,(.dest)+
 	dbf	d2,.loop
-	move.l	(sp)+,d2
+	movem.l	(sp)+,.regs
 	rts
 	
 ;;; Search a track (mfm encoded) in memory.
