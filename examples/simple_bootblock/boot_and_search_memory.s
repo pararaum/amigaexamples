@@ -3,6 +3,7 @@
 	include	hardware/dmabits.i
 
 BOOTCODEADDRESS = $100
+BOOTSIZE=1024
 
 BOOTSTART:
 	dc.b	"DOS",0		; Header of a bootable disk.
@@ -118,7 +119,7 @@ coplist:
 	even
 BOOTEND:
 	printv	BOOTEND-BOOTSTART
-	dcb.b	512-(BOOTEND-BOOTSTART)
-	REPT	(880*512*2-512)/4
+	dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
+	REPT	(880*512*2-BOOTSIZE)/4
 	dc.l	REPTN
 	ENDR
