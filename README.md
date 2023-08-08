@@ -29,6 +29,7 @@ Tool Links
  * http://xi6.com/projects/asmx/
  * https://github.com/asmotor/asmotor
  * https://github.com/arnaud-carre/ldos
+ * https://github.com/bebbo/amiga-gcc
 
 Graphics
 --------
@@ -67,3 +68,12 @@ Detecting Hardware
  * http://aminet.net/package/util/moni/WhichAmiga
  * http://romanworkshop.blutu.pl/asm68/proc.htm
  * http://eab.abime.net/showthread.php?t=72300
+
+Trackloader/Hunkloader
+----------------------
+
+ * https://github.com/deplinenoise/trackloader/tree/master
+ * http://cyberpingui.free.fr/tuto_trackloader.htm
+ * https://github.com/keirf/Amiga-Stuff/blob/master/host_tools/hunk_loader.c
+ * https://github.com/keirf/amiga-stuff/blob/master/base/bootblock.S
+ 
