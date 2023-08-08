@@ -76,4 +76,5 @@ Trackloader/Hunkloader
  * http://cyberpingui.free.fr/tuto_trackloader.htm
  * https://github.com/keirf/Amiga-Stuff/blob/master/host_tools/hunk_loader.c
  * https://github.com/keirf/amiga-stuff/blob/master/base/bootblock.S
- 
+ * https://aminet.net/package/dev/asm/t-loader
+ * https://aminet.net/package/dev/src/trackldr1_43
