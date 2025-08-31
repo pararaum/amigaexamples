@@ -29,6 +29,7 @@ Tool Links
  * http://xi6.com/projects/asmx/
  * https://github.com/asmotor/asmotor
  * https://github.com/arnaud-carre/ldos
+ * [DPaint.js](https://www.stef.be/dpaint "https://www.stef.be/dpaint")
 
 Graphics
 --------
