@@ -30,6 +30,7 @@ Tool Links
  * https://github.com/asmotor/asmotor
  * https://github.com/arnaud-carre/ldos
  * https://github.com/bebbo/amiga-gcc
+ * [DPaint.js](https://www.stef.be/dpaint "https://www.stef.be/dpaint")
 
 Graphics
 --------
