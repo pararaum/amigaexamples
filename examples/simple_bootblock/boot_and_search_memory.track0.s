@@ -128,8 +128,10 @@ coplist:
 	even
 BOOTEND:
 	printv	BOOTEND-BOOTSTART
+	;; Skip till end.
+	dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
+_main:	rts
 	;; This produces each byte flagged with a counter.
-	;; dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
  	REPT	$1000
 	dc.w	REPTN
 	ENDR
