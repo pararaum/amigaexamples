@@ -1,8 +1,8 @@
 #! /usr/bin/make -f
 
-TARGETS = boot_and_do_nothing.adf boot_and_load_track.adf boot_and_search_memory.adf
+TARGETS = boot_and_do_nothing.adf boot_and_load_track.adf boot_and_search_memory.adf boot_and_search_memory.raw.adf
 # CURRENT is only used for run, which of the TARGETS is actually run?
-CURRENT = boot_and_search_memory.adf # boot_and_load_track.adf
+CURRENT = boot_and_search_memory.raw.adf # boot_and_load_track.adf
 #Not used "./fix-bb.py $@" as bootblock is handled by `xdftool`.
 
 include ../config.mk
@@ -11,6 +11,14 @@ all:	$(TARGETS)
 
 %.bootblock: %.o
 	vlink $(VLINKFLAGS) -Tall_in_one.x -nostdlib -b rawbin $^ -o $@ $(LIBS)
+
+%.track0: %.track0.o
+	vlink $(VLINKFLAGS) -Tall_in_one.x -nostdlib -b rawbin $^ -o $@ $(LIBS)
+
+%.raw.adf: %.track0
+	xdftool $@ create
+	dd conv=notrunc of=$@ < $<
+	./fix-bb.py $@
 
 %.adf: %.bootblock
 	xdftool $@ format "BootDisk"
@@ -24,4 +32,5 @@ run:
 
 .PHONY: clean run
 clean:
-	rm -f *.o *.adf *.bootblock *.lst
+	rm -f *.o *.adf *.bootblock *.lst *.track0
+	rm -f $(TARGETS)
