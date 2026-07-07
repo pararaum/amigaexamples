@@ -21,6 +21,7 @@ boot_and_search_memory.adf: boot_and_search_memory.o
 
 run:
 	fs-uae --console_debugger=1 --floppy_drive_0=$(CURRENT)
+	#fs-uae --scale_y=2 --scale_x=2 --window_width=1400 --window_height=1100 --console_debugger=1 --floppy_drive_0=boot_and_load_track.adf
 
 .PHONY: clean run
 clean:
