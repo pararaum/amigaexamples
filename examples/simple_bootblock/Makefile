@@ -15,6 +15,8 @@ all:	$(TARGETS)
 %.adf: %.bootblock
 	xdftool $@ format "BootDisk"
 	xdftool $@ boot write $<
+#To add some data:
+	dd conv=notrunc seek=2 of=boot_and_search_memory.adf < Makefile
 
 run:
 	fs-uae --console_debugger=1 --floppy_drive_0=$(CURRENT)

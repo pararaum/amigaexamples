@@ -129,7 +129,7 @@ coplist:
 BOOTEND:
 	printv	BOOTEND-BOOTSTART
 	;; This produces each byte flagged with a counter.
-;	dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
-;	REPT	(880*512*2-BOOTSIZE)/4
-;	dc.l	REPTN
-;	ENDR
+	;; dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
+ 	REPT	$150
+	dc.w	REPTN
+	ENDR
