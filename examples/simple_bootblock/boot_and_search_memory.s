@@ -4,11 +4,13 @@
 
 BOOTCODEADDRESS = $100
 BOOTSIZE=1024
+;;; Here we put the decoded data in the correct order.
+DESTINATIONDECODEBUFFER=$c00000
 
 BOOTSTART:
-	dc.b	"DOS",0		; Header of a bootable disk.
-	dc.l	0		; Checksum, will be added later.
-	dc.l	880		; Root block number (default).
+	;dc.b	"DOS",0		; Header of a bootable disk.
+	;dc.l	0		; Checksum, will be added later.
+	;dc.l	880		; Root block number (default).
 
 ;;; Registers:
 	;; A5 = $DFF000
@@ -26,24 +28,22 @@ BOOTSTART:
 	move.l	a1,$20.w	; Prepare the priviledge violation vector.
 .cloop:	move.l	(a0)+,(a1)+
 	dbf	d0,.cloop
-	lea	BOOTEND(PC),a2	; A2=end of boot code
 	stop	#$0200		; Now continue below:
 
 	;; Here we start in supervisor mode.
 bootcode:
-	lea.l	coplist(pc),a0
-	move.l	a0,cop1lc(a5)	; Point copper to the Copperlist.
-	;; Enable display and copper.
-	move.w	#DMAF_SETCLR|DMAF_COPPER|DMAF_RASTER|DMAF_MASTER,dmacon(a5)
-	;; Search for tracks in memory
+	bsr	init_cuschi
+	lea	BOOTEND(PC),a2	; A2=end of boot code
+	lea	$c70000,a3	; Where to put the track information stuff?
 	move.l	a2,a0
 	moveq	#11-1,d2
 .bootloop:
 	bsr.s	search_track
+	move.l	d0,(a3)+	; Track information
 	move.l	$4.w,$4.w
-	and.l	#$00ffff00,d0
-	asl.l	#1,d0
-	add.l	#$c00000,d0
+	and.l	#$00ffff00,d0	; Mask out $00TTSS00, aka track and sector.
+	asl.l	#1,d0		; Multiply by two (T=0, probably) and S=[0..11], as it is already at bit 8-15 multiplying by 2 conveniently skips another 512 bytes.
+	add.l	#DESTINATIONDECODEBUFFER,d0
 	move.l	a0,a2
 	move.l	d0,a0
 	bsr.s	decode_trackA1A0
@@ -51,7 +51,6 @@ bootcode:
 	cmp.l	#$800000,a0
 	dbhi	d2,.bootloop	; if A0>$800000 is false (if true leave loop) then D2-=1, loop if D2 >= 0!
 	stop	#$2704
-	illegal
 	bra	*		; Stay a while! Stay forever!
 
 ;;; Decode a track
@@ -101,6 +100,16 @@ search_track:
 	lea.l	1024(a1),a0	; Skip sector data.
 	rts
 
+;;; Initialise custom chips.
+;;; Modifies: A0
+init_cuschi:
+	lea.l	coplist(pc),a0
+	move.l	a0,cop1lc(a5)	; Point copper to the Copperlist.
+	;; Enable display and copper.
+	move.w	#DMAF_SETCLR|DMAF_COPPER|DMAF_RASTER|DMAF_MASTER,dmacon(a5)
+	;; Search for tracks in memory
+	rts
+
 coplist:
 	dc.w	$0106,$0000,$01fc,$0000		; AGA compatible
 	;; Setting up display.
@@ -119,7 +128,8 @@ coplist:
 	even
 BOOTEND:
 	printv	BOOTEND-BOOTSTART
-	dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
-	REPT	(880*512*2-BOOTSIZE)/4
-	dc.l	REPTN
-	ENDR
+	;; This produces each byte flagged with a counter.
+;	dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
+;	REPT	(880*512*2-BOOTSIZE)/4
+;	dc.l	REPTN
+;	ENDR
