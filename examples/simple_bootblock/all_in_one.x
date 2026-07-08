@@ -8,5 +8,6 @@ SECTIONS {
  	 *(exec_LVO1)
  }
  DATA : {
+      *(DATA)
  }
 }
