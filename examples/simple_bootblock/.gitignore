@@ -1,2 +1,5 @@
 *.adf
+*.sym
+*.zx0
 *.bootblock
+boss

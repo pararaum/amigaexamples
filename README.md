@@ -21,6 +21,7 @@ Links
  * https://amigasourcecodepreservation.gitlab.io/total-amiga-assembler/
  * https://github.com/Ozzyboshi/AmigaDemo_the_crows
  * http://www.powerprograms.nl/amiga/spr-layer.html
+ * https://tetracorp.github.io/
 
 Tool Links
 ==========
@@ -41,6 +42,7 @@ Graphics
 Compression
 -----------
 
+ * https://github.com/emmanuel-marty/salvador
  * https://github.com/steve-chamberlin/fc8-compression
  * https://github.com/arnaud-carre/lz4-68k
  * http://aminet.net/package/util/pack/cranker

@@ -7,7 +7,11 @@ CURRENT = boot_and_search_memory.raw.adf # boot_and_load_track.adf
 
 include ../config.mk
 
-all:	$(TARGETS)
+all:	boss $(TARGETS)
+
+boss:	boss.o
+	vlink $(VLINKFLAGS) -Tall_in_one.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS)
+
 
 %.bootblock: %.o
 	vlink $(VLINKFLAGS) -Tall_in_one.x -nostdlib -b rawbin $^ -o $@ $(LIBS)
@@ -34,5 +38,6 @@ run:
 
 .PHONY: clean run
 clean:
-	rm -f *.o *.adf *.bootblock *.lst *.track0
+	rm -f *.o *.adf *.bootblock *.lst *.sym *.track0
 	rm -f $(TARGETS)
+	rm -f boss

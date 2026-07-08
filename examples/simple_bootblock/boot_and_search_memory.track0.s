@@ -42,7 +42,7 @@ bootcode:
 .bootloop:
 	bsr.s	search_track
 	move.l	d0,(a3)+	; Track information
-	move.l	$4.w,$4.w
+	move.l	$4.w,$4.w	; Special form to be used with memory watchpoints: "w 1 4 4 W". Every write (long) to address 4 will trigger a watchpoint.
 	and.l	#$00ffff00,d0	; Mask out $00TTSS00, aka track and sector.
 	asl.l	#1,d0		; Multiply by two (T=0, probably) and S=[0..11], as it is already at bit 8-15 multiplying by 2 conveniently skips another 512 bytes.
 	add.l	#DESTINATIONDECODEBUFFER,d0
@@ -143,7 +143,7 @@ BOOTEND:
 	printv	BOOTEND-BOOTSTART
 	;; Skip till end.
 	dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
-_main:	rts
+_main:	incbin	"boss"
 	;; This produces each byte flagged with a counter.
  	REPT	$1000
 	dc.w	REPTN
