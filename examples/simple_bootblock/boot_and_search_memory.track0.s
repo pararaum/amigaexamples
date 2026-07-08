@@ -25,13 +25,15 @@ BOOTSTART:
 	move.w	#$100/4-1,d0	; Number of long words to copy.
 	lea.l	bootcode(pc),a0	; Get address of boot code.
 	lea.l	BOOTCODEADDRESS.w,a1 ; Destination for the bootcode.
-	move.l	a1,$20.w	; Prepare the priviledge violation vector.
+	move.l	a1,$20.w	; Prepare the privilege violation vector.
 .cloop:	move.l	(a0)+,(a1)+
 	dbf	d0,.cloop
 	stop	#$0200		; Now continue below:
 
 	;; Here we start in supervisor mode.
 bootcode:
+	;lea	trapcode(pc),a0
+	;move.l	a0,$80.w	; Set vector for TRAP#0.
 	bsr	init_cuschi
 	lea	BOOTEND(PC),a2	; A2=end of boot code
 	lea	$c70000,a3	; Where to put the track information stuff?
@@ -51,7 +53,16 @@ bootcode:
 	cmp.l	#$800000,a0
 	dbhi	d2,.bootloop	; if A0>$800000 is false (if true leave loop) then D2-=1, loop if D2 >= 0!
 	stop	#$2704
-	bra	*		; Stay a while! Stay forever!
+	bra	*
+
+final:	nop
+	;; 	trap	#0
+	nop
+	bra	final		; Stay a while! Stay forever!
+
+trapcode:
+	addq	#3,color(a5)
+	rte
 
 ;;; Decode a track
 ;;; Input: A0=destination to write decoded data to, A1=source MFM data
@@ -123,10 +134,11 @@ coplist:
 	dc.w	color+0,$012e		  ; Light blue background.
 	dc.w	color+2,$0efe		  ; Not quite white foreground.
 	dc.w	bplpt,$0000,bplpt+2,$0000 ; Bitplane pointer points to $0.
-	dc.l	-2		; Wait forever: $FFFF,$FFFE
+	dc.w	$FFFF,$FFFE		  ; Wait forever!
 	dc.b	"Pararaum/T7D",0
 	even
 BOOTEND:
+	printt "BOOTEND-BOOTSTART"
 	printv	BOOTEND-BOOTSTART
 	;; Skip till end.
 	dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)

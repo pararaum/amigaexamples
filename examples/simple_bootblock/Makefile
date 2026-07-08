@@ -16,6 +16,8 @@ all:	$(TARGETS)
 	vlink $(VLINKFLAGS) -Tall_in_one.x -nostdlib -b rawbin $^ -o $@ $(LIBS)
 
 %.raw.adf: %.track0
+	printf "\e[31mRemoving '%s'\e[0m: " "$@"
+	rm -f $@
 	xdftool $@ create
 	dd conv=notrunc of=$@ < $<
 	./fix-bb.py $@
