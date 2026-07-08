@@ -22,7 +22,7 @@ BOOTSTART:
 	move.w	#$7fff,intreq(a5) ; Disable interrupt requests.
 	move.w	#$7fff,dmacon(a5) ; Disable DMA.
 	;; Now we will copy the code and everything to the area at $100 which are "user vectors" and unused(?). This will assure that the copperlist is in chip mem.
-	move.w	#$100/4-1,d0	; Number of long words to copy.
+	move.w	#BOOTSIZE/4-1,d0  ; Number of long words to copy.
 	lea.l	bootcode(pc),a0	; Get address of boot code.
 	lea.l	BOOTCODEADDRESS.w,a1 ; Destination for the bootcode.
 	move.l	a1,$20.w	; Prepare the privilege violation vector.
@@ -32,8 +32,8 @@ BOOTSTART:
 
 	;; Here we start in supervisor mode.
 bootcode:
-	;lea	trapcode(pc),a0
-	;move.l	a0,$80.w	; Set vector for TRAP#0.
+	lea	trapcode(pc),a0
+	move.l	a0,$80.w	; Set vector for TRAP#0.
 	bsr	init_cuschi
 	lea	BOOTEND(PC),a2	; A2=end of boot code
 	lea	$c70000,a3	; Where to put the track information stuff?
@@ -52,16 +52,17 @@ bootcode:
 	move.l	a2,a0
 	cmp.l	#$800000,a0
 	dbhi	d2,.bootloop	; if A0>$800000 is false (if true leave loop) then D2-=1, loop if D2 >= 0!
-	stop	#$2704
-	bra	*
+	;; This really stops the CPU:	STOP    #$2704
 
 final:	nop
-	;; 	trap	#0
+	addq.l	#1,_main
+	trap	#0
 	nop
 	bra	final		; Stay a while! Stay forever!
 
 trapcode:
-	addq	#3,color(a5)
+	addq.w	#3,d0
+	move.w	d0,color(a5)
 	rte
 
 ;;; Decode a track
