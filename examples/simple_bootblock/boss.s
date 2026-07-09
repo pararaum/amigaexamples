@@ -2,6 +2,15 @@
 	include	hardware/custom.i
 	include	hardware/dmabits.i
 
+	XREF	boss_memmanage_init
+	XREF	boss_memmanage_alloc
+	XREF	boss_memmanage_free
+
+	XDEF	BOSS_MAIN_INIT
+	XDEF	trap0code
+	XDEF	trap1code
+	XDEF	trap15code
+
 SCREENCOPLIST=$400
 ;;; The screen bitplane is 640/8*256=20480 $5000 bytes large.
 SCREENBITPLANE=$480
@@ -40,6 +49,7 @@ coplist_end:
 	;; MAIN
 	;; **********************************************************************
 	CODE
+BOSS_MAIN_INIT:
 	lea	$DFF000,a5	; Custom base in A5.
 	move.w	#$7fff,intena(a5) ; Disable interrupts.
 	move.w	#$7fff,intreq(a5) ; Disable interrupt requests.
@@ -162,3 +172,16 @@ trap1writeln:
 	moveq	#10,d0
 	bsr	trap1putc
 	rts
+
+	;; Memory functions.
+trap15code:
+		movem.l	d2-d7/a2-a6,-(sp)
+	lsl.w	#2,d7
+	jsr	list$(PC,d7.w)
+	movem.l	(sp)+,d2-d7/a2-a6
+	rte
+list$:	jmp	boss_memmanage_init(pc)
+	jmp	boss_memmanage_alloc(pc)
+	jmp	boss_memmanage_free(pc)
+	;; 6 bytes:
+	;; 	jmp	boss_memmanage_free

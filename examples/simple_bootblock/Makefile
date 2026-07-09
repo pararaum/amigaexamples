@@ -9,13 +9,14 @@ include ../config.mk
 
 all:	boss.zx0 $(TARGETS)
 
-boss:	boss.o
+boss:	boss.o boss.memorymanagement.o
+#boss:	boss.o
 	vlink $(VLINKFLAGS) -Tboss.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS)
 
 boot_salvadore.track0.o: boot_salvadore.track0.s boss.zx0
 
 %.bootblock: %.o
-	vlink $(VLINKFLAGS) -Tall_in_one.x -nostdlib -b rawbin $(filter %.o $^) -o $@ $(LIBS)
+	vlink $(VLINKFLAGS) -Tall_in_one.x -nostdlib -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
 
 %.track0: %.track0.o
 	vlink $(VLINKFLAGS) -Tall_in_one.x -nostdlib -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
