@@ -143,7 +143,12 @@ BOOTEND:
 	printv	BOOTEND-BOOTSTART
 	;; Skip till end.
 	dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
-_main:	incbin	"boss"
+
+_main:	jmp	uncompressed
+	incbin	"boss.zx0"
+	even
+uncompressed:
+	incbin	"boss"
 	;; This produces each byte flagged with a counter.
  	REPT	$1000
 	dc.w	REPTN
