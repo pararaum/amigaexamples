@@ -3,7 +3,7 @@
 	include	hardware/dmabits.i
 
 SCREENCOPLIST=$400
-;;; The screen bitplane is 640/8*256=20480 bytes large.
+;;; The screen bitplane is 640/8*256=20480 $5000 bytes large.
 SCREENBITPLANE=$480
 
 	data

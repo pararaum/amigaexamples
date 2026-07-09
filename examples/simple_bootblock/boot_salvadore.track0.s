@@ -183,13 +183,6 @@ BOOTEND:
 	;; Skip till end.
 	dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
 
-	jmp	uncompressed
 zx0data:
 	incbin	"boss.zx0"
 	even
-uncompressed:
-	incbin	"boss"
-	;; This produces each byte flagged with a counter.
- 	REPT	$1000
-	dc.w	REPTN
-	ENDR
