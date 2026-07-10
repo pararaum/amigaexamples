@@ -1,8 +1,14 @@
 ; -*- mode: asm -*-
 
+;;; In:	D0.L = bytes to allocate
+;;; Out: A0 = address of memory
 BossMemTrapAlloc = 1
+;;; A0 = address of memory to free
 BossMemTrapFree = 2
+;;; In:	D0.L = bytes to allocate
+;;; Out: A0 = address of memory
 BossMemTrapAllocSlow = 3
+;;; A0 = address of memory to free
 BossMemTrapFreeSlow = 4
 BossMemTrapCopyWords = 5
 BossMemTrapClearWords = 6

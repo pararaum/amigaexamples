@@ -34,6 +34,7 @@ BossIOTrapWriteln = 2
 	macro	BossIOWritelnS
 	DATA
 .l\@:	dc.b	\1
+	dc.b	0
 	even
 	CODE
 	move.l	#.l\@,a0
