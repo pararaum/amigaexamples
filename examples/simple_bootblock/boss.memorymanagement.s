@@ -44,6 +44,38 @@
 ;
 ;=============================================================================
 
+;;; \1=memname, \2=shift, \3=start, \4=end
+	macro	ChunkStructure
+	rsreset
+rsMEMCHUNK\1_shift:	rs.w	1 ; log2(chunk size)
+rsMEMCHUNK\1_chunksize:	rs.w	1 ; 1<<above shift
+rsMEMCHUNK\1_memchunknum:	rs.w	1
+rsMEMCHUNK\1_memchunks:	rs.w	((\4)-\3)/(1<<\2)
+rsMEMCHUNK\1_memstart:	rs.l	1
+rsMEMCHUNK\1_rs_size:	rs
+
+	bss
+MEMCHUNK\1:	dcb.b	rsMEMCHUNK\1_rs_size
+
+	code
+init_MEMCHUNK\1:
+	lea.l	MEMCHUNK\1,a6
+	move.w	#\2,rsMEMCHUNK\1_shift(a6)
+	move.w	#1<<\2,rsMEMCHUNK\1_chunksize(a6)
+	move.w	#((\4)-\3)/(1<<\2),rsMEMCHUNK\1_memchunknum(a6)
+	move.l	#\3,rsMEMCHUNK\1_memstart(a6)
+        lea     rsMEMCHUNK\1_memstart(a6),a0
+	move.w  #((\4)-\3)/(1<<\2)-1,d0
+	moveq	#0,d1
+clear$:
+        move.w  d1,(a0)+
+        dbra    d0,clear$
+	rts
+	endm
+
+	ChunkStructure	CHIP, 7, $6000, 512<<10
+	ChunkStructure	SLOW, 9, $c10000, $c7f800
+	
 ;-----------------------------------------------------------------------------
 ; CONSTANTS
 ;-----------------------------------------------------------------------------
@@ -70,8 +102,7 @@ CHUNK_TABLE:    ds.w    NUM_CHUNKS      ; one word per chunk (see header)
 	dc.b	"END TABLE"
 	even
 
-	code
-
+	CODE
 ;=============================================================================
 ; Clears the chunk table so every chunk starts out FREE. Call once before
 ; any mem_alloc/mem_free calls.
@@ -81,6 +112,8 @@ CHUNK_TABLE:    ds.w    NUM_CHUNKS      ; one word per chunk (see header)
 ; Modifies: d0/a0
 ;=============================================================================
 boss_memmanage_init:
+	bsr	init_MEMCHUNKSLOW
+	bsr	init_MEMCHUNKCHIP
         lea     CHUNK_TABLE,a0
         move.w  #NUM_CHUNKS-1,d0
 	moveq	#0,d1
