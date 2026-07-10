@@ -1,4 +1,6 @@
 
+	include boss.memorymanagement.i
+
 	XDEF	boss_memmanage_init
 
 ;=============================================================================
@@ -83,14 +85,7 @@ CONT_MARKER     equ     $FFFF           ; marks a "continuation" chunk
 
 
 	CODE
-;=============================================================================
-; Clears the chunk table so every chunk starts out FREE. Call once before
-; any mem_alloc/mem_free calls.
-;
-; In:  -
-; Out: -
-; Modifies: d0/a0
-;=============================================================================
+;;; Initialise the whole memory system. This will install the trap15code.
 boss_memmanage_init:
 	bsr	init_MEMCHUNKSLOW
 	bsr	init_MEMCHUNKCHIP
@@ -104,11 +99,28 @@ trap15code:
 	jsr	list$(PC,d7.w)
 	movem.l	(sp)+,d2-d7/a2-a6
 	rte
+	;; Using JMP PC relative to make sure that each opcode takes 4 bytes!
 list$:	jmp	boss_memmanage_init(pc)
 	jmp	boss_memmanage_chipalloc(pc)
 	jmp	boss_memmanage_chipfree(pc)
 	jmp	boss_memmanage_slowalloc(pc)
 	jmp	boss_memmanage_slowfree(pc)
+	jmp	memcopyword(pc)
+	jmp	memclearword(pc)
+
+;;; Copy memory from a0, a1. D0 words are copied.
+memcopyword:
+l1$	move.w	(a0)+,(a1)+
+	dbf	d0,l1$
+	rts
+
+;;; Clear memory from a0 for d0 words.
+memclearword:
+l1$:	clr.w	(a0)+
+	dbf	d0,l1$
+	rts
+
+
 
 boss_memmanage_chipalloc:
 	lea.l	MEMCHUNKCHIP,a6

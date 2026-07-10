@@ -9,7 +9,7 @@ include ../config.mk
 
 all:	boss.zx0 $(TARGETS)
 
-boss:	boss.o boss.memorymanagement.o boss.highlevel.o
+boss:	boss.o boss.memorymanagement.o boss.io.o boss.highlevel.o
 #boss:	boss.o
 	vlink $(VLINKFLAGS) -Tboss.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS)
 
