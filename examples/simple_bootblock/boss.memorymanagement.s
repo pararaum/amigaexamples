@@ -87,7 +87,6 @@ boss_memmanage_init:
 mi_clear:
         move.w  d1,(a0)+
         dbra    d0,mi_clear
-	rts
 	lea	trap15code(pc),a0
 	move.l	a0,$BC.w	; Set vector for TRAP#15.
 	move.w	#NUM_CHUNKS,d0

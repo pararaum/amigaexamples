@@ -12,6 +12,13 @@
 	XDEF	trap1code
 	XDEF	trap15code
 
+BossMemTrapAlloc = 1
+BossMemTrapFree = 2
+
+	MACRO	BossMem
+	moveq	#\1,d7
+	trap	#15
+	ENDM
 
 BossIOTrapPutc = 0
 BossIOTrapWrite = 1
@@ -109,6 +116,23 @@ super$:				  ; Supervisor mode with A7=SP at end of memory.
 	move.l	d0,a0
 	BossIO	BossIOTrapWriteln
 	BossIOWritelnS	"A beautiful day."
+	move.l	#$1001,d0
+	BossMem	BossMemTrapAlloc
+	move.l	a0,a2
+	move.l	a0,-(sp)
+	bsr	_ul2hex
+	lea	4(sp),sp	; Restore stack.
+	move.l	d0,a0
+	BossIO	BossIOTrapWriteln
+	move.l	#$1001,d0
+	BossMem	BossMemTrapAlloc
+	move.l	a0,-(sp)
+	bsr	_ul2hex
+	lea	4(sp),sp	; Restore stack.
+	move.l	d0,a0
+	BossIO	BossIOTrapWriteln
+	move.l	a2,a0
+	BossMem	BossMemTrapFree
 	jmp	*
 
 init_traps:
