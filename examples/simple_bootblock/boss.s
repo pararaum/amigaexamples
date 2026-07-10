@@ -124,7 +124,7 @@ super$:				  ; Supervisor mode with A7=SP at end of memory.
 	lea	4(sp),sp	; Restore stack.
 	move.l	d0,a0
 	BossIO	BossIOTrapWriteln
-	move.l	#$1001,d0
+	move.l	#$107f,d0
 	BossMem	BossMemTrapAlloc
 	move.l	a0,-(sp)
 	bsr	_ul2hex
@@ -133,6 +133,20 @@ super$:				  ; Supervisor mode with A7=SP at end of memory.
 	BossIO	BossIOTrapWriteln
 	move.l	a2,a0
 	BossMem	BossMemTrapFree
+	move.l	#$1081,d0
+	BossMem	BossMemTrapAlloc
+	move.l	a0,-(sp)
+	bsr	_ul2hex
+	lea	4(sp),sp	; Restore stack.
+	move.l	d0,a0
+	BossIO	BossIOTrapWriteln
+	move.l	#$10,d0
+	BossMem	BossMemTrapAlloc
+	move.l	a0,-(sp)
+	bsr	_ul2hex
+	lea	4(sp),sp	; Restore stack.
+	move.l	d0,a0
+	BossIO	BossIOTrapWriteln
 	jmp	*
 
 init_traps:
