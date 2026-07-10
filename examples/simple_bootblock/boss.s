@@ -3,14 +3,11 @@
 	include	hardware/dmabits.i
 
 	XREF	boss_memmanage_init
-	XREF	boss_memmanage_alloc
-	XREF	boss_memmanage_free
 	xref	_ul2hex
 
 	XDEF	BOSS_MAIN_INIT
 	XDEF	trap0code
 	XDEF	trap1code
-	XDEF	trap15code
 
 BossMemTrapAlloc = 1
 BossMemTrapFree = 2
@@ -251,16 +248,3 @@ trap1writeln:
 	moveq	#10,d0
 	bsr	trap1putc
 	rts
-
-	;; Memory functions.
-trap15code:
-		movem.l	d2-d7/a2-a6,-(sp)
-	lsl.w	#2,d7
-	jsr	list$(PC,d7.w)
-	movem.l	(sp)+,d2-d7/a2-a6
-	rte
-list$:	jmp	boss_memmanage_init(pc)
-	jmp	boss_memmanage_alloc(pc)
-	jmp	boss_memmanage_free(pc)
-	;; 6 bytes:
-	;; 	jmp	boss_memmanage_free

@@ -1,7 +1,5 @@
 
 	XDEF	boss_memmanage_init
-	XDEF	boss_memmanage_alloc
-	XDEF	boss_memmanage_free
 
 ;=============================================================================
 ; CHUNK-TABLE MEMORY ALLOCATOR  (Motorola 68000)
@@ -44,28 +42,33 @@
 ;
 ;=============================================================================
 
+
+	RSRESET
+rsMEMCHUNK_shift:	rs.w	1 ; log2(chunk size)
+rsMEMCHUNK_chunksize:	rs.w	1 ; 1<<above shift
+rsMEMCHUNK_memchunknum:	rs.w	1
+rsMEMCHUNK_memstart:	rs.l	1
+rsMEMCHUNK_memchunks:	rs.w	0 ; Placeholder!
+rsMEMCHUNK_rs_size:	rs
+
+
 ;;; \1=memname, \2=shift, \3=start, \4=end
 	macro	ChunkStructure
-	rsreset
-rsMEMCHUNK\1_shift:	rs.w	1 ; log2(chunk size)
-rsMEMCHUNK\1_chunksize:	rs.w	1 ; 1<<above shift
-rsMEMCHUNK\1_memchunknum:	rs.w	1
-rsMEMCHUNK\1_memchunks:	rs.w	((\4)-\3)/(1<<\2)
-rsMEMCHUNK\1_memstart:	rs.l	1
-rsMEMCHUNK\1_rs_size:	rs
+MEMCHUNKSIZE\1	equ	((\4)-\3)
 
 	bss
-MEMCHUNK\1:	dcb.b	rsMEMCHUNK\1_rs_size
+MEMCHUNK\1:	dcb.b	rsMEMCHUNK_rs_size
+	dcb.w	MEMCHUNKSIZE\1/(1<<\2)
 
 	code
 init_MEMCHUNK\1:
 	lea.l	MEMCHUNK\1,a6
-	move.w	#\2,rsMEMCHUNK\1_shift(a6)
-	move.w	#1<<\2,rsMEMCHUNK\1_chunksize(a6)
-	move.w	#((\4)-\3)/(1<<\2),rsMEMCHUNK\1_memchunknum(a6)
-	move.l	#\3,rsMEMCHUNK\1_memstart(a6)
-        lea     rsMEMCHUNK\1_memstart(a6),a0
-	move.w  #((\4)-\3)/(1<<\2)-1,d0
+	move.w	#\2,rsMEMCHUNK_shift(a6)
+	move.w	#1<<\2,rsMEMCHUNK_chunksize(a6)
+	move.w	#MEMCHUNKSIZE\1/(1<<\2),rsMEMCHUNK_memchunknum(a6)
+	move.l	#\3,rsMEMCHUNK_memstart(a6)
+        lea     rsMEMCHUNK_memchunks(a6),a0 ; a0 = start of chunk list
+	move.w  #MEMCHUNKSIZE\1/(1<<\2)-1,d0
 	moveq	#0,d1
 clear$:
         move.w  d1,(a0)+
@@ -76,31 +79,8 @@ clear$:
 	ChunkStructure	CHIP, 7, $6000, 512<<10
 	ChunkStructure	SLOW, 9, $c10000, $c7f800
 	
-;-----------------------------------------------------------------------------
-; CONSTANTS
-;-----------------------------------------------------------------------------
-CHUNK_SHIFT     equ     7               ; log2(CHUNK_SIZE), used for fast *//
-CHUNK_SIZE      equ     (1<<7)		; bytes per chunk
-
-MEM_START	equ	$6000	; Lowest available memory.
-POOL_SIZE       equ     (512<<10)-MEM_START ; 512KB of chip memory.
-NUM_CHUNKS      equ     POOL_SIZE/CHUNK_SIZE
-
 CONT_MARKER     equ     $FFFF           ; marks a "continuation" chunk
 
-;-----------------------------------------------------------------------------
-; DATA / BSS
-;-----------------------------------------------------------------------------
-	BSS
-
-        even
-CHUNK_TABLE:    ds.w    NUM_CHUNKS      ; one word per chunk (see header)
-
-	DATA
-	dc.l	__BSS_START__
-	dc.l	__BSS_END__
-	dc.b	"END TABLE"
-	even
 
 	CODE
 ;=============================================================================
@@ -108,21 +88,14 @@ CHUNK_TABLE:    ds.w    NUM_CHUNKS      ; one word per chunk (see header)
 ; any mem_alloc/mem_free calls.
 ;
 ; In:  -
-; Out: NUM_CHUNKS
+; Out: -
 ; Modifies: d0/a0
 ;=============================================================================
 boss_memmanage_init:
 	bsr	init_MEMCHUNKSLOW
 	bsr	init_MEMCHUNKCHIP
-        lea     CHUNK_TABLE,a0
-        move.w  #NUM_CHUNKS-1,d0
-	moveq	#0,d1
-mi_clear:
-        move.w  d1,(a0)+
-        dbra    d0,mi_clear
 	lea	trap15code(pc),a0
 	move.l	a0,$BC.w	; Set vector for TRAP#15.
-	move.w	#NUM_CHUNKS,d0
         rts
 
 trap15code:
@@ -132,32 +105,52 @@ trap15code:
 	movem.l	(sp)+,d2-d7/a2-a6
 	rte
 list$:	jmp	boss_memmanage_init(pc)
-	jmp	boss_memmanage_alloc(pc)
-	jmp	boss_memmanage_free(pc)
+	jmp	boss_memmanage_chipalloc(pc)
+	jmp	boss_memmanage_chipfree(pc)
+	jmp	boss_memmanage_slowalloc(pc)
+	jmp	boss_memmanage_slowfree(pc)
 
+boss_memmanage_chipalloc:
+	lea.l	MEMCHUNKCHIP,a6
+	bra	boss_memmanage_allocA6
+boss_memmanage_chipfree:
+	lea.l	MEMCHUNKCHIP,a6
+	bra	boss_memmanage_freeA6
+
+boss_memmanage_slowalloc:
+	lea.l	MEMCHUNKSLOW,a6
+	bra	boss_memmanage_allocA6
+boss_memmanage_slowfree:
+	lea.l	MEMCHUNKSLOW,a6
+	bra	boss_memmanage_freeA6
 
 ;=============================================================================
-; In:  d0.l = number of bytes requested
+;;; In:	d0.l = number of bytes requested
+;;;	a6.l = pointer to memory structure
 ; Out: a0   = pointer to allocated memory, or 0 if the request failed
 ;             (no run of free chunks was large enough)
 ; Modifies: d1-d4/a1
 ;=============================================================================
-boss_memmanage_alloc:
+boss_memmanage_allocA6:
 	;;---- chunks_needed = ceil(size / CHUNK_SIZE) ----
-        move.l  d0,d1
-        addi.l  #CHUNK_SIZE-1,d1
-        lsr.l   #CHUNK_SHIFT,d1
+	moveq	#0,d1
+        move.w 	rsMEMCHUNK_chunksize(a6),d1 ; d1 = chunksize in L.
+	subq.l	#1,d1
+	add.l	d0,d1
+	;; Afterwards 0 will be 0 but 1 (a single byte) will occupy at least one chunk.
+        move.w	rsMEMCHUNK_shift(a6),d0
+	lsr.l	d0,d1		; d1 = number of chunks
         beq     ma_fail                 ; size 0 -> nothing to do
         move.l  d1,d4                   ; d4 = chunks needed
 
 	;;---- scan CHUNK_TABLE for a run of d4 consecutive zeros ----
-        lea     CHUNK_TABLE,a1          ; a1 = table scan pointer
-        moveq   #0,d2                   ; d2 = current free-run length
-        moveq   #0,d3                   ; d3 = start index of run
-        moveq   #0,d0                   ; d0 = current chunk index
+        lea     rsMEMCHUNK_memchunks(a6),a1	; a1 = table scan pointer
+        moveq   #0,d2                   	; d2 = current free-run length
+        moveq   #0,d3                   	; d3 = start index of run
+        moveq   #0,d0                   	; d0 = current chunk index
 
 ma_scan:
-        cmp.l   #NUM_CHUNKS,d0
+        cmp.l   rsMEMCHUNK_memchunknum(a6),d0
         bge     ma_fail                 ; ran off the end, no room
 
         tst.w   (a1)
@@ -183,7 +176,7 @@ ma_next:
 
 	;; ---- found a run of d4 free chunks starting at chunk index d3 ----
 ma_found:
-        lea     CHUNK_TABLE,a1
+        lea     rsMEMCHUNK_memchunks(a6),a1
         move.l  d3,d0
         add.l   d0,d0                    ; *2 -> byte offset into table
         adda.l  d0,a1                    ; a1 -> table entry of start
@@ -198,9 +191,10 @@ ma_markcont:
         bne     ma_markcont
 
 ma_addr:
-        move.l  d3,d0
-        lsl.l   #CHUNK_SHIFT,d0          ; chunk index -> byte offset
-        lea     MEM_START,a0
+        move.l  d3,d0		; d0 = start index of run, see above.
+	move.w	rsMEMCHUNK_shift(a6),d1
+        lsl.l   d1,d0          ; chunk index -> byte offset
+        move.l	rsMEMCHUNK_memstart(a6),a0 ; Start address of memory.
         adda.l  d0,a0                    ; a0 = pointer to give caller
         rts
 
@@ -213,7 +207,8 @@ ma_fail:
 ;=============================================================================
 ; mem_free
 ;
-; In:  a0 = pointer previously returned by mem_alloc
+;;; In:	a0 = pointer previously returned by mem_alloc
+;;;	a6.l = pointer to memory structure
 ; Out: -
 ; Modifies: d0-d2/a0-a1
 ;
@@ -222,14 +217,15 @@ ma_fail:
 ; is a no-op. mf_bad is the spot to extend with real error reporting
 ; (e.g. return a status code in d0) if you need it.
 ;=============================================================================
-boss_memmanage_free:
+boss_memmanage_freeA6:
 	;; ---- chunk index = (a0 - MEM_POOL) / CHUNK_SIZE ----
         move.l  a0,d0
-        lea     MEM_START,a1
-        sub.l   a1,d0
-        lsr.l   #CHUNK_SHIFT,d0
+        move.l	rsMEMCHUNK_memstart(a6),a1
+        sub.l   a1,d0		; d0 = offset of memory in the memory block
+	move.w	rsMEMCHUNK_shift(a6),d1
+        lsr.l   d1,d0		; d0 = which chunk is it?
 	
-        lea     CHUNK_TABLE,a1
+        lea     rsMEMCHUNK_memchunks(a6),a1
         move.l  d0,d1
         add.l   d1,d1                    ; *2 -> byte offset
         adda.l  d1,a1                    ; a1 -> table entry
@@ -241,11 +237,12 @@ boss_memmanage_free:
         beq     mf_bad                   ; already free / invalid
 
 	;; ---- d2 = number of chunks to clear ----
-        move.w  #0,(a1)+
+	moveq	#0,d0		; Clear D0 for freeing chunks.
+        move.w  d0,(a1)+
         subq.w  #1,d2
         beq     mf_done
 mf_clear:
-        move.w  #0,(a1)+
+        move.w  d0,(a1)+
         subq.w  #1,d2
         bne     mf_clear
 
