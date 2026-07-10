@@ -63,6 +63,10 @@ CONT_MARKER     equ     $FFFF           ; marks a "continuation" chunk
 
         even
 CHUNK_TABLE:    ds.w    NUM_CHUNKS      ; one word per chunk (see header)
+
+	DATA
+	dc.l	__BSS_START__
+	dc.l	__BSS_END__
 	dc.b	"END TABLE"
 	even
 
@@ -78,12 +82,26 @@ CHUNK_TABLE:    ds.w    NUM_CHUNKS      ; one word per chunk (see header)
 ;=============================================================================
 boss_memmanage_init:
         lea     CHUNK_TABLE,a0
-        move.l  #NUM_CHUNKS-1,d0
+        move.w  #NUM_CHUNKS-1,d0
+	moveq	#0,d1
 mi_clear:
-        move.w  #0,(a0)+
+        move.w  d1,(a0)+
         dbra    d0,mi_clear
-	move.l	#NUM_CHUNKS,d0
+	rts
+	lea	trap15code(pc),a0
+	move.l	a0,$BC.w	; Set vector for TRAP#15.
+	move.w	#NUM_CHUNKS,d0
         rts
+
+trap15code:
+	movem.l	d2-d7/a2-a6,-(sp)
+	lsl.w	#2,d7
+	jsr	list$(PC,d7.w)
+	movem.l	(sp)+,d2-d7/a2-a6
+	rte
+list$:	jmp	boss_memmanage_init(pc)
+	jmp	boss_memmanage_alloc(pc)
+	jmp	boss_memmanage_free(pc)
 
 
 ;=============================================================================

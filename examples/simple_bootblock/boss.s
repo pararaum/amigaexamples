@@ -5,11 +5,48 @@
 	XREF	boss_memmanage_init
 	XREF	boss_memmanage_alloc
 	XREF	boss_memmanage_free
+	xref	_ul2hex
 
 	XDEF	BOSS_MAIN_INIT
 	XDEF	trap0code
 	XDEF	trap1code
 	XDEF	trap15code
+
+
+BossIOTrapPutc = 0
+BossIOTrapWrite = 1
+BossIOTrapWriteln = 2
+
+	macro	BossIO
+	moveq	#\1,d7
+	trap	#1
+	endm
+
+	macro	BossIOWrite
+	BossIO	BossIOTrapWrite
+	endm
+	macro	BossIOWriteS
+	DATA
+.l\@:	dc.b	\1
+	dc.b	0
+	even
+	CODE
+	move.l	#.l\@,a0
+	BossIO	BossIOTrapWrite
+	endm
+
+	macro	BossIOWriteln
+	BossIO	BossIOTrapWriteln
+	endm
+	macro	BossIOWritelnS
+	DATA
+.l\@:	dc.b	\1
+	even
+	CODE
+	move.l	#.l\@,a0
+	BossIO	BossIOTrapWriteln
+	endm
+
 
 SCREENCOPLIST=$400
 ;;; The screen bitplane is 640/8*256=20480 $5000 bytes large.
@@ -19,10 +56,6 @@ SCREENBITPLANE=$480
 	dc.b	"DATA begins here."
 	even
 
-welcome_text:	dc.b	"Booting BOSS...",0
-welcome_text2:	dc.b	"...I am ready for you.",0
-	even
-	
 _FONT:	incbin	"Computing 60s Bold.ch8"
 	EVEN
 screen_row:	dc.w	0
@@ -50,24 +83,32 @@ coplist_end:
 	;; **********************************************************************
 	CODE
 BOSS_MAIN_INIT:
-	lea	$DFF000,a5	; Custom base in A5.
+	lea	$00DFF000,a5	; Custom base in A5.
 	move.w	#$7fff,intena(a5) ; Disable interrupts.
 	move.w	#$7fff,intreq(a5) ; Disable interrupt requests.
 	move.w	#$7fff,dmacon(a5) ; Disable DMA.
+	lea	super$(pc),a0
+	move.l	a0,$20.w	  ; Set privilege escalation vector.
+	stop	#$0200		  ; This is a privileged opcode.
+super$:				  ; Supervisor mode with A7=SP at end of memory.
 	bsr	init_traps
 	bsr	init_custom
+	bsr	boss_memmanage_init
 
 	lea.l	SCREENBITPLANE,a0
 	move.w	#640*256/8/2,d0
 	moveq	#1,d7		; CLEAR
 	trap	#0
 
-	lea.l	welcome_text,a0
-	moveq	#2,d7
-	trap	#1
-	lea.l	welcome_text2,a0
-	moveq	#2,d7
-	trap	#1
+	BossIOWritelnS	"Booting BOSS..."
+	BossIOWritelnS	"...I am ready for you."
+	
+	move.l	#"12AB",-(sp)
+	bsr	_ul2hex
+	lea	4(sp),sp	; Restore stack.
+	move.l	d0,a0
+	BossIO	BossIOTrapWriteln
+	BossIOWritelnS	"A beautiful day."
 	jmp	*
 
 init_traps:
