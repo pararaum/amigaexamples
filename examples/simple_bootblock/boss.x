@@ -11,4 +11,7 @@ SECTIONS {
  DATA : {
       *(DATA)
  }
+ BSS (NOLOAD) : {
+     *(BSS)
+ }
 }

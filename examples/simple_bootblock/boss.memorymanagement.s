@@ -59,7 +59,7 @@ CONT_MARKER     equ     $FFFF           ; marks a "continuation" chunk
 ;-----------------------------------------------------------------------------
 ; DATA / BSS
 ;-----------------------------------------------------------------------------
-	data
+	BSS
 
         even
 CHUNK_TABLE:    ds.w    NUM_CHUNKS      ; one word per chunk (see header)
