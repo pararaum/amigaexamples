@@ -6,6 +6,11 @@ BossIOTrapPutc = 0
 BossIOTrapWrite = 1
 ;;; A0 = string to output, append a NL.
 BossIOTrapWriteln = 2
+;;; Bring cursor to (0, 0).
+BossIOTrapHome = 3
+;;; Clear Screen. Cursor to (0, 0).
+BossIOTrapClrscr = 4
+
 
 ;;; General macro to call a BossIO trap.
 	macro	BossIO
@@ -40,3 +45,5 @@ BossIOTrapWriteln = 2
 	move.l	#.l\@,a0
 	BossIO	BossIOTrapWriteln
 	endm
+
+	XREF	boss_trackloader_init

@@ -105,8 +105,17 @@ BOOTEND:
 	printt "BOOTEND-BOOTSTART"
 	printv	BOOTEND-BOOTSTART
 	;; Skip till end.
-	dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
+	;; 	dcb.b	BOOTSIZE-(BOOTEND-BOOTSTART)
+	ALIGN	9
 
 zx0data:
 	incbin	"boss.zx0"
+zx0data_end:
 	even
+	align	9
+	dc.b	"After the bootblock."
+	even
+	dc.l	zx0data,zx0data_end
+	rept	32
+	dc.l	*
+	endr

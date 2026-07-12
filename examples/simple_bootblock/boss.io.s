@@ -42,8 +42,8 @@ coplist_end:
 boss_io_init:
 	lea	trap1code(pc),a0
 	move.l	a0,$84.w	; Set vector for TRAP#1.
-	BossMemClearWords	SCREENBITPLANE,640*256/8/2
 	bsr	init_custom
+	bsr	trap1clrscr
 	rts
 
 
@@ -59,7 +59,7 @@ init_custom:
 	rts
 
 
-	;; Font functions
+	;; Font/Console/IO functions
 trap1code:
 	movem.l	d2-d7/a2-a6,-(sp)
 	lsl.w	#2,d7
@@ -69,6 +69,18 @@ trap1code:
 list$:	jmp	trap1putc(pc)
 	jmp	trap1write(pc)
 	jmp	trap1writeln(pc)
+	jmp	trap1home(pc)
+	jmp	trap1clrscr(pc)
+
+trap1home:
+	moveq	#0,d0
+	move.w	d0,screen_row
+	move.w	d0,screen_col
+	rts
+
+trap1clrscr:
+	BossMemClearWords	SCREENBITPLANE,640*256/8/2
+	bra	trap1home
 
 ;;; D0=char
 trap1putc:
