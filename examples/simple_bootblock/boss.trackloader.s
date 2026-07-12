@@ -58,9 +58,9 @@ boss_trackloader_init:
 	move.b	#CIACRAF_OUTMODE|CIACRAF_RUNMODE|CIACRAF_SPMODE,ciacra+_ciab ; Stop, one-shot mode.
 
 	bsr	SelDF0MotOn
-;		Bsr	GoToTrack00
-;		Bsr	SelDF0MotOff
-;		Rts
+	bsr	GoToTrack00
+	bsr	SelDF0MotOff
+
 	unlk	a6
 	rts
 
@@ -249,11 +249,10 @@ SelDF0MotOff:
 ;		Cmp.b	d4,d3
 ;		Bne.s	FindSector
 ;		Rts
-;
-;*­---------------------------------------------­*
-;
-;GoToTrack00	Btst	#4,$bfe001	Track 00 when low.
-;		Beq.s	Pos00
+
+GoToTrack00:
+	btst	#CIAF_DSKTRACK0,$bfe001 ; Bit 4: track 00 when low.
+	beq.s	pos00$
 ;		Bsr.s	MoveOutwards
 ;TowardsTrack00	Btst	#4,$bfe001	Track 00 when low.
 ;		Beq.s	Pos00
@@ -265,9 +264,32 @@ SelDF0MotOff:
 ;		Move.b	#$0e,$bfd500	Timer A hi, and starts timer.
 ;		Bsr.s	Timer		5.2ms
 ;		Bra.s	TowardsTrack00
-;Pos00		Clr.b	Position(a4)
-;		Rts
-;
+pos00$:
+	;; 	clr.b	Position(a4); TODO?
+	rts
+
+
+MoveOutwards:
+	bset.b	#CIAB_DSKDIREC,ciaprb+_ciab
+	bra.s	move_head
+
+MoveInwards:
+	bclr.b	#CIAB_DSKDIREC,ciaprb+_ciab
+	bra.s	move_head
+
+move_head:
+	bset	#CIAB_DSKSTEP,ciaprb+_ciab
+	nop
+	nop
+	bclr	#CIAB_DSKSTEP,ciaprb+_ciab
+	nop
+	nop
+	bset	#CIAB_DSKSTEP,ciaprb+_ciab
+	bra	timer_31e1
+
+time_31e1:
+	rts
+	
 ;*­---------------------------------------------­*
 ;
 ;Upper		Bclr	#2,$bfd100	Upper side.
