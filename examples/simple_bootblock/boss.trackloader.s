@@ -64,10 +64,16 @@ boss_trackloader_init:
 	bsr	GoToTrack00
 	bsr	SelDF0MotOff
 
-	moveq	#0,d0
+	move.w	#1000,d0
+	moveq	#55,d1
+	lea.l	$c40000,a0
+	bsr	trackload_data
+
+	moveq	#23,d0
 	moveq	#120,d1
 	lea.l	$c50000,a0
 	bsr	trackload_data
+
 	unlk	a6
 	rts
 
@@ -217,6 +223,7 @@ decode_mfm:
 findsector$:
 	movea.l	rsDiskBuf(a4),a1 ; Address of mfm buffer into a1.
 syncsearch$:
+	move.b	(a1),color(a5)
 	cmp.w	(a1)+,d5	; Check for Sync-word.
 	bne.s	syncsearch$
 	cmp.w	(a1),d5		; Are there two sync words in a row?
