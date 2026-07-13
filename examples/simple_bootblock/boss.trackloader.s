@@ -45,7 +45,7 @@ boss_trackloader_init:
 	move.b	d0,rsDiskStartTrack(a0)
 	move.b	d0,rsDiskTracks(a0)
 	move.b	d0,rsDiskEndSector(a0)
-	move.l	#$1000,rsDiskBuf(a0) ; Hard coded for now.
+	move.l	#$500,rsDiskBuf(a0) ; Hard coded for now.
 	;move.l	#rsDiskStructSize,d0
 	;BossMem	BossMemTrapAlloc
 	;move.l	a0,current_diskstruct
@@ -162,23 +162,28 @@ already_right_track$:
 	beq.s	lasttrack$
 	moveq	#11,d4
 	bsr.s	read_and_decode
-;NextTrack	Moveq	#0,d3
-;		Btst	#2,$bfd100
-;		Bne.s	NextSide
-;		Bsr	Lower
-;		Btst	#1,$bfd100
-;		Bne.s	.FirstMoveIn
-;		Bsr	MoveHead
-;		Bra.s	NextRead
-;.FirstMoveIn	Bsr	MoveInwards
-;		Bra.s	NextRead
-;NextSide	Bsr	Upper
-;NextRead	Subq.b	#1,d2
-;		Beq.s	LastTrack
-;		Bsr.s	Read
-;		Bra.s	NextTrack
-lasttrack$:	move.b	rsDiskEndSector(a4),d4
-;		Bsr.s	Read
+nexttrack$:
+	moveq	#0,d3
+	btst	#2,$bfd100
+	bne.s	nextside_up$
+	bsr	select_lower_side
+	btst	#1,$bfd100
+	bne.s	firstmovein$
+	bsr	move_inwards
+	bra.s	nextread$
+firstmovein$:
+	bsr	move_inwards
+	bra.s	nextread$
+nextside_up$:
+	bsr	select_upper_side
+nextread$:
+	subq.b	#1,d2
+	beq.s	lasttrack$
+	bsr.s	read_and_decode
+	bra.s	nexttrack$
+lasttrack$:
+	move.b	rsDiskEndSector(a4),d4
+	bsr.s	read_and_decode
 	bsr	SelDF0MotOff
 exit$:	rts
 
@@ -195,11 +200,11 @@ read_and_decode:
 	move.w	#$4000,dsklen(a5)
 	move.w	#$9900,dsklen(a5)
 	move.w	#$9900,dsklen(a5)
-DMAwait$:
-	Btst	#1,$1f(a5)		DMA transfer done when high.
-;		Beq.s	.DMAwait
-;		Move.w	#$4000,$24(a5)
-;		Move.w	#$0010,$96(a5)		Disk DMA off.
+dmawait$:
+	btst	#1,$1f(a5)		DMA transfer done when high.
+	beq.s	dmawait$
+	move.w	#$4000,$24(a5)
+	move.w	#$0010,$96(a5)		Disk DMA off.
 ;
 ;*­---------------------------------------------­*
 ;	*	Destination address -> a0
