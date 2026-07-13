@@ -10,7 +10,9 @@
 	include	hardware/dmabits.i
 	include hardware/adkbits.i
 	include hardware/cia.i
-	XREF _ciab		; $BFD000
+
+;;; CIA B is used, and there we are going to use timer A.
+	XREF _ciab
 
 	XDEF	boss_trackloader_init
 
@@ -55,7 +57,8 @@ boss_trackloader_init:
 	move.w	#SyncWord,dsksync(a5)	; DSKSYNC, this is the default synchronisation mode.
 	move.w	#$7f00,adkcon(a5)	; clear all disk bits
 	move.w	#ADKF_SETCLR|ADKF_MFMPREC|ADKF_FAST|ADKF_WORDSYNC,adkcon(a5)
-	move.b	#CIACRAF_OUTMODE|CIACRAF_RUNMODE|CIACRAF_SPMODE,ciacra+_ciab ; Stop, one-shot mode.
+	;; Outmode=toggle, runmode=1 is one-shot, spmode=1 is output on serial(?), load=0 means every write in hi latches the value into the timer, inmode=0 is 716 kHz mode.
+	move.b	#CIACRAF_OUTMODE|CIACRAF_RUNMODE|CIACRAF_SPMODE,_ciab+ciacra
 
 	bsr	SelDF0MotOn
 	bsr	GoToTrack00
@@ -65,22 +68,6 @@ boss_trackloader_init:
 	rts
 
 
-;	lea	trackbuffer(pc),a1
-;	bsr	Init
-;	lea	$400.w,a0
-;	moveq	#2,d0		; start block 0-1803
-;	move.l	#130,d1		; number of blocks
-;	bsr	Loader
-;
-;	lea	$10000,a0
-;	move.l	#128,d0		; start block 0-1803
-;	move.l	#1056,d1	; number of blocks
-;	bsr	Loader
-;
-;	ILLEGAL
-;
-;*===========================================================================*
-;
 SelDF0MotOn:
 	or.b	#CIAF_DSKSEL3|CIAF_DSKSEL2|CIAF_DSKSEL1|CIAF_DSKSEL0,ciaprb+_ciab ; Deselect all drives by setting bits to high.
 	bclr	#CIAB_DSKMOTOR,ciaprb+_ciab ; Clear bit to switch motor on.
@@ -251,20 +238,6 @@ SelDF0MotOff:
 ;		Rts
 
 GoToTrack00:
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
-	bsr	move_inwards
 	btst	#CIAF_DSKTRACK0,$bfe001 ; Bit 4: track 0 when low.
 	beq.s	pos00$
 	bsr.s	move_outwards
@@ -292,17 +265,20 @@ timer_wait:
 	lsr.w	#8,d0
 	move.b	d0,ciatahi+_ciab
 	bset	#CIACRAB_START,_ciab+ciacra
+	nop
 waittimer$:
-	btst	#CIAICRF_TA,ciaicr+_ciab
+	btst	#CIACRAB_START,_ciab+ciacra
 	bne	waittimer$
 	rts
 
 move_outwards:
 	bset.b	#CIAB_DSKDIREC,ciaprb+_ciab
+	nop
 	bra.s	move_head
 
 move_inwards:
 	bclr.b	#CIAB_DSKDIREC,ciaprb+_ciab
+	nop
 	bra.s	move_head
 
 move_head:
