@@ -61,7 +61,7 @@ boss_trackloader_init:
 	move.b	#CIACRAF_OUTMODE|CIACRAF_RUNMODE|CIACRAF_SPMODE,_ciab+ciacra
 
 	bsr	SelDF0MotOn
-	bsr	GoToTrack00
+	bsr	go_to_track0
 	bsr	SelDF0MotOff
 
 	move.w	#1000,d0
@@ -107,7 +107,7 @@ curdisstrptr$	equr	a4
 	bmi	exit$
 	move.w	d1,d2
 	add.w	d0,d2
-	cmp.l	#1804,d2
+	cmp.w	#1804,d2
 	bgt	exit$
 
 	lea.l	current_diskstruct,curdisstrptr$ ; Get pointer
@@ -257,25 +257,12 @@ decodeloop$:
 	rts
 
 
-GoToTrack00:
+go_to_track0:
 	btst	#CIAF_DSKTRACK0,$bfe001 ; Bit 4: track 0 when low.
 	beq.s	pos00$
 	bsr.s	move_outwards
-istrack00$:
-	btst	#CIAB_DSKTRACK0,$bfe001 ; Test again if track 0 was reached.
-	beq.s	pos00$
-	bsr	move_outwards
-;		Bclr	#0,$bfd100	Move head.
-;		Nop
-;		Nop
-;		Bset	#0,$bfd100	Prepare to move head.
-;		Move.b	#$69,$bfd400	Timer A low.
-;		Move.b	#$0e,$bfd500	Timer A hi, and starts timer.
-;		Bsr.s	Timer		5.2ms
-	bra.s	istrack00$
-pos00$:
-	;; 	clr.b	Position(a4); TODO?
-	rts
+	bra.s	go_to_track0
+pos00$:	rts
 
 
 ;;; In: d0.w = timer value to use
@@ -301,7 +288,9 @@ move_outwards:
 move_inwards:
 	bclr.b	#CIAB_DSKDIREC,ciaprb+_ciab
 	nop
-	bra.s	move_head
+	;; 	bra.s	move_head
+	;; Fall through to move_head and add a NOP for small delay in order to give the hardware some time.
+	nop
 
 ;;; Modifies: d0
 move_head:
