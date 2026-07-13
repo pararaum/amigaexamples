@@ -66,7 +66,7 @@ boss_trackloader_init:
 
 	moveq	#0,d0
 	moveq	#120,d1
-	lea.l	$c60000,a0
+	lea.l	$c50000,a0
 	bsr	trackload_data
 	unlk	a6
 	rts
@@ -205,46 +205,50 @@ dmawait$:
 	beq.s	dmawait$
 	move.w	#$4000,$24(a5)
 	move.w	#$0010,$96(a5)		Disk DMA off.
-;
-;*­---------------------------------------------­*
-;	*	Destination address -> a0
-;	*	Start sector -> d3
-;	*	End sector -> d4
-;
-;Decode		Move.w	#SyncWord,d5		Sync-word.
-;		Move.l	#$55555555,d7		%010101...
-;
-;FindSector	movea.l	buf(a4),a1		Move Buffer-address.
-;SyncSearch	Cmp.w	(a1)+,d5		Check for Sync-word.
-;		Bne.s	SyncSearch
-;		Cmp.w	(a1),d5			Another Sync-word?
-;		Beq.s	SyncSearch
-;		Move.l	(a1),d0
-;		Move.l	4(a1),d1
-;		And.l	d7,d0
-;		Asl.l	#1,d0
-;		And.l	d7,d1
-;		Or.l	d1,d0
-;		Ror.l	#8,d0
-;		Cmp.b	d3,d0			Correct sector?
-;		Beq.s	SectorOK
-;		Lea	$43E(a1),a1		Add to next sector.
-;		Bra.s	SyncSearch
-;
-;SectorOK	Addq.b	#1,d3
-;		Lea	$38(a1),a1		Skip InfoBytes.
-;		Moveq	#$7f,d6
-;DeCodeLoop	Move.l	$200(a1),d1
-;		Move.l	(a1)+,d0
-;		And.l	d7,d0
-;		Asl.l	#1,d0
-;		And.l	d7,d1
-;		Or.l	d1,d0
-;		Move.l	d0,(a0)+		Move to Load Address.
-;		Dbra	d6,DeCodeLoop
-;		Cmp.b	d4,d3
-;		Bne.s	FindSector
+
+;;; Decode MFM track.
+;;; In:	a0 = destination address
+;;; 	d3 = start sector
+;;; 	d4 = end sector
+decode_mfm:
+	move.w	#SyncWord,d5	; Put synchornisation word into d5.
+	move.l	#$55555555,d7	; Clock pattern in d7.
+
+findsector$:
+	movea.l	rsDiskBuf(a4),a1 ; Address of mfm buffer into a1.
+syncsearch$:
+	cmp.w	(a1)+,d5	; Check for Sync-word.
+	bne.s	syncsearch$
+	cmp.w	(a1),d5		; Are there two sync words in a row?
+	beq.s	syncsearch$
+	move.l	(a1),d0		; Movel two MFM encoded longwords into d0 and d1.
+	move.l	4(a1),d1
+	and.l	d7,d0
+	asl.l	#1,d0
+	and.l	d7,d1
+	or.l	d1,d0
+	ror.l	#8,d0
+	cmp.b	d3,d0		; Is this the correct sector?
+	beq.s	sectorok$
+	lea	$43E(a1),a1	; Skip to next sector.
+	bra.s	syncsearch$
+sectorok$:
+	addq.b	#1,d3
+	lea	$38(a1),a1	; Skip header bytes.
+	moveq	#$7f,d6
+decodeloop$:
+	move.l	$200(a1),d1
+	move.l	(a1)+,d0
+	and.l	d7,d0
+	asl.l	#1,d0
+	and.l	d7,d1
+	or.l	d1,d0
+	move.l	d0,(a0)+	; Move to destination buffer.
+	dbra	d6,decodeloop$
+	cmp.b	d4,d3
+	bne.s	findsector$
 	rts
+
 
 GoToTrack00:
 	btst	#CIAF_DSKTRACK0,$bfe001 ; Bit 4: track 0 when low.
