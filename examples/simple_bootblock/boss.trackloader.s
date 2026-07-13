@@ -64,6 +64,10 @@ boss_trackloader_init:
 	bsr	GoToTrack00
 	bsr	SelDF0MotOff
 
+	moveq	#0,d0
+	moveq	#120,d1
+	lea.l	$c60000,a0
+	bsr	trackload_data
 	unlk	a6
 	rts
 
@@ -157,7 +161,7 @@ already_right_track$:
 	move.b	rsDiskTracks(a4),d2
 	beq.s	lasttrack$
 	moveq	#11,d4
-;		Bsr.s	Read
+	bsr.s	read_and_decode
 ;NextTrack	Moveq	#0,d3
 ;		Btst	#2,$bfd100
 ;		Bne.s	NextSide
@@ -180,24 +184,19 @@ exit$:	rts
 
 
 
-
-;*­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­*
-;
-;
-;*­---------------------------------------------­*
-;
-;Read		Btst	#5,$bfe001		Await Disk ready.
-;		Bne.s	Read
-;		Move.b	#$91,$bfd400		Timer A low.
-;		Move.b	#$29,$bfd500		Timer A hi, and starts timer.
-;		Bsr	Timer
-;		Move.w	#2,$9c(a5)		Clear Disk Intrequest.
-;		Move.l	buf(a4),$20(a5)	DSKPT, MFM-buffer.
-;		Move.w	#$8010,$96(a5)		Disk DMA on.
-;		Move.w	#$4000,$24(a5)		dsklen
-;		Move.w	#$9900,$24(a5)		dsklen, read lenght.
-;		Move.w	#$9900,$24(a5)		dsklen
-;.DMAwait	Btst	#1,$1f(a5)		DMA transfer done when high.
+read_and_decode:
+	btst	#5,$bfe001	; Await Disk ready.
+	bne.s	read_and_decode
+	move.w	#$2991,d0
+	bsr	timer_wait
+	move.w	#2,intreq(a5)	; Clear Disk Intrequest.
+	move.l	rsDiskBuf(a4),dskpt(a5) ; Set MFM buffer.
+	move.w	#$8010,dmacon(a5)	; Disk DMA on.
+	move.w	#$4000,dsklen(a5)
+	move.w	#$9900,dsklen(a5)
+	move.w	#$9900,dsklen(a5)
+DMAwait$:
+	Btst	#1,$1f(a5)		DMA transfer done when high.
 ;		Beq.s	.DMAwait
 ;		Move.w	#$4000,$24(a5)
 ;		Move.w	#$0010,$96(a5)		Disk DMA off.
@@ -240,7 +239,7 @@ exit$:	rts
 ;		Dbra	d6,DeCodeLoop
 ;		Cmp.b	d4,d3
 ;		Bne.s	FindSector
-;		Rts
+	rts
 
 GoToTrack00:
 	btst	#CIAF_DSKTRACK0,$bfe001 ; Bit 4: track 0 when low.
@@ -303,35 +302,11 @@ move_head:
 select_upper_side:
 	bclr	#2,$bfd100	; Upper side.
 	move.w	#$0047,d0
-	bra	time_wait
+	bra	timer_wait
 
 select_lower_side:
 	bset	#2,$bfd100	; Lower side.
 	move.w	#$0047,d0
-	bra	time_wait
+	bra	timer_wait
 
-;MoveInwards	And.b	#$fc,$bfd100	Clear bits 0 and 1,
-;		Nop	which results in diskdirec=inwards, head moved.
-;		Nop
-;		Bset	#0,$bfd100	Prepare to move head.
-;		Move.b	#$e1,$bfd400	Timer A low.
-;		Move.b	#$31,$bfd500	Timer A hi, and starts timer.
-;		Move.b	#2,Direction(a4)
-;		Addq.b	#2,Position(a4)
-;		Bra.s	Timer		18ms
-;
-;*­---------------------------------------------­*
-;
-;MoveHead	Bclr	#0,$bfd100	Move head.
-;		Nop
-;		Nop
-;		Bset	#0,$bfd100	Prepare to move head.
-;		Move.b	#$50,$bfd400	Timer A low.
-;		Move.b	#$08,$bfd500	Timer A hi, and starts timer.
-;		Move.b	Direction(a4),d0
-;		Add.b	d0,Position(a4)
-;		Bra.s	Timer		3ms
-;
-;trackbuffer:
-;	even
 	END
