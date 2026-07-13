@@ -71,6 +71,7 @@ list$:	jmp	trap1putc(pc)
 	jmp	trap1writeln(pc)
 	jmp	trap1home(pc)
 	jmp	trap1clrscr(pc)
+	jmp	trap1scroll_up(pc)
 
 trap1home:
 	moveq	#0,d0
@@ -81,6 +82,13 @@ trap1home:
 trap1clrscr:
 	BossMemClearWords	SCREENBITPLANE,640*256/8/2
 	bra	trap1home
+
+trap1scroll_up:
+	lea.l	SCREENBITPLANE,a1 ; Destination
+	lea.l	640/8*8(a1),a0	  ; Source, top left position + one line.
+	move.w	#640/8,d0
+	BossMem	BossMemTrapCopyWords
+	rts
 
 ;;; D0=char
 trap1putc:
@@ -106,10 +114,15 @@ l1$:	move.b	(a0)+,(a1)
 	addq.w	#1,d0		; Advance to next column.
 	cmp.w	#80,d0		; Right border reached?
 	blt.s	less80$		; No, every thing is OK.
-	moveq	#0,d0		; Move cursor to the left of screen
 	addq.w	#1,screen_row	; Move to next row.
-	;; TODO: Implement scrolling.
-less80$:move.w	d0,screen_col
+	cmp.w	#32,screen_row	; Have we left the lowest row?
+	blt.s	norowadjust$
+	subq.w	#1,screen_row	; We are back on the visible area.
+	bsr	trap1scroll_up
+norowadjust$:
+	moveq	#0,d0		; Move cursor to the left of screen
+less80$:
+	move.w	d0,screen_col
 	rts
 charCR$:
 	moveq	#0,d0

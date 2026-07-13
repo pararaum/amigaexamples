@@ -83,17 +83,17 @@ boss_trackloader_init:
 ;
 SelDF0MotOn:
 	or.b	#CIAF_DSKSEL3|CIAF_DSKSEL2|CIAF_DSKSEL1|CIAF_DSKSEL0,ciaprb+_ciab ; Deselect all drives by setting bits to high.
-	bclr	#CIAF_DSKMOTOR,ciaprb+_ciab ; Clear bit to switch motor on.
+	bclr	#CIAB_DSKMOTOR,ciaprb+_ciab ; Clear bit to switch motor on.
 	nop
 	nop
-	bclr	#CIAF_DSKSEL0,$bfd100 ; Clear bit 3 to select DF0.
+	bclr	#CIAB_DSKSEL0,$bfd100 ; Clear bit 3 to select DF0.
 	rts
 SelDF0MotOff:
 	or.b	#CIAF_DSKSEL3|CIAF_DSKSEL2|CIAF_DSKSEL1|CIAF_DSKSEL0,ciaprb+_ciab ; Deselect all drives by setting bits to high.
-	bset	#CIAF_DSKMOTOR,ciaprb+_ciab ; Set bit to switch motor off.
+	bset	#CIAB_DSKMOTOR,ciaprb+_ciab ; Set bit to switch motor off.
 	nop
 	nop
-	bclr	#CIAF_DSKSEL0,$bfd100 ; Clear bit 3 to select DF0.
+	bclr	#CIAB_DSKSEL0,$bfd100 ; Clear bit 3 to select DF0.
 	rts
 
 ;*­---------------------------------------------­*
@@ -251,11 +251,27 @@ SelDF0MotOff:
 ;		Rts
 
 GoToTrack00:
-	btst	#CIAF_DSKTRACK0,$bfe001 ; Bit 4: track 00 when low.
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	bsr	move_inwards
+	btst	#CIAF_DSKTRACK0,$bfe001 ; Bit 4: track 0 when low.
 	beq.s	pos00$
-;		Bsr.s	MoveOutwards
-;TowardsTrack00	Btst	#4,$bfe001	Track 00 when low.
-;		Beq.s	Pos00
+	bsr.s	move_outwards
+istrack00$:
+	btst	#CIAB_DSKTRACK0,$bfe001 ; Test again if track 0 was reached.
+	beq.s	pos00$
+	bsr	move_outwards
 ;		Bclr	#0,$bfd100	Move head.
 ;		Nop
 ;		Nop
@@ -263,17 +279,29 @@ GoToTrack00:
 ;		Move.b	#$69,$bfd400	Timer A low.
 ;		Move.b	#$0e,$bfd500	Timer A hi, and starts timer.
 ;		Bsr.s	Timer		5.2ms
-;		Bra.s	TowardsTrack00
+	bra.s	istrack00$
 pos00$:
 	;; 	clr.b	Position(a4); TODO?
 	rts
 
 
-MoveOutwards:
+;;; In: d0.w = timer value to use
+;;; Modifies: d0
+timer_wait:
+	move.b	d0,ciatalo+_ciab
+	lsr.w	#8,d0
+	move.b	d0,ciatahi+_ciab
+	bset	#CIACRAB_START,_ciab+ciacra
+waittimer$:
+	btst	#CIAICRF_TA,ciaicr+_ciab
+	bne	waittimer$
+	rts
+
+move_outwards:
 	bset.b	#CIAB_DSKDIREC,ciaprb+_ciab
 	bra.s	move_head
 
-MoveInwards:
+move_inwards:
 	bclr.b	#CIAB_DSKDIREC,ciaprb+_ciab
 	bra.s	move_head
 
@@ -285,11 +313,9 @@ move_head:
 	nop
 	nop
 	bset	#CIAB_DSKSTEP,ciaprb+_ciab
-	bra	timer_31e1
+	move.w	#$31e1,d0
+	bra	timer_wait
 
-time_31e1:
-	rts
-	
 ;*­---------------------------------------------­*
 ;
 ;Upper		Bclr	#2,$bfd100	Upper side.
@@ -303,18 +329,7 @@ time_31e1:
 ;		Move.b	#$47,$bfd400	Timer A low.
 ;		Move.b	#$00,$bfd500	Timer A hi, and starts timer.
 ;		Bra.s	Timer		100µs
-;
-;*­---------------------------------------------­*
-;
-;MoveOutwards	Bset	#1,$bfd100	Head direction outward.
-;		Bclr	#0,$bfd100	Move head.
-;		Nop
-;		Nop
-;		Bset	#0,$bfd100	Prepare to move head.
-;		Move.b	#$e1,$bfd400	Timer A low.
-;		Move.b	#$31,$bfd500	Timer A hi, and starts timer.
-;		Move.b	#-2,Direction(a4)
-;		Add.b	#-2,Position(a4)	18ms
+
 ;
 ;*­---------------------------------------------­*
 ;
