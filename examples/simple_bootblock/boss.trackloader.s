@@ -20,11 +20,11 @@ SyncWord	Equ	$4489	; Default sync value.
 
 ; Structure for our disk.
 	rsreset
-rsDiskPosition		rs.b	1
+rsDiskPosition		rs.b	1 ; Where is the head?
 rsDiskDirection		rs.b	1
 rsDiskStartTrack	rs.b	1
 rsDiskStartSector	rs.b	1
-rsDiskTracks		rs.b	1
+rsDiskTracks		rs.b	1 ; Tracks to load.
 rsDiskEndSector		rs.b	1
 rsDiskBuf		rs.l	1		 ; Pointer to the Memory for the track buffer, must be in CHIP.
 rsDiskStructSize	rs
@@ -83,78 +83,80 @@ SelDF0MotOff:
 	bclr	#CIAB_DSKSEL0,$bfd100 ; Clear bit 3 to select DF0.
 	rts
 
-;*­---------------------------------------------­*
-;
-;	*	Control routine.
-;
-;	*	Start block -> d0
-;	*	Number of blocks -> d1
-;	*	Destination address -> a0
-;
-;Loader		Tst.l	d1
-;		Beq	ExitLR
-;		Bmi	ExitLR
-;		Tst.l	d0
-;		Bmi	ExitLR			Boundary check.
-;		Move.l	d1,d2
-;		Add.l	d0,d2
-;		Cmp.l	#1804,d2
-;		Bgt	ExitLR
-;
-;		Bsr.s	SelDF0MotOn
-;		Divu	#11,d0
-;		Move.b	d0,StartTrack(a4)
-;		Move.l	d0,d2
-;		Swap 	d2
-;		Move.b	d2,StartSector(a4)
-;		Add.b	d2,d1
-;		Divu	#11,d1
-;		Move.l	d1,d2
-;		Swap 	d2
-;		Tst.b	d2
-;		Bne.s	EqualTrack
-;		Subq.b	#1,d1
-;		Move.b	#11,d2
-;EqualTrack	Move.b	d1,Tracks(a4)
-;		Move.b	d2,EndSector(a4)
-;
-;		Move.b	d0,d1			Start-track in d0.
-;		Move.b	Position(a4),d2
-;		Lsr.b	#1,d1
-;		Lsr.b	#1,d2
-;		Cmp.b	d1,d2
-;		Beq.s	RightCyl		No need to move head.
-;		Blt.s	MoveHeadIn
-;		Sub.b	d1,d2			Moving head outwards.
-;		Bsr	MoveOutwards
-;		Subq.b	#1,d2
-;		Beq.s	RightCyl
-;		Subq.b	#1,d2
-;		Ext.w	d2
-;.MoveHeadOut	Bsr	MoveHead
-;		Dbra	d2,.MoveHeadOut
-;		Bra.s	RightCyl
-;MoveHeadIn	Sub.b	d2,d1			Moving head inwards.
-;		Bsr	MoveInwards
-;		Subq.b	#1,d1
-;		Beq.s	RightCyl
-;		Subq.b	#1,d1
-;		Ext.w	d1
-;.MoveHeadIn	Bsr	MoveHead
-;		Dbra	d1,.MoveHeadIn
-;RightCyl	Btst	#0,StartTrack(a4)		Time to choose side.
-;		Beq.s	.LowerIt
-;		Btst	#2,$bfd100
-;		Beq.s	RightTrack
-;		Bsr	Upper
-;		Bra.s	RightTrack
-;.LowerIt	Btst	#2,$bfd100
-;		Bne.s	RightTrack
-;		Bsr	Lower
-;RightTrack	Move.b	StartSector(a4),d3	And now, the reading begins.
-;		Move.b	Tracks(a4),d2
-;		Beq.s	LastTrack
-;		Moveq	#11,d4
+;;; Trackload data (sectors) into memory
+;;; In: D0.w = startblock
+;;;	D1.w = number of blocks
+;;;	A0.l = destination address
+;;; Modifies: d0-d2,a0
+trackload_data:
+curdisstrptr$	equr	a4
+	tst.w	d1		; Sanity check number of blocks to read.
+	beq	exit$
+	bmi	exit$
+	tst.w	d0		; Negative start block?
+	bmi	exit$
+	move.w	d1,d2
+	add.w	d0,d2
+	cmp.l	#1804,d2
+	bgt	exit$
+
+	lea.l	current_diskstruct,curdisstrptr$ ; Get pointer
+	bsr	SelDF0MotOn ; Start the motor.
+	divu	#11,d0	    ; Divide d0 by 11 (no of sectors per track) to get cylinder/track.
+	move.b	d0,rsDiskStartTrack(curdisstrptr$)
+	move.l	d0,d2	    ; Division result/remainder into d2.
+	swap 	d2	    ; Remainder aka start sector.
+	move.b	d2,rsDiskStartSector(curdisstrptr$)
+	add.w	d2,d1	      ; Add start sector to number of blocks(?).
+	divu	#11,d1
+	move.l	d1,d2		; track in result/sector in remainder
+	swap 	d2		; D2 = track
+	tst.b	d2
+	bne.s	equaltrack$
+	subq.b	#1,d1
+	move.b	#11,d2
+equaltrack$:
+	move.b	d1,rsDiskTracks(a4)
+	move.b	d2,rsDiskEndSector(a4)
+	move.w	d0,d1			Start-track in d0.
+	move.b	rsDiskPosition(a4),d2
+	lsr.b	#1,d1
+	lsr.b	#1,d2
+	cmp.b	d1,d2
+	beq.s	rightcyl$	; The cylinder is right.
+	blt.s	moveheadin$
+	sub.b	d1,d2	       ; How many cylinders outward?
+	bsr	move_outwards
+	subq.b	#1,d2
+	beq.s	rightcyl$
+	subq.b	#1,d2
+	ext.w	d2
+moveheadout$:
+	bsr	move_outwards
+	dbra	d2,moveheadout$
+	bra.s	rightcyl$
+moveheadin$:
+	sub.b	d2,d1		; How many cylinders inward?
+	bsr	move_inwards
+	subq.b	#1,d1
+	beq.s	rightcyl$
+	subq.b	#1,d1
+	ext.w	d1
+movefurtherin$:
+	bsr	move_inwards
+	dbra	d1,movefurtherin$
+rightcyl$:
+	btst	#0,rsDiskStartTrack(a4) ; Getting the side (upper/lower) bit.
+	beq.s	lower_side$
+	bsr	select_upper_side
+	bra.s	already_right_track$
+lower_side$:
+	bsr	select_lower_side
+already_right_track$:
+	move.b	rsDiskStartSector(a4),d3 ; Read the sectors.
+	move.b	rsDiskTracks(a4),d2
+	beq.s	lasttrack$
+	moveq	#11,d4
 ;		Bsr.s	Read
 ;NextTrack	Moveq	#0,d3
 ;		Btst	#2,$bfd100
@@ -171,11 +173,14 @@ SelDF0MotOff:
 ;		Beq.s	LastTrack
 ;		Bsr.s	Read
 ;		Bra.s	NextTrack
-;LastTrack	Move.b	EndSector(a4),d4
+lasttrack$:	move.b	rsDiskEndSector(a4),d4
 ;		Bsr.s	Read
-;		Bsr.s	SelDF0MotOff
-;ExitLR		Rts
-;
+	bsr	SelDF0MotOff
+exit$:	rts
+
+
+
+
 ;*­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­-­*
 ;
 ;
@@ -271,16 +276,19 @@ waittimer$:
 	bne	waittimer$
 	rts
 
+;;; Modifies: d0
 move_outwards:
 	bset.b	#CIAB_DSKDIREC,ciaprb+_ciab
 	nop
 	bra.s	move_head
 
+;;; Modifies: d0
 move_inwards:
 	bclr.b	#CIAB_DSKDIREC,ciaprb+_ciab
 	nop
 	bra.s	move_head
 
+;;; Modifies: d0
 move_head:
 	bset	#CIAB_DSKSTEP,ciaprb+_ciab
 	nop
@@ -292,30 +300,16 @@ move_head:
 	move.w	#$31e1,d0
 	bra	timer_wait
 
-;*­---------------------------------------------­*
-;
-;Upper		Bclr	#2,$bfd100	Upper side.
-;		Move.b	#$47,$bfd400	Timer A low.
-;		Move.b	#$00,$bfd500	Timer A hi, and starts timer.
-;		Bra.s	Timer		100µs
-;
-;*­---------------------------------------------­*
-;
-;Lower		Bset	#2,$bfd100	Lower side.
-;		Move.b	#$47,$bfd400	Timer A low.
-;		Move.b	#$00,$bfd500	Timer A hi, and starts timer.
-;		Bra.s	Timer		100µs
+select_upper_side:
+	bclr	#2,$bfd100	; Upper side.
+	move.w	#$0047,d0
+	bra	time_wait
 
-;
-;*­---------------------------------------------­*
-;
-;Timer		Move.b	$bfdd00,d0	Await Timer ready.
-;		Btst	#0,d0
-;		Beq.s	Timer
-;		Rts
-;
-;*­---------------------------------------------­*
-;
+select_lower_side:
+	bset	#2,$bfd100	; Lower side.
+	move.w	#$0047,d0
+	bra	time_wait
+
 ;MoveInwards	And.b	#$fc,$bfd100	Clear bits 0 and 1,
 ;		Nop	which results in diskdirec=inwards, head moved.
 ;		Nop
