@@ -15,6 +15,7 @@
 	XREF _ciab
 
 	XDEF	boss_trackloader_init
+	XDEF	boss_trackload_data
 
 SyncWord	Equ	$4489	; Default sync value.
 
@@ -35,7 +36,6 @@ current_diskstruct:	ds.b	rsDiskStructSize
 
 	code
 boss_trackloader_init:
-	link	a6,#0
 	moveq	#0,d0
 	lea	$DFF000,a5
 	lea	current_diskstruct,a0
@@ -61,18 +61,6 @@ boss_trackloader_init:
 	bsr	SelDF0MotOn
 	bsr	go_to_track0
 	bsr	SelDF0MotOff
-
-	move.w	#1000,d0
-	moveq	#55,d1
-	lea.l	$c40000,a0
-	bsr	trackload_data
-
-	moveq	#23,d0
-	moveq	#120,d1
-	lea.l	$c50000,a0
-	bsr	trackload_data
-
-	unlk	a6
 	rts
 
 ;;; Modifies: -
@@ -149,7 +137,7 @@ rightcyl$:
 ;;;	D1.w = number of blocks
 ;;;	A0.l = destination address
 ;;; Modifies: d0-d2,d7,a0
-trackload_data:
+boss_trackload_data:
 curdisstrptr$	equr	a4
 ;;; This contains the current track in the loader loop.
 curtralooR$	equr	d7	

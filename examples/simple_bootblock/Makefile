@@ -11,7 +11,7 @@ all:	boss.zx0 $(TARGETS)
 
 boss:	boss.o boss.memorymanagement.o boss.io.o boss.trackloader.o boss.highlevel.o
 #boss:	boss.o
-	vlink $(VLINKFLAGS) -Tboss.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS)
+	vlink $(VLINKFLAGS) -Tboss.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS) vc.lib
 
 boot_salvadore.track0.o: boot_salvadore.track0.s boss.zx0
 

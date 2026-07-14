@@ -72,6 +72,14 @@ list$:	jmp	trap1putc(pc)
 	jmp	trap1home(pc)
 	jmp	trap1clrscr(pc)
 	jmp	trap1scroll_up(pc)
+	rept	15
+	illegal
+	illegal
+	endr
+	jmp	boss_trackload_data(pc)
+	;; If we forget to increase this should be a gentle reminder.
+	illegal
+
 
 trap1home:
 	moveq	#0,d0

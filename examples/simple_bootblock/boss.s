@@ -35,6 +35,10 @@ super$:				  ; Supervisor mode with A7=SP at end of memory.
 	BossIOWritelnS	"Booting BOSS..."
 	bsr	boss_trackloader_init
 	BossIOWritelnS	"...I am ready for you."
+	moveq	#23,d0
+	moveq	#120,d1
+	lea.l	$c50000,a0
+	BossIO	BossIOTrapTrackload
 	
 	move.l	#"12AB",-(sp)
 	bsr	_ul2hex
@@ -74,6 +78,13 @@ super$:				  ; Supervisor mode with A7=SP at end of memory.
 	move.l	d0,a0
 	BossIO	BossIOTrapWriteln
 	;;
+	move.l	a7,a6
+	move.l	#12345678,-(sp)
+	bsr	_ul2dec
+	move.l	a6,a7
+	move.l	d0,a0
+	BossIO	BossIOTrapWriteln
+
 	
 	jmp	*
 

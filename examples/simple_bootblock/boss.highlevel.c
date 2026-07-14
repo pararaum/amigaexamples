@@ -17,3 +17,22 @@ char *ul2hex(unsigned long v1) {
   buf[8] = 0;
   return buf;
 }
+
+
+char *ul2dec(unsigned long num) {
+  // Largest possible number 4294967296, do not forget the string terminator.
+  static char buf[12];
+  char localbuf[12];
+  char *sptr;
+  int i = 0;
+
+  do {
+    localbuf[i++] = (num % 10) + '0';
+    num /= 10;
+  } while(num > 0);
+  for(sptr = buf; i >= 0; --i) {
+    *sptr++ = localbuf[i - 1];
+  }
+  return buf;
+}
+

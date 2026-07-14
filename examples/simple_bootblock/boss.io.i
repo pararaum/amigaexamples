@@ -10,7 +10,12 @@ BossIOTrapWriteln = 2
 BossIOTrapHome = 3
 ;;; Clear Screen. Cursor to (0, 0).
 BossIOTrapClrscr = 4
+;;; Scroll screen up.
+BossIOTrapScrollUp = 5
 
+;;; Trackload data.
+;;; D0.w = start sector, D1.w = number of sectors to load, A0.l = data destination address
+BossIOTrapTrackload = 21
 
 ;;; General macro to call a BossIO trap.
 	macro	BossIO
@@ -46,4 +51,3 @@ BossIOTrapClrscr = 4
 	BossIO	BossIOTrapWriteln
 	endm
 
-	XREF	boss_trackloader_init
