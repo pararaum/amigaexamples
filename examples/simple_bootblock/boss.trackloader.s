@@ -94,6 +94,7 @@ SelDF0MotOff:
 ;;; In:	D0.w = startblock
 ;	D1.w = number of blocks
 ;	A4.l = disk information structure
+;;; Out: modifies disk information structure, sets start/end track and start/end sector (0..10)
 ;;; Modifies: d0-d2
 trackload_calc_start_end_tracks:
 curdisstrptr$ equr A4
