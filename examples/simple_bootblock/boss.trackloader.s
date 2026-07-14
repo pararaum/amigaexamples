@@ -226,6 +226,8 @@ dmawait$:
 ;;; In:	a0 = destination address
 ;;; 	d3 = start sector
 ;;; 	d4 = end sector
+;;; Modifies: d0-d4,d0-a1
+;;; TODO: Return or check if the track was right.
 decode_mfm:
 syncwordR$	equr	d5
 clockpatR$	equr	d7
@@ -237,7 +239,6 @@ REGS$:	REG	syncwordR$/clockpatR$
 findsector$:
 	movea.l	rsDiskBuf(a4),a1 ; Address of mfm buffer into a1.
 syncsearch$:
-	move.b	(a1),color(a5)
 	cmp.w	(a1)+,d5	; Check for Sync-word.
 	bne.s	syncsearch$
 	cmp.w	(a1),d5		; Are there two sync words in a row?
