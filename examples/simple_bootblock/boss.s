@@ -9,12 +9,14 @@
 	XREF	boss_io_init
 
 	xref	_ul2hex
+	xref	_boss_simprintf
+	xref	_testfun
 
 	XDEF	BOSS_MAIN_INIT
 
 
 	data
-	dc.b	"DATA begins here."
+testtext:	dc.b	"%x %x %x %x",10,0
 	even
 
 	;; **********************************************************************
@@ -35,10 +37,26 @@ super$:				  ; Supervisor mode with A7=SP at end of memory.
 	BossIOWritelnS	"Booting BOSS..."
 	bsr	boss_trackloader_init
 	BossIOWritelnS	"...I am ready for you."
-	moveq	#23,d0
-	moveq	#120,d1
-	lea.l	$c50000,a0
-	BossIO	BossIOTrapTrackload
+
+	move.l	a7,a6
+	move.l	a7,d0
+	subq.l	#3,d0
+	and.l	#$FFFFFFFC,d0
+	move.l	d0,a7
+	move.l	#$d0e0f000,-(sp)
+	move.l	#$90a0b0c0,-(sp)
+	move.l	#$50607080,-(sp)
+	move.l	#$10203040,-(sp)
+	;; 	clr.w	-(sp)
+	pea.l	testtext
+	bsr	_boss_simprintf
+	bsr	_testfun
+	move.l	a6,a7
+	
+	;moveq	#23,d0
+	;moveq	#120,d1
+	;lea.l	$c50000,a0
+	;BossIO	BossIOTrapTrackload
 	
 	move.l	#"12AB",-(sp)
 	bsr	_ul2hex

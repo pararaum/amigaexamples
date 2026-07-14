@@ -1,5 +1,6 @@
 #include <stdio.h>
-
+#include <stdarg.h>
+#include "boss.h"
 
 char *ul2hex(unsigned long v1) {
   static char buf[9];
@@ -30,9 +31,51 @@ char *ul2dec(unsigned long num) {
     localbuf[i++] = (num % 10) + '0';
     num /= 10;
   } while(num > 0);
-  for(sptr = buf; i >= 0; --i) {
+  for(sptr = buf; i > 0; --i) {
     *sptr++ = localbuf[i - 1];
   }
+  *sptr = 0;
   return buf;
 }
 
+
+/*! simulated printf
+ *
+ * \warning This assumes that the stack is aligned to a longword!
+ */
+void boss_simprintf(const char *format, ...) {
+  va_list ap;
+  unsigned long ul;
+  short s;
+
+  va_start(ap, format);
+  for(; *format; ++format) {
+    s = *format;
+    switch(*format) {
+    case '%':
+      switch(*(format + 1)) {
+      case '%':
+	BossPutc('%');
+	break;
+      case 'd': // Decimal number.
+	ul = va_arg(ap, unsigned long);
+	BossWrite(ul2dec(ul));
+	break;
+      case 'x': // Hexadecimal number.
+	ul = va_arg(ap, unsigned long);
+	BossWrite(ul2hex(ul));
+	break;
+      }
+      ++format;
+      break;
+    default:
+      BossPutc(*format);
+    }
+  }
+  va_end(ap);
+}
+
+void testfun(void) {
+  boss_simprintf("c: %x %x", 0x12345678ul, 0xea);
+  BossPutc(10);
+}
