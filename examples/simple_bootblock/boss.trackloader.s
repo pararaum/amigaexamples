@@ -20,12 +20,11 @@ SyncWord	Equ	$4489	; Default sync value.
 
 ; Structure for our disk.
 	rsreset
-rsDiskPosition		rs.b	1 ; Where is the head?
-rsDiskDirection		rs.b	1
-rsDiskStartTrack	rs.b	1
-rsDiskStartSector	rs.b	1
-rsDiskTracks		rs.b	1 ; Tracks to load.
-rsDiskEndSector		rs.b	1
+rsDiskPosition		rs.w	1 ; Where is the head? Which track?
+rsDiskStartTrack	rs.w	1
+rsDiskStartSector	rs.w	1
+rsDiskEndTrack		rs.w	1 ; End track to reach.
+rsDiskEndSector		rs.w	1
 rsDiskBuf		rs.l	1		 ; Pointer to the Memory for the track buffer, must be in CHIP.
 rsDiskStructSize	rs
 
@@ -40,11 +39,8 @@ boss_trackloader_init:
 	moveq	#0,d0
 	lea	$DFF000,a5
 	lea	current_diskstruct,a0
-	move.b	d0,rsDiskPosition(a0)
-	move.b	d0,rsDiskDirection(a0)
-	move.b	d0,rsDiskStartTrack(a0)
-	move.b	d0,rsDiskTracks(a0)
-	move.b	d0,rsDiskEndSector(a0)
+	move.w	d0,rsDiskPosition(a0)
+	move.w	d0,rsDiskStartTrack(a0)
 	move.l	#$500,rsDiskBuf(a0) ; Hard coded for now.
 	;move.l	#rsDiskStructSize,d0
 	;BossMem	BossMemTrapAlloc
@@ -60,6 +56,8 @@ boss_trackloader_init:
 	;; Outmode=toggle, runmode=1 is one-shot, spmode=1 is output on serial(?), load=0 means every write in hi latches the value into the timer, inmode=0 is 716 kHz mode.
 	move.b	#CIACRAF_OUTMODE|CIACRAF_RUNMODE|CIACRAF_SPMODE,_ciab+ciacra
 
+	;; We make sure that the head is at track 0 as the structure
+	;; above is initialised to this track.
 	bsr	SelDF0MotOn
 	bsr	go_to_track0
 	bsr	SelDF0MotOff
@@ -77,7 +75,7 @@ boss_trackloader_init:
 	unlk	a6
 	rts
 
-
+;;; Modifies: -
 SelDF0MotOn:
 	or.b	#CIAF_DSKSEL3|CIAF_DSKSEL2|CIAF_DSKSEL1|CIAF_DSKSEL0,ciaprb+_ciab ; Deselect all drives by setting bits to high.
 	bclr	#CIAB_DSKMOTOR,ciaprb+_ciab ; Clear bit to switch motor on.
@@ -93,103 +91,111 @@ SelDF0MotOff:
 	bclr	#CIAB_DSKSEL0,$bfd100 ; Clear bit 3 to select DF0.
 	rts
 
+;;; In:	D0.w = startblock
+;	D1.w = number of blocks
+;	A4.l = disk information structure
+;;; Modifies: d0-d2
+trackload_calc_start_end_tracks:
+curdisstrptr$ equr A4
+	and.l	#$0000ffff,d1	; If there is something in the upper bits remove it!
+	and.l	#$0000ffff,d0	; If there is something in the upper bits remove it!
+	add.w	d0,d1	      ; Add start sector to number of blocks. This gives us the last block in d1.
+	divu	#11,d1
+	divu.w	#11,d0	    ; Divide d0 by 11 (no of sectors per track) to get cylinder/track.
+	;; D0 = rrrrqqqq, quotient in the lower bits, remainder in the most significant 16 bits.
+	move.w	d0,rsDiskStartTrack(curdisstrptr$)
+	move.l	d0,d2	    ; Division result/remainder into d2.
+	swap 	d2	    ; Remainder aka start sector.
+	move.w	d2,rsDiskStartSector(curdisstrptr$)
+	move.w	d1,rsDiskEndTrack(curdisstrptr$)
+	swap	d1
+	move.w	d1,rsDiskEndSector(curdisstrptr$)
+	rts
+
+;;; In: d0.w = destination track
+;;;	A4.l = curdisstrptr$
+;;; Modifies: d0-d3
+move_head_to_track:
+curdisstrptr$	equr	a4
+	move.w	d0,d3		; Keep destination track safe in d3.
+	and.w	#$0001,d0	; Only disk side needed.
+	move.w	rsDiskPosition(curdisstrptr$),d1
+	and.w	#$FFFE,d1	; Remove disk side.
+	or.w	d1,d0
+	move.w	d0,rsDiskPosition(curdisstrptr$)
+head_position_loop$:
+	move.w	d3,d1			; Destination track in d1.
+	move.w	rsDiskPosition(a4),d2	; Current position in d2.
+	lsr.w	#1,d1			; Calculate the actual cylinder!
+	lsr.w	#1,d2
+	cmp.w	d1,d2
+	beq.s	rightcyl$	; The cylinder is right.
+	blt.s	moveheadin$
+	;; Move the head out.
+	bsr	move_outwards
+	subq.w	#2,rsDiskPosition(curdisstrptr$)
+	bra.s	head_position_loop$
+moveheadin$:			; Move head in increasing the cylinder.
+	bsr	move_inwards
+	addq.w	#2,rsDiskPosition(curdisstrptr$)
+	bra	head_position_loop$
+rightcyl$:
+	rts
+	
+	
 ;;; Trackload data (sectors) into memory
 ;;; In: D0.w = startblock
 ;;;	D1.w = number of blocks
 ;;;	A0.l = destination address
-;;; Modifies: d0-d2,a0
+;;; Modifies: d0-d2,d7,a0
 trackload_data:
 curdisstrptr$	equr	a4
+;;; This contains the current track in the loader loop.
+curtralooR$	equr	d7	
 	tst.w	d1		; Sanity check number of blocks to read.
 	beq	exit$
 	bmi	exit$
 	tst.w	d0		; Negative start block?
 	bmi	exit$
 	move.w	d1,d2
-	add.w	d0,d2
-	cmp.w	#1804,d2
+	add.w	d0,d2	       ; d2 contains sum of startblock and number of blocks to read.
+	cmp.w	#1804,d2	;Maximum is 82 tracks: (* 11 2 82) 1804
 	bgt	exit$
 
-	lea.l	current_diskstruct,curdisstrptr$ ; Get pointer
 	bsr	SelDF0MotOn ; Start the motor.
-	divu	#11,d0	    ; Divide d0 by 11 (no of sectors per track) to get cylinder/track.
-	move.b	d0,rsDiskStartTrack(curdisstrptr$)
-	move.l	d0,d2	    ; Division result/remainder into d2.
-	swap 	d2	    ; Remainder aka start sector.
-	move.b	d2,rsDiskStartSector(curdisstrptr$)
-	add.w	d2,d1	      ; Add start sector to number of blocks(?).
-	divu	#11,d1
-	move.l	d1,d2		; track in result/sector in remainder
-	swap 	d2		; D2 = track
-	tst.b	d2
-	bne.s	equaltrack$
-	subq.b	#1,d1
-	move.b	#11,d2
-equaltrack$:
-	move.b	d1,rsDiskTracks(a4)
-	move.b	d2,rsDiskEndSector(a4)
-	move.w	d0,d1			Start-track in d0.
-	move.b	rsDiskPosition(a4),d2
-	lsr.b	#1,d1
-	lsr.b	#1,d2
-	cmp.b	d1,d2
-	beq.s	rightcyl$	; The cylinder is right.
-	blt.s	moveheadin$
-	sub.b	d1,d2	       ; How many cylinders outward?
-	bsr	move_outwards
-	subq.b	#1,d2
-	beq.s	rightcyl$
-	subq.b	#1,d2
-	ext.w	d2
-moveheadout$:
-	bsr	move_outwards
-	dbra	d2,moveheadout$
-	bra.s	rightcyl$
-moveheadin$:
-	sub.b	d2,d1		; How many cylinders inward?
-	bsr	move_inwards
-	subq.b	#1,d1
-	beq.s	rightcyl$
-	subq.b	#1,d1
-	ext.w	d1
-movefurtherin$:
-	bsr	move_inwards
-	dbra	d1,movefurtherin$
-rightcyl$:
-	btst	#0,rsDiskStartTrack(a4) ; Getting the side (upper/lower) bit.
+	lea.l	current_diskstruct,curdisstrptr$ ; Get pointer
+	bsr	trackload_calc_start_end_tracks
+	move.w	rsDiskStartTrack(a4),curtralooR$ ; Start track in d7.
+head_position_loop$:
+	move.w	curtralooR$,d0
+	bsr	move_head_to_track
+	btst	#0,rsDiskPosition(a4) ; Getting the side (upper/lower) bit.
 	beq.s	lower_side$
 	bsr	select_upper_side
-	bra.s	already_right_track$
+	bra.s	disk_position_reached$
 lower_side$:
 	bsr	select_lower_side
-already_right_track$:
-	move.b	rsDiskStartSector(a4),d3 ; Read the sectors.
-	move.b	rsDiskTracks(a4),d2
-	beq.s	lasttrack$
-	moveq	#11,d4
+disk_position_reached$:
+	moveq	#0,d3		; Read from the beginning of the track.
+	moveq	#11,d4		; Read until the end of the track.
+	;; Check if on first or last track to adjust first and last sector.
+	move.w	rsDiskPosition(curdisstrptr$),d0
+	cmp.w	rsDiskStartTrack(curdisstrptr$),d0
+	bne.s	no_start_track$
+	move.w	rsDiskStartSector(curdisstrptr$),d3
+no_start_track$:
+	;; 	move.w	rsDiskPosition(curdisstrptr$)
+	cmp.w	rsDiskEndTrack(curdisstrptr$),d0
+	bne.s	no_end_track$
+	move.w	rsDiskEndSector(curdisstrptr$),d4
+no_end_track$:
 	bsr.s	read_and_decode
-nexttrack$:
-	moveq	#0,d3
-	btst	#2,$bfd100
-	bne.s	nextside_up$
-	bsr	select_lower_side
-	btst	#1,$bfd100
-	bne.s	firstmovein$
-	bsr	move_inwards
-	bra.s	nextread$
-firstmovein$:
-	bsr	move_inwards
-	bra.s	nextread$
-nextside_up$:
-	bsr	select_upper_side
-nextread$:
-	subq.b	#1,d2
-	beq.s	lasttrack$
-	bsr.s	read_and_decode
-	bra.s	nexttrack$
-lasttrack$:
-	move.b	rsDiskEndSector(a4),d4
-	bsr.s	read_and_decode
+	move.w	rsDiskPosition(curdisstrptr$),d0
+	cmp.w	rsDiskEndTrack(curdisstrptr$),d0
+	beq.s	finished$
+	addq.w	#1,curtralooR$
+	bra	head_position_loop$
+finished$:
 	bsr	SelDF0MotOff
 exit$:	rts
 
@@ -217,6 +223,10 @@ dmawait$:
 ;;; 	d3 = start sector
 ;;; 	d4 = end sector
 decode_mfm:
+syncwordR$	equr	d5
+clockpatR$	equr	d7
+REGS$:	REG	syncwordR$/clockpatR$
+	movem.l	REGS$,-(sp)
 	move.w	#SyncWord,d5	; Put synchornisation word into d5.
 	move.l	#$55555555,d7	; Clock pattern in d7.
 
@@ -242,7 +252,7 @@ syncsearch$:
 sectorok$:
 	addq.b	#1,d3
 	lea	$38(a1),a1	; Skip header bytes.
-	moveq	#$7f,d6
+	moveq	#$7f,d6		; $80-1 long words.
 decodeloop$:
 	move.l	$200(a1),d1
 	move.l	(a1)+,d0
@@ -254,6 +264,7 @@ decodeloop$:
 	dbra	d6,decodeloop$
 	cmp.b	d4,d3
 	bne.s	findsector$
+	movem.l	(sp)+,REGS$
 	rts
 
 
