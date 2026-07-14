@@ -169,15 +169,18 @@ curtralooR$	equr	d7
 head_position_loop$:
 	move.w	curtralooR$,d0
 	bsr	move_head_to_track
-	btst	#0,rsDiskPosition(a4) ; Getting the side (upper/lower) bit.
-	beq.s	lower_side$
+	move.w	rsDiskPosition(a4),d0 ; Getting the side (upper/lower) bit.
+	;btst.l	#0,d0
+	;beq.s	lower_side$
+	lsr.w	#1,d0
+	bcc.s	lower_side$
 	bsr	select_upper_side
 	bra.s	disk_position_reached$
 lower_side$:
 	bsr	select_lower_side
 disk_position_reached$:
 	moveq	#0,d3		; Read from the beginning of the track.
-	moveq	#11,d4		; Read until the end of the track.
+	moveq	#11-1,d4	; Read until the end of the track.
 	;; Check if on first or last track to adjust first and last sector.
 	move.w	rsDiskPosition(curdisstrptr$),d0
 	cmp.w	rsDiskStartTrack(curdisstrptr$),d0
@@ -200,7 +203,7 @@ finished$:
 exit$:	rts
 
 
-
+;;; Read the current track and decode the sectors.
 read_and_decode:
 	btst	#5,$bfe001	; Await Disk ready.
 	bne.s	read_and_decode
@@ -209,7 +212,6 @@ read_and_decode:
 	move.w	#2,intreq(a5)	; Clear Disk Intrequest.
 	move.l	rsDiskBuf(a4),dskpt(a5) ; Set MFM buffer.
 	move.w	#$8010,dmacon(a5)	; Disk DMA on.
-	move.w	#$4000,dsklen(a5)
 	move.w	#$9900,dsklen(a5)
 	move.w	#$9900,dsklen(a5)
 dmawait$:
@@ -217,6 +219,7 @@ dmawait$:
 	beq.s	dmawait$
 	move.w	#$4000,$24(a5)
 	move.w	#$0010,$96(a5)		Disk DMA off.
+	clr.w	dsklen(a5)
 
 ;;; Decode MFM track.
 ;;; In:	a0 = destination address
@@ -250,7 +253,6 @@ syncsearch$:
 	lea	$43E(a1),a1	; Skip to next sector.
 	bra.s	syncsearch$
 sectorok$:
-	addq.b	#1,d3
 	lea	$38(a1),a1	; Skip header bytes.
 	moveq	#$7f,d6		; $80-1 long words.
 decodeloop$:
@@ -262,9 +264,11 @@ decodeloop$:
 	or.l	d1,d0
 	move.l	d0,(a0)+	; Move to destination buffer.
 	dbra	d6,decodeloop$
-	cmp.b	d4,d3
-	bne.s	findsector$
-	movem.l	(sp)+,REGS$
+	cmp.b	d4,d3		; Is this the end?
+	beq.s	exit$
+	addq.w	#1,d3
+	bra.s	findsector$
+exit$:	movem.l	(sp)+,REGS$
 	rts
 
 
