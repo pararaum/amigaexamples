@@ -5,6 +5,7 @@ SECTIONS {
  }
  CODE : {
       *(CODE)
+      *(music)
  }
  exec_LVO : {
  	 *(exec_LVO)
@@ -20,6 +21,7 @@ SECTIONS {
  BSS (NOLOAD) : {
      __BSS_START__ = .;
      *(BSS)
+     *(musicbss)
      __BSS_END__ = .;
  }
 }

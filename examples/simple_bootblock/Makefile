@@ -7,6 +7,7 @@ CURRENT = boot_salvadore.raw.adf # boot_and_load_track.adf
 
 include ../config.mk
 
+
 all:	boss.zx0 part0 $(TARGETS)
 
 part0:	part0.o part0.entry.o bassing.modified.mod.zx0
