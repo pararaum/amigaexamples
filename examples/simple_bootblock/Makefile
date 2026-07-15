@@ -10,12 +10,14 @@ include ../config.mk
 
 all:	boss.zx0 part0 $(TARGETS)
 
-part0:	part0.o part0.entry.o bassing.modified.mod.zx0
+part0.entry.s:  bassing.modified.mod.zx0
+
+part0:	part0.o part0.entry.o
 	vlink $(VLINKFLAGS) -D STARTADDR=0xc60000 -Tall_in_one.x -nostdlib -symfile $@.sym -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
 
 boss:	boss.o boss.memorymanagement.o boss.io.o boss.trackloader.o boss.highlevel.o
 #boss:	boss.o
-	vlink $(VLINKFLAGS) -Tboss.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS) vc.lib
+	vlink $(VLINKFLAGS) -Tboss.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS) -L$$VBCC/vbcc_target_m68k-kick13/targets/m68k-kick13/lib -lvc
 
 boot_salvadore.track0.o: boot_salvadore.track0.s boss.zx0
 
@@ -47,6 +49,6 @@ run:
 
 .PHONY: clean run
 clean:
-	rm -f *.o *.adf *.bootblock *.lst *.sym *.track0
+	rm -f *.o *.adf *.bootblock *.lst *.sym *.track0 *.zx0
 	rm -f $(TARGETS)
-	rm -f boss
+	rm -f boss part0

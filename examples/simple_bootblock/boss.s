@@ -36,10 +36,10 @@ mainloop$:
 	move.l	(sp)+,d2	; Address.
 	bmi	end_of_demo$
 	moveq	#9,d0
-	move.l	(sp)+,d3	; End sector of part.
-	lsr.l	d0,d3
-	move.l	(sp)+,d4	; Start sector of part.
-	lsr.l	d0,d4
+	move.l	(sp)+,d3	; End offset of part.
+	lsr.l	d0,d3		; calculate sector
+	move.l	(sp)+,d4	; Start offset of part.
+	lsr.l	d0,d4		; calculate sector
 	move.l	a7,a6
 	move.l	a7,d0
 	and.l	#$FFFFFFFC,d0	; Align to word
