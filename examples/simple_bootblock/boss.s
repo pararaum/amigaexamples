@@ -36,7 +36,13 @@ super$:				  ; Supervisor mode with A7=SP at end of memory.
 	bsr	boss_io_init
 	BossIOWritelnS	"Booting BOSS..."
 	bsr	boss_trackloader_init
-	BossIOWritelnS	"...I am ready for you."
+	BossIOWritelnS	"READY."
+
+	lea.l	$6100,a0
+	move.l	#$400,d0
+	BossMem	BossMemTrapAllocChipAt
+
+	jmp	*
 
 	move.l	a7,a6
 	move.l	a7,d0

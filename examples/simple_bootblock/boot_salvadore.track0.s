@@ -119,3 +119,12 @@ zx0data_end:
 	rept	32
 	dc.l	*
 	endr
+
+	align	9
+	printt "--------------------------------------------"
+	printv *,*/512
+
+	;; Constant?
+	;ds.b	4*11*512-*
+	dc.b	"Block 4*11",0
+	even

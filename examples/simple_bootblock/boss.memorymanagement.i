@@ -10,8 +10,16 @@ BossMemTrapFree = 2
 BossMemTrapAllocSlow = 3
 ;;; A0 = address of memory to free
 BossMemTrapFreeSlow = 4
-BossMemTrapCopyWords = 5
-BossMemTrapClearWords = 6
+;;; In: D0.l = number of bytes requested
+;;;	A0.l = address requested
+;;; Out: A0 = address we got or 0 on failure
+BossMemTrapAllocChipAt = 5
+;;; In: D0.l = number of bytes requested
+;;;	A0.l = address requested
+;;; Out: A0 = address we got or 0 on failure
+BossMemTrapAllocSlowAt = 6
+BossMemTrapCopyWords = 7
+BossMemTrapClearWords = 8
 
 	MACRO	BossMem
 	moveq	#\1,d7

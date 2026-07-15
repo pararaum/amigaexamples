@@ -48,8 +48,8 @@
 	RSRESET
 rsMEMCHUNK_shift:	rs.w	1 ; log2(chunk size)
 rsMEMCHUNK_chunksize:	rs.w	1 ; 1<<above shift
-rsMEMCHUNK_memchunknum:	rs.w	1
-rsMEMCHUNK_memstart:	rs.l	1
+rsMEMCHUNK_memchunknum:	rs.w	1 ; available chunks
+rsMEMCHUNK_memstart:	rs.l	1 ; Pointer to the memory
 rsMEMCHUNK_memchunks:	rs.w	0 ; Placeholder!
 rsMEMCHUNK_rs_size:	rs
 
@@ -105,6 +105,8 @@ list$:	jmp	boss_memmanage_init(pc)
 	jmp	boss_memmanage_chipfree(pc)
 	jmp	boss_memmanage_slowalloc(pc)
 	jmp	boss_memmanage_slowfree(pc)
+	jmp	boss_memmanage_chipalloc_at(pc)
+	jmp	boss_memmanage_slowalloc_at(pc)
 	jmp	memcopyword(pc)
 	jmp	memclearword(pc)
 
@@ -121,6 +123,12 @@ l1$:	clr.w	(a0)+
 	rts
 
 
+boss_memmanage_chipalloc_at:
+	lea.l	MEMCHUNKCHIP,a6
+	bra	boss_memmanage_alloc_atA6
+boss_memmanage_slowalloc_at:
+	lea.l	MEMCHUNKSLOW,a6
+	bra	boss_memmanage_alloc_atA6
 
 boss_memmanage_chipalloc:
 	lea.l	MEMCHUNKCHIP,a6
@@ -135,6 +143,66 @@ boss_memmanage_slowalloc:
 boss_memmanage_slowfree:
 	lea.l	MEMCHUNKSLOW,a6
 	bra	boss_memmanage_freeA6
+
+
+;;; Allocate memory at a certain position.
+;;; In:	D0.l = number of bytes requested
+;;;	A0.l = address requested
+;;;	A6.l = pointer to memory structure
+;;; Out: a0 = pointer to allocated memory or 0 on failure
+boss_memmanage_alloc_atA6:
+chunee$	equr	d4 ; Chunks needed
+chunum$	equr	d2 ; Number of first chunk
+	;;---- chunks_needed = ceil(size / CHUNK_SIZE) ----
+	moveq	#0,d1
+        move.w 	rsMEMCHUNK_chunksize(a6),d1 ; d1 = chunksize in L.
+	subq.l	#1,d1
+	add.l	d0,d1
+        move.w	rsMEMCHUNK_shift(a6),d0
+	lsr.l	d0,d1		; d1 = number of chunks
+        beq     fail$		; size 0 -> nothing to do
+        move.l  d1,chunee$		; d4 = chunks needed
+	move.l	rsMEMCHUNK_memstart(a6),a1 ; Start of memory
+	cmpa.l	a1,a0
+	blt.s	fail$
+	move.l	a0,chunum$		; Put address into data register.
+	sub.l	a1,chunum$		; Offset into the memory
+        move.w	rsMEMCHUNK_shift(a6),d0
+	lsr.l	d0,chunum$	; First chunk number calculated.
+	;; Now scan.
+	move.l	chunum$,d0	; First chunk number in D0.
+	lsl.l	#1,d0		; A word for each chunk.
+	move.w	d4,d1
+	subq.w	#1,d1
+	lea.l	rsMEMCHUNK_memchunks(a6),a0
+scanloop$:
+	tst.w	0(a0,d0)
+	bne	fail$
+	addq.l	#2,d0
+	dbf	d1,scanloop$
+	;; Memory is free, allocate it.
+	move.l	chunum$,d0	; First chunk number in D0.
+	lsl.l	#1,d0		; A word for each chunk.
+	add.l	d0,a0		; Chunk entry in table, a0 is unchanged from above!
+	move.w	d4,d1
+	move.w	d4,(a0)+	; Allocate the memory.
+	subq.w	#1,d1
+	beq	onlyone$
+	subq.w	#1,d1		; DBF goes to -1.
+	moveq	#-1,d0		; $FFFF
+fillloop$:
+	move.w	d0,(a0)+
+	dbf	d1,fillloop$
+onlyone$:
+	move.w	rsMEMCHUNK_shift(a6),d0	; Multi first chunk number to get offset.
+	lsl.l	d0,chunum$
+	add.l	rsMEMCHUNK_memstart(a6),chunum$ ; Add beginning of memory.
+	;; chunum$ now contains the real start address
+	move.l	chunum$,a0		; A0, too.
+	rts
+fail$:	moveq	#0,d0
+	move.l	d0,a0
+	rts
 
 ;=============================================================================
 ;;; In:	d0.l = number of bytes requested
