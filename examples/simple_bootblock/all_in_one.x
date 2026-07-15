@@ -17,4 +17,9 @@ SECTIONS {
  data : {
       *(data)
  }
+ BSS (NOLOAD) : {
+     __BSS_START__ = .;
+     *(BSS)
+     __BSS_END__ = .;
+ }
 }

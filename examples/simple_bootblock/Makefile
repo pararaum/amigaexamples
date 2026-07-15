@@ -9,7 +9,7 @@ include ../config.mk
 
 all:	boss.zx0 part0 $(TARGETS)
 
-part0:	part0.o part0.entry.o
+part0:	part0.o part0.entry.o bassing.modified.mod.zx0
 	vlink $(VLINKFLAGS) -D STARTADDR=0xc60000 -Tall_in_one.x -nostdlib -symfile $@.sym -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
 
 boss:	boss.o boss.memorymanagement.o boss.io.o boss.trackloader.o boss.highlevel.o

@@ -20,6 +20,10 @@ BossMemTrapAllocChipAt = 5
 BossMemTrapAllocSlowAt = 6
 BossMemTrapCopyWords = 7
 BossMemTrapClearWords = 8
+;;; In:	a0.l = start of compressed data
+;;;     a1.l = start of decompression buffer
+BossMemDecompressZX0 = 9
+
 
 	MACRO	BossMem
 	moveq	#\1,d7

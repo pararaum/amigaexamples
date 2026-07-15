@@ -109,6 +109,9 @@ list$:	jmp	boss_memmanage_init(pc)
 	jmp	boss_memmanage_slowalloc_at(pc)
 	jmp	memcopyword(pc)
 	jmp	memclearword(pc)
+	jmp	zx0_decompress(pc)
+
+	include	"zx0decompress.inc"
 
 ;;; Copy memory from a0, a1. D0 words are copied.
 memcopyword:
