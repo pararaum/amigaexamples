@@ -1,4 +1,8 @@
 SECTIONS {
+ . = STARTADDR;
+ LOWCODE : {
+ 	 *(LOWCODE)
+ }
  CODE : {
       *(CODE)
  }
@@ -9,5 +13,8 @@ SECTIONS {
  }
  DATA : {
       *(DATA)
+ }
+ data : {
+      *(data)
  }
 }

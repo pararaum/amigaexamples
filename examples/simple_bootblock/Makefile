@@ -7,7 +7,10 @@ CURRENT = boot_salvadore.raw.adf # boot_and_load_track.adf
 
 include ../config.mk
 
-all:	boss.zx0 $(TARGETS)
+all:	boss.zx0 part0 $(TARGETS)
+
+part0:	part0.o part0.entry.o
+	vlink $(VLINKFLAGS) -D STARTADDR=0xc60000 -Tall_in_one.x -nostdlib -symfile $@.sym -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
 
 boss:	boss.o boss.memorymanagement.o boss.io.o boss.trackloader.o boss.highlevel.o
 #boss:	boss.o
@@ -16,10 +19,10 @@ boss:	boss.o boss.memorymanagement.o boss.io.o boss.trackloader.o boss.highlevel
 boot_salvadore.track0.o: boot_salvadore.track0.s boss.zx0
 
 %.bootblock: %.o
-	vlink $(VLINKFLAGS) -Tall_in_one.x -nostdlib -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
+	vlink $(VLINKFLAGS) -D STARTADDR=0 -Tall_in_one.x -nostdlib -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
 
 %.track0: %.track0.o
-	vlink $(VLINKFLAGS) -Tall_in_one.x -nostdlib -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
+	vlink $(VLINKFLAGS) -D STARTADDR=0 -Tall_in_one.x -nostdlib -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
 
 %.raw.adf: %.track0
 	printf "\e[31mRemoving '%s'\e[0m: " "$@"

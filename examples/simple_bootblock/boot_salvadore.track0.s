@@ -22,8 +22,11 @@ BOOTSTART:
 	move.w	#$7fff,intena(a5) ; Disable interrupts.
 	move.w	#$7fff,intreq(a5) ; Disable interrupt requests.
 	move.w	#$7fff,dmacon(a5) ; Disable DMA.
-
-bootcode:
+	;; And switch directly to super user mode.
+	lea	super$(pc),a0
+	move.l	a0,$20.w	  ; Set privilege escalation vector.
+	stop	#$0200		  ; This is a privileged opcode.
+super$:				  ; Supervisor mode with A7=SP at end of memory.
 	lea	BOOTEND(PC),a2	; A2=end of boot code
 	move.l	a2,a0
 	moveq	#11-1,d2
@@ -46,7 +49,35 @@ bootcode:
 	bsr	zx0_decompress
 	move.w	#$00a0,color(a5)
 
+	moveq	#-1,d0
+	move.l	d0,-(sp)	; End.
+	move.l	#part0,-(sp)
+	move.l	#part0_end,-(sp)
+	move.l	#$c60000,-(sp)
 	jmp	DESTINATIONBOSS
+
+	
+;;; Search a track (mfm encoded) in memory.
+;;; Input: A0=memory pointer
+;;; Output: A0=memory pointer *after* sector, A1=pointer to mfm encoded sector data, D0=$FFTTSSkk (T=track, S=sector, k=skip to end of track)
+;;; Modifies: A0,A1,D0,D1
+search_track:
+	cmp.w	#$AAAA,(a0)+	; Find the MFM encoding of a the gap (zero bytes).
+	bne.s	search_track
+	cmp.w	#$4489,(a0)	; First sync mark.
+	bne.s	search_track
+	cmp.w	#$4489,2(a0)	; Second sync mark.
+	bne.s	search_track
+	lea.l	4(a0),a0	; Skip syncs.
+	move.l	(a0)+,d0
+	move.l	(a0)+,d1
+	and.l	#$55555555,d0
+	and.l	#$55555555,d1
+	lsl.l	#1,d0
+	or.l	d1,d0
+	lea.l	48(a0),a1	; Beginning of MFM sector data.
+	lea.l	1024(a1),a0	; Skip sector data.
+	rts
 
 ;;; Decode a track
 ;;; Input: A0=destination to write decoded data to, A1=source MFM data
@@ -71,28 +102,6 @@ decode_trackA1A0:
 	or.l	d1,(.dest)+
 	dbf	d2,.loop
 	movem.l	(sp)+,.regs
-	rts
-	
-;;; Search a track (mfm encoded) in memory.
-;;; Input: A0=memory pointer
-;;; Output: A0=memory pointer *after* sector, A1=pointer to mfm encoded sector data, D0=$FFTTSSkk (T=track, S=sector, k=skip to end of track)
-;;; Modifies: A0,A1,D0,D1
-search_track:
-	cmp.w	#$AAAA,(a0)+	; Find the MFM encoding of a the gap (zero bytes).
-	bne.s	search_track
-	cmp.w	#$4489,(a0)	; First sync mark.
-	bne.s	search_track
-	cmp.w	#$4489,2(a0)	; Second sync mark.
-	bne.s	search_track
-	lea.l	4(a0),a0	; Skip syncs.
-	move.l	(a0)+,d0
-	move.l	(a0)+,d1
-	and.l	#$55555555,d0
-	and.l	#$55555555,d1
-	lsl.l	#1,d0
-	or.l	d1,d0
-	lea.l	48(a0),a1	; Beginning of MFM sector data.
-	lea.l	1024(a1),a0	; Skip sector data.
 	rts
 
 	dc.b	"Pararaum/T7D",0
@@ -121,10 +130,10 @@ zx0data_end:
 	endr
 
 	align	9
-	printt "--------------------------------------------"
+	printt "Part0"
 	printv *,*/512
 
-	;; Constant?
-	;ds.b	4*11*512-*
-	dc.b	"Block 4*11",0
+part0:
+	incbin	"part0"
+part0_end:
 	even
