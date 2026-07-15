@@ -74,8 +74,3 @@ void boss_simprintf(const char *format, ...) {
   }
   va_end(ap);
 }
-
-void testfun(void) {
-  boss_simprintf("c: %x %x", 0x12345678ul, 0xea);
-  BossPutc(10);
-}

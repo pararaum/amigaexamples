@@ -8,15 +8,13 @@
 	XREF	boss_memmanage_init
 	XREF	boss_io_init
 
-	xref	_ul2hex
-	xref	_boss_simprintf
-	xref	_testfun
 
 	XDEF	BOSS_MAIN_INIT
 
 
 	data
-testtext:	dc.b	"%x %x %x %x",10,0
+trackloadtext:
+	dc.b	"Trackloading %x..%x to %x.",10,0
 	even
 
 	;; **********************************************************************
@@ -42,6 +40,16 @@ mainloop$:
 	lsr.l	d0,d3
 	move.l	(sp)+,d4	; Start sector of part.
 	lsr.l	d0,d4
+	move.l	a7,a6
+	move.l	a7,d0
+	and.l	#$FFFFFFFC,d0	; Align to word
+	move.l	d0,a7
+	move.l	d2,-(sp)
+	move.l	d3,-(sp)
+	move.l	d4,-(sp)
+	pea.l	trackloadtext
+	bsr	_boss_simprintf
+	move.l	a6,a7		; Restore stack
 	move.l	d4,d0
 	move.l	d3,d1
 	move.l	d2,a0
