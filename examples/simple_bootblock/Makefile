@@ -1,17 +1,19 @@
 #! /usr/bin/make -f
 
-TARGETS = boot_and_do_nothing.adf boot_and_load_track.adf boot_and_search_memory.adf boot_and_search_memory.raw.adf boot_salvadore.raw.adf
+TARGETS = boot_and_do_nothing.adf boot_and_load_track.adf boot_and_search_memory.adf boot_and_search_memory.raw.adf boot_salvadore.raw.adf bossdemo.adf
 # CURRENT is only used for run, which of the TARGETS is actually run?
-CURRENT = boot_salvadore.raw.adf # boot_and_load_track.adf
+CURRENT = bossdemo.adf
 #Not used "./fix-bb.py $@" as bootblock is handled by `xdftool`.
 
 include ../config.mk
 
 
-all:	boss.zx0 part0 $(TARGETS)
+all:	boss.zx0 part0.zx0 $(TARGETS)
+
+resident: resident.entrypoint.o
+	vlink $(VLINKFLAGS) -D STARTADDR=0x6000 -Tall_in_one.x -nostdlib -symfile $@.sym -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
 
 part0.entry.s:  bassing.modified.mod.zx0
-
 part0:	part0.o part0.entry.o
 	vlink $(VLINKFLAGS) -D STARTADDR=0xc60000 -Tall_in_one.x -nostdlib -symfile $@.sym -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
 
@@ -20,6 +22,10 @@ boss:	boss.o boss.memorymanagement.o boss.io.o boss.trackloader.o boss.highlevel
 	vlink $(VLINKFLAGS) -Tboss.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS) -L$$VBCC/vbcc_target_m68k-kick13/targets/m68k-kick13/lib -lvc
 
 boot_salvadore.track0.o: boot_salvadore.track0.s boss.zx0
+
+bossdemo.adf:	boot.bossboot.bootblock boss.zx0 resident.zx0 part0.zx0 assets.cfg
+	./diskmaster.py -o $@ $< boss.zx0
+
 
 %.bootblock: %.o
 	vlink $(VLINKFLAGS) -D STARTADDR=0 -Tall_in_one.x -nostdlib -b rawbin $(filter %.o, $^) -o $@ $(LIBS)

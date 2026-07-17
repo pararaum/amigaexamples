@@ -3,6 +3,9 @@
 
 	XDEF	boss_memmanage_init
 
+	xref	boss_manifest_entries
+	xref	boss_manifest_memory
+
 ;=============================================================================
 ; CHUNK-TABLE MEMORY ALLOCATOR  (Motorola 68000)
 ;=============================================================================
@@ -79,7 +82,7 @@ clear$:
 	endm
 
 	ChunkStructure	CHIP, 7, $6000, 512<<10
-	ChunkStructure	SLOW, 9, $c10000, $c7f800
+	ChunkStructure	SLOW, 9, $c10000, $c7f000
 	
 CONT_MARKER     equ     $FFFF           ; marks a "continuation" chunk
 
@@ -87,10 +90,13 @@ CONT_MARKER     equ     $FFFF           ; marks a "continuation" chunk
 	CODE
 ;;; Initialise the whole memory system. This will install the trap15code.
 boss_memmanage_init:
+regs$:	reg	d2-d7/a2-a6
+	movem.l	regs$,-(sp)
 	bsr	init_MEMCHUNKSLOW
 	bsr	init_MEMCHUNKCHIP
 	lea	trap15code(pc),a0
 	move.l	a0,$BC.w	; Set vector for TRAP#15.
+	movem.l	(sp)+,regs$
         rts
 
 trap15code:
@@ -110,6 +116,19 @@ list$:	jmp	boss_memmanage_init(pc)
 	jmp	memcopyword(pc)
 	jmp	memclearword(pc)
 	jmp	zx0_decompress(pc)
+	jmp	find_manifest(pc)
+
+
+find_manifest:
+	move.l	boss_manifest_memory,a0
+	move.w	boss_manifest_entries,d1
+l1$:
+	cmp.l	(a0),d0		; Is this the entry we are looking for?
+	beq	found$
+	lea.l	rsManifest_Structsize(a0),a0 ; Skip to next entry.
+	dbeq	d1,l1$
+	sub.l	a0,a0		; Clear A0 as nothing was found.
+found$:	rts
 
 	include	"zx0decompress.inc"
 

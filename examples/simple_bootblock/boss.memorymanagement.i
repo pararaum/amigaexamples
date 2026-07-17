@@ -18,11 +18,18 @@ BossMemTrapAllocChipAt = 5
 ;;;	A0.l = address requested
 ;;; Out: A0 = address we got or 0 on failure
 BossMemTrapAllocSlowAt = 6
+;;; In:	d0.w = number of words
+;;;	A0 = source
+;;;	A1 = destination
 BossMemTrapCopyWords = 7
 BossMemTrapClearWords = 8
 ;;; In:	a0.l = start of compressed data
 ;;;     a1.l = start of decompression buffer
 BossMemDecompressZX0 = 9
+;;; Find an entry in the manifest list.
+;;; In: d0.l = name of the entry
+;;; Out: a0 = address of entry or 0
+BossFindManifestEntry = 10
 
 
 	MACRO	BossMem
@@ -42,3 +49,14 @@ BossMemDecompressZX0 = 9
 	move.w	#\2,d0		; Number of bytes
 	BossMem	BossMemTrapClearWords
 	endm
+
+;;; Manifest memory structure.
+	rsreset
+rsManifestName:	rs.l	1
+rsManifestStartSector:	rs.w	1
+rsManifestNumSectors:	rs.w	1
+rsManifestPackedSize:	rs.l	1
+rsManifestUnpackedSize:	rs.l	1
+rsManifestMemflags:	rs.w	1
+rsManifestType:	rs.w	1
+rsManifestStructsize:	rs

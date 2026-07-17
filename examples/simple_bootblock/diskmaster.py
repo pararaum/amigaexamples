@@ -6,15 +6,15 @@
 master_disk.py - Amiga trackloader disk mastering tool
 
 Takes a list of assets (demo parts, music, graphics), compresses each with
-the external 'salvador' LZSA packer, lays them out sector-by-sector on a
+the external 'salvador' ZX0 packer, lays them out sector-by-sector on a
 raw 880K disk image, writes a fixed-size manifest table describing where
 everything is, and produces a bootable .adf.
 
 Layout produced:
-    Track 0, sector 0-1   : bootblock (1024 bytes, checksum patched in)
-    Track 0, sector 2-10  : resident loader binary (raw binary, up to 4608 bytes)
-    Track 1               : manifest table (up to MANIFEST_MAX_ENTRIES entries)
-    Track 2 onward        : compressed assets, back to back, sector-aligned
+    Track 0, sector 0   : bootblock (1024 bytes, checksum patched in)
+    Track 0, sector 1-2 : manifest, first part is in bootblock!
+    Track 0, sector 3-10: boss resident loader binary (raw binary, up to 4096 bytes)
+    Track 1 onward        : compressed assets, back to back, sector-aligned
 
 Requires: 'salvador' binary on PATH (https://github.com/emmanuel-marty/salvador)
 Requires: python3-arpeggio (apt install python3-arpeggio, or pip install arpeggio)
@@ -37,17 +37,17 @@ SECTORS_PER_TRACK = 11
 TRACKS           = 80 * 2                     # 80 cylinders * 2 heads
 DISK_SIZE        = SECTOR_SIZE * SECTORS_PER_TRACK * TRACKS   # 901120 bytes
 
-BOOTBLOCK_SECTORS  = 2                        # fixed by Kickstart
-LOADER_START_SECTOR = BOOTBLOCK_SECTORS       # track 0, sector 2
-LOADER_MAX_SECTORS  = SECTORS_PER_TRACK - BOOTBLOCK_SECTORS
-MANIFEST_START_SECTOR = SECTORS_PER_TRACK     # track 1, sector 0
-MANIFEST_SECTORS   = SECTORS_PER_TRACK        # one whole track reserved for manifest
-ASSET_START_SECTOR = MANIFEST_START_SECTOR + MANIFEST_SECTORS   # track 2, sector 0
+BOOTBLOCK_SECTORS  = 1                      # We only use the first sector!
+MANIFEST_START_SECTOR = 2
+MANIFEST_SECTORS   = 2 
+BOSS_START_SECTOR = MANIFEST_START_SECTOR + MANIFEST_SECTORS
+BOSS_MAX_SECTORS  = 8                   # TODO: trackloader should be able to load anything
+ASSET_START_SECTOR = 11                 # Track 1, Sector 0
 
 # ---------------------------------------------------------------------------
 # Manifest record format
 #   4s  name        4 bytes, not null-terminated, purely for debugging
-#   I   start_sector
+#   H   start_sector
 #   H   num_sectors  (sectors to read from disk, i.e. packed data size / 512, rounded up)
 #   I   packed_size  (exact byte length of compressed data)
 #   I   unpacked_size(size to allocate before depacking)
@@ -56,9 +56,9 @@ ASSET_START_SECTOR = MANIFEST_START_SECTOR + MANIFEST_SECTORS   # track 2, secto
 # Big-endian, matches 68k / C struct layout with no padding (24 bytes total).
 # ---------------------------------------------------------------------------
 
-MANIFEST_FORMAT = ">4sIHIIHH"
+MANIFEST_FORMAT = ">4sHHIIHH"
 MANIFEST_ENTRY_SIZE = struct.calcsize(MANIFEST_FORMAT)
-assert MANIFEST_ENTRY_SIZE == 22, MANIFEST_ENTRY_SIZE
+assert MANIFEST_ENTRY_SIZE == 20, MANIFEST_ENTRY_SIZE
 
 MANIFEST_MAX_ENTRIES = (MANIFEST_SECTORS * SECTOR_SIZE) // MANIFEST_ENTRY_SIZE
 
@@ -190,20 +190,27 @@ def compress_with_salvador(src_path: str, salvador_bin: str = "salvador") -> byt
     """
     out_path = src_path + ".zx0"
     try:
+        stats = os.stat(out_path)
+        #print(f"\tUsing file {out_path} with {stats.st_size} bytes.")
+    except FileNotFoundError:
         cmd = [salvador_bin, src_path, out_path]
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             raise RuntimeError(
                 f"salvador failed on {src_path}:\n{result.stdout}\n{result.stderr}"
             )
-        with open(out_path, "rb") as f:
-            return f.read()
-    finally:
-        if os.path.exists(out_path):
-            os.remove(out_path)
+    with open(out_path, "rb") as f:
+        return f.read()
 
 
 def sectors_needed(byte_len: int) -> int:
+    """calculate number of sectors needed
+
+    This function will take care of partially filled sectors so that a
+    single byte will still occupy a whole sector.
+
+    @param byte_len: bytes needed
+    """
     return (byte_len + SECTOR_SIZE - 1) // SECTOR_SIZE
 
 
@@ -214,25 +221,30 @@ def pad_to_sector(data: bytes) -> bytes:
     return data + bytes(SECTOR_SIZE - remainder)
 
 
-# ---------------------------------------------------------------------------
-# Bootblock checksum (standard Amiga algorithm: sum of all longwords with
-# carry wraparound must equal 0xFFFFFFFF; checksum field itself is zeroed
-# during the sum, then patched with the value that makes this true)
-# ---------------------------------------------------------------------------
 
-def patch_bootblock_checksum(bootblock: bytearray) -> None:
-    assert len(bootblock) == 1024, "bootblock must be exactly 1024 bytes"
-    bootblock[4:8] = b"\x00\x00\x00\x00"
 
-    total = 0
-    for i in range(0, 1024, 4):
-        word = struct.unpack_from(">I", bootblock, i)[0]
-        total += word
-        if total > 0xFFFFFFFF:
-            total = (total & 0xFFFFFFFF) + 1   # carry wraparound
+def patch_bootblock_checksum(data: bytearray) -> None:
+    """fix bb
 
-    checksum = (0xFFFFFFFF - total) & 0xFFFFFFFF
-    struct.pack_into(">I", bootblock, 4, checksum)
+    Bootblock checksum (standard Amiga algorithm: sum of all longwords
+    with carry wraparound must equal 0xFFFFFFFF; checksum field itself
+    is zeroed during the sum, then patched with the value that makes
+    this true)
+
+    @param data: bootblock data, 1024 bytes
+    @return: fixed bootblock
+    """
+    assert len(data) >= 1024, "bootblock must be at least 1024 bytes"
+
+    chksum = 0x444f5300
+    for w in range(8, 1024, 4):
+        chksum += struct.unpack('>I', data[w:w + 4])[0]
+        if chksum > 0xffffffff:
+            chksum = (chksum + 1) & 0xffffffff
+    chksum = (~chksum) & 0xffffffff
+    print("BB checksum is $%08X." % chksum)
+    # Set checksum.
+    struct.pack_into(">I", data, 4, chksum)
 
 
 # ---------------------------------------------------------------------------
@@ -248,10 +260,9 @@ def build_manifest(assets: list[Asset]) -> bytes:
 
     out = bytearray()
     # The first longword of the manifest track is the entry count, so
-    # the resident loader knows how far to iterate without a sentinel
-    # scan. We add three more longwords for further expansion.
-    out += struct.pack(">IIII", len(assets), 0, 0, 0)
-
+    # the resident boss knows how far to iterate without a sentinel
+    # scan.
+    out += struct.pack(">I", len(assets))
     for a in assets:
         name_bytes = a.name.encode("ascii")[:4].ljust(4, b"\x00")
         out += struct.pack(
@@ -274,34 +285,35 @@ def build_manifest(assets: list[Asset]) -> bytes:
 
 def master_disk(
     bootblock_bin: str,
-    loader_bin: str,
+    boss_bin: str,
     assets: list[Asset],
     out_adf: str,
     salvador_bin: str = "salvador",
 ):
-    # --- bootblock ---
+    # Read bootblock code.
     with open(bootblock_bin, "rb") as f:
         bootblock_code = f.read()
     if len(bootblock_code) > 1024 - 12:
         print("Warning! Bootblock code too large $%08X, extracting code." % len(bootblock_code), file=sys.stderr)
         bootblock_code = bootblock_code[12:1024 - 2]
-
+    # Prepare bootblock
     bootblock = bytearray(1024)
     bootblock[0:4] = b"DOS\x00"
-    struct.pack_into(">I", bootblock, 8, 0)     # rootblock field, unused
+    # Set root disk value to make Amigados recognise the disk.
+    struct.pack_into(">I", bootblock, 8, 0x370)
     bootblock[12:12 + len(bootblock_code)] = bootblock_code
-    patch_bootblock_checksum(bootblock)
 
-    # --- resident loader ---
-    with open(loader_bin, "rb") as f:
-        loader_code = f.read()
-    max_loader_bytes = LOADER_MAX_SECTORS * SECTOR_SIZE
-    if len(loader_code) > max_loader_bytes:
+    # --- resident boss ---
+    with open(boss_bin, "rb") as f:
+        boss_code = f.read()
+    max_boss_bytes = BOSS_MAX_SECTORS * SECTOR_SIZE
+    if len(boss_code) > max_boss_bytes:
         raise ValueError(
-            f"loader binary too large ({len(loader_code)} bytes), "
-            f"only {max_loader_bytes} bytes reserved on track 0"
+            f"boss binary too large ({len(boss_code)} bytes), "
+            f"only {max_boss_bytes} bytes reserved on track 0"
         )
-    loader_padded = loader_code.ljust(max_loader_bytes, b"\x00")
+    print("Boss binary is $%08X bytes, padded to $%08X." % (len(boss_code), max_boss_bytes))
+    boss_padded = boss_code.ljust(max_boss_bytes, b"\x00")
 
     # --- compress + place each asset ---
     next_sector = ASSET_START_SECTOR
@@ -333,15 +345,18 @@ def master_disk(
 
     # --- assemble final image ---
     image = bytearray()
+    # Bootblock only one sector in our case!
+    bootblock = bootblock[0:512]
     image += bootblock
-    image += loader_padded
     image += manifest
+    image += boss_padded
     for blob in packed_blobs:
         image += blob
     image = image.ljust(DISK_SIZE, b"\x00")
 
     assert len(image) == DISK_SIZE, f"image size {len(image)} != {DISK_SIZE}"
-
+    # Fix the bootblock checksum in the image
+    patch_bootblock_checksum(image)
     with open(out_adf, "wb") as f:
         f.write(image)
 
@@ -377,7 +392,7 @@ def main():
 
     master_disk(
         bootblock_bin=args.bootblock,
-        loader_bin=args.boss,
+        boss_bin=args.boss,
         assets=assets,
         out_adf=args.output,
         salvador_bin="salvador",
