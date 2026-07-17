@@ -340,9 +340,10 @@ def master_disk(
         next_sector += a.num_sectors
         packed_blobs.append(pad_to_sector(packed))
         print(
-            f"  {a.name:<4} {a.path:<30} "
-            f"{a.unpacked_size:>7} -> {a.packed_size:>7} bytes  "
-            f"sectors {a.start_sector}..{a.start_sector + a.num_sectors - 1}"
+            f"  {a.name:<4}"
+            f"{a.unpacked_size:>7} -> {a.packed_size:>7} bytes"
+            f" sectors {a.start_sector:>5} ..{a.start_sector + a.num_sectors - 1:>5}"
+            f": {a.path:<40} "
         )
 
     total_disk_sectors = next_sector
