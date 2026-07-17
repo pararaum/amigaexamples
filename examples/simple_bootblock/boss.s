@@ -69,7 +69,7 @@ manifestcopyloop$:
 	bra	*
 found$:	move.l	a0,a6		; Manifest pointer in A6.
 	move.l	rsManifestUnpackedSize(a6),d0
-SAFETYBUFFERSIZE$:	equ	$100
+SAFETYBUFFERSIZE$:	equ	$20
 	add.l	#SAFETYBUFFERSIZE$,d0	; Safety buffer.
 	tst.w	rsManifestMemflags(a6)
 	beq.s	allocslow$

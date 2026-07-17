@@ -51,23 +51,23 @@ ASSET_START_SECTOR = 11                 # Track 1, Sector 0
 #   H   num_sectors  (sectors to read from disk, i.e. packed data size / 512, rounded up)
 #   I   packed_size  (exact byte length of compressed data)
 #   I   unpacked_size(size to allocate before depacking)
-#   H   mem_flags    (0 = fast/any, 1 = chip)
-#   H   type         (0 = part, 1 = music, 2 = gfx, ... up to you)
+#   I   mem_flags    (0x00000000 = any memory, 0x80000000 = chip memory,
+#                      anything else = explicit destination address)
 # Big-endian, matches 68k / C struct layout with no padding (24 bytes total).
 # ---------------------------------------------------------------------------
 
-MANIFEST_FORMAT = ">4sHHIIHH"
+MANIFEST_FORMAT = ">4sHHIII"
 MANIFEST_ENTRY_SIZE = struct.calcsize(MANIFEST_FORMAT)
 assert MANIFEST_ENTRY_SIZE == 20, MANIFEST_ENTRY_SIZE
 
 MANIFEST_MAX_ENTRIES = (MANIFEST_SECTORS * SECTOR_SIZE) // MANIFEST_ENTRY_SIZE
 
-MEM_ANY  = 0
-MEM_CHIP = 1
-
-TYPE_PART  = 0
-TYPE_MUSIC = 1
-TYPE_GFX   = 2
+MEM_ANY  = 0x00000000
+# 0x80000000 is used as a sentinel, not a real address: 68000-based Amigas
+# only have a 24-bit address bus (max 16MB), so no real chip/fast memory
+# address will ever have bit 31 set. That makes this value unambiguous
+# against any hex destination address someone specifies explicitly.
+MEM_CHIP = 0x80000000
 
 
 @dataclass
@@ -75,7 +75,6 @@ class Asset:
     name: str            # up to 4 chars, for debugging only
     path: str            # path to the uncompressed source file
     mem_flags: int = MEM_ANY
-    type_: int = TYPE_PART
     # filled in during mastering:
     packed_path: str = field(default="", init=False)
     start_sector: int = field(default=0, init=False)
@@ -89,8 +88,13 @@ class Asset:
 # Text format, one declaration per line:
 #
 #     # comment
-#     asset PT01 "parts/intro.bin"   type=part  mem=any
-#     asset MUS1 "assets/track1.mod" type=music mem=chip
+#     asset PT01 "parts/intro.bin"   mem=any
+#     asset MUS1 "assets/track1.mod" mem=chip
+#     asset LOGO "assets/logo.raw"   mem=0x40000
+#
+# mem= accepts 'any' (loader picks the address), 'chip' (must be chip
+# RAM, loader picks the address), or a hex address (asset must land at
+# that exact destination address - see MEM_ANY/MEM_CHIP sentinels below).
 #
 # Arpeggio (apt install python3-arpeggio) builds a memoizing recursive
 # descent PEG parser from the grammar functions below - this is what
@@ -134,7 +138,6 @@ class AssetVisitor(PTNodeVisitor):
 
 
 _MEM_NAMES  = {"any": MEM_ANY, "chip": MEM_CHIP}
-_TYPE_NAMES = {"part": TYPE_PART, "music": TYPE_MUSIC, "gfx": TYPE_GFX}
 
 
 def parse_asset_file(path_: str) -> list[Asset]:
@@ -161,19 +164,29 @@ def parse_asset_file(path_: str) -> list[Asset]:
         seen_names.add(asset_name)
 
         mem_str = attrs.get("mem", "any")
-        type_str = attrs.get("type", "part")
-        if mem_str not in _MEM_NAMES:
-            raise ValueError(f"asset {asset_name!r}: unknown mem={mem_str!r} "
-                              f"(expected one of {sorted(_MEM_NAMES)})")
-        if type_str not in _TYPE_NAMES:
-            raise ValueError(f"asset {asset_name!r}: unknown type={type_str!r} "
-                              f"(expected one of {sorted(_TYPE_NAMES)})")
+        mem_key = mem_str.lower()
+        if mem_key in _MEM_NAMES:
+            mem_flags = _MEM_NAMES[mem_key]
+        else:
+            # not 'any' or 'chip' - must be a hex destination address,
+            # e.g. mem=0x40000 or mem=40000 (int(..., 16) accepts both)
+            try:
+                mem_flags = int(mem_str, 16)
+            except ValueError:
+                raise ValueError(
+                    f"asset {asset_name!r}: mem={mem_str!r} is not 'any', "
+                    f"'chip', or a valid hex address"
+                )
+            if mem_flags & 0xFF000000:
+                raise ValueError(
+                    f"asset {asset_name!r}: mem=0x{mem_flags:X} has bits set "
+                    f"above the 24-bit Amiga address range"
+                )
 
         assets.append(Asset(
             name=asset_name,
             path=file_path,
-            mem_flags=_MEM_NAMES[mem_str],
-            type_=_TYPE_NAMES[type_str],
+            mem_flags=mem_flags,
         ))
     return assets
 
@@ -273,7 +286,6 @@ def build_manifest(assets: list[Asset]) -> bytes:
             a.packed_size,
             a.unpacked_size,
             a.mem_flags,
-            a.type_,
         )
 
     return pad_to_sector(bytes(out)).ljust(MANIFEST_SECTORS * SECTOR_SIZE, b"\x00")
