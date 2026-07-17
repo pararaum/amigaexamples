@@ -57,6 +57,5 @@ rsManifestStartSector:	rs.w	1
 rsManifestNumSectors:	rs.w	1
 rsManifestPackedSize:	rs.l	1
 rsManifestUnpackedSize:	rs.l	1
-rsManifestMemflags:	rs.w	1
-rsManifestType:	rs.w	1
+rsManifestMemflags:	rs.l	1
 rsManifestStructsize:	rs

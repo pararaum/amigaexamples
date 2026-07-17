@@ -67,26 +67,38 @@ manifestcopyloop$:
 	bne.s	found$
 	BossIOWritelnS "Finding of first part failed!"
 	bra	*
+	;;  Part was found, now get the memory.
 found$:	move.l	a0,a6		; Manifest pointer in A6.
-	move.l	rsManifestUnpackedSize(a6),d0
 SAFETYBUFFERSIZE$:	equ	$20
+	move.l	rsManifestUnpackedSize(a6),d0
 	add.l	#SAFETYBUFFERSIZE$,d0	; Safety buffer.
-	tst.w	rsManifestMemflags(a6)
-	beq.s	allocslow$
-	BossMem	BossMemTrapAlloc ; Alloc CHIP.
-	bra.s	run$
-allocslow$:
+	move.l	rsManifestMemflags(a6),d1 ; Where to put the data?
+	bmi	useCHIP$
+	beq	useSLOW$
+	;; ...or a fixed destination address.
+	move.l	d1,a0
+	cmp.l	#$800000,d1
+	blt	useAbsCHIP$
+	BossMem	BossMemTrapAllocSlowAt
+	bra	run$
+useAbsCHIP$:
+	BossMem	BossMemTrapAllocChipAt
+	bra	run$
+useCHIP$:
+	BossMem	BossMemTrapAlloc
+	bra	run$
+useSLOW$:
 	BossMem	BossMemTrapAllocSlow
 run$:				; A0 has memory.
-	move.l	a0,a2		; Put address into a2
+	move.l	a0,a2		; Put address into a2.
 	add.l	rsManifestUnpackedSize(a6),a0
 	lea.l	SAFETYBUFFERSIZE$(a0),a0
 	sub.l	rsManifestPackedSize(a6),a0
+	move.l	a0,a3		; Load address into A3.
 	move.w	rsManifestStartSector(a6),d0
 	move.w	rsManifestNumSectors(a6),d1
 	BossIO	BossIOTrapTrackload
 	move.l	a2,a1		; Destination
-	lea	SAFETYBUFFERSIZE$(a2),a0
+	move.l	a3,a0
 	BossMem	BossMemDecompressZX0
-
-	jmp	*
+	jmp	(a2)
