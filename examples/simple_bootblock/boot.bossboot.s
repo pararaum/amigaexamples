@@ -71,8 +71,7 @@ super$:				  ; Supervisor mode with A7=SP at end of memory.
 	;; Init the BOSS.
 	move.l	MEMADDR,a0
 	move.l	#"RESI",d0
-	jsr	DESTINATIONBOSS
-	bra	*
+	jmp	DESTINATIONBOSS
 	
 	include	zx0decompress.inc
 

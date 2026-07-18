@@ -22,10 +22,12 @@ trackloadtext:
 ;;; This stores the number of available manifest entries.
 boss_manifest_entries:	ds.w	1
 boss_manifest_memory:	ds.l	1
-	;; **********************************************************************
-	;; MAIN
-	;; **********************************************************************
+
+
 	CODE
+;;; BOSS initialisation function
+;;; In:	A0.l = address where the manifest resides.
+;;;	D0.l = id of first part to load and JMP to.
 BOSS_MAIN_INIT:
 	lea	$00DFF000,a5	; Custom base in A5.
 	move.w	#$7fff,intena(a5) ; Disable interrupts.
