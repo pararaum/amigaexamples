@@ -73,23 +73,7 @@ SAFETYBUFFERSIZE$:	equ	$20
 	move.l	rsManifestUnpackedSize(a6),d0
 	add.l	#SAFETYBUFFERSIZE$,d0	; Safety buffer.
 	move.l	rsManifestMemflags(a6),d1 ; Where to put the data?
-	bmi	useCHIP$
-	beq	useSLOW$
-	;; ...or a fixed destination address.
-	move.l	d1,a0
-	cmp.l	#$800000,d1
-	blt	useAbsCHIP$
-	BossMem	BossMemTrapAllocSlowAt
-	bra	run$
-useAbsCHIP$:
-	BossMem	BossMemTrapAllocChipAt
-	bra	run$
-useCHIP$:
-	BossMem	BossMemTrapAlloc
-	bra	run$
-useSLOW$:
-	BossMem	BossMemTrapAllocSlow
-run$:				; A0 has memory.
+	BossMem	BossMemTrapAllocDeluxe
 	move.l	a0,a2		; Put address into a2.
 	add.l	rsManifestUnpackedSize(a6),a0
 	lea.l	SAFETYBUFFERSIZE$(a0),a0
