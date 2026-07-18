@@ -18,7 +18,8 @@ SECTIONS {
  data : {
       *(data)
  }
- BSS (NOLOAD) : {
+ 
+ BSS  : {
      __BSS_START__ = .;
      *(BSS)
      *(musicbss)

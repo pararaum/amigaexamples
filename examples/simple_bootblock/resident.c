@@ -8,9 +8,11 @@ extern volatile struct Custom custom;
 extern volatile uint32_t framecounter;
 
 static unsigned short copperlist4gfx[] = {
-  BPLPT,0,BPLPT,0,	// Bitplane pointers, set by loop.
-  BPLPT,0,BPLPT,0,	// Bitplane pointers, set by loop.
-  BPLPT,0,BPLPT,0,	// Bitplane pointers, set by loop.
+  CNOOP,0,CNOOP,0,	// Bitplane pointers, set by loop.
+  CNOOP,0,CNOOP,0,
+  CNOOP,0,CNOOP,0,
+  CNOOP,0,CNOOP,0,
+  CNOOP,0,CNOOP,0,
   DIWSTRT,0x2C81,DIWSTOP,0x2CC1,
   DDFSTRT, 0X0038,DDFSTOP,0X00D0,
   BPLCON0,(3<<12)|0X200,
@@ -58,6 +60,6 @@ void show_graphics(void) {
 int main() {
   BossWriteln("Loading further assets.");
   show_graphics();
-  BossManifestLoad(0x50543030);
+  BossManifestLoad(0x47465832);
   return 0;
 }

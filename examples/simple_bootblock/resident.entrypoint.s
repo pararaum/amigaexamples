@@ -11,11 +11,12 @@
 ;;; c20000-c4ffff (format "%x" (- #xc47fff #xc20000))"27fff"
 ;;; c50000-c7f000 (format "%x" (- #xc7f000 #xc50000))"2f000"
 
-;;; Warning! Do not use BSS, as the disk master does not know about BSS!
-	;; BSS
-	DATA
+;;; Warning! When using BSS our linkerscript will put it into the file!
+	BSS
 pingmem:	ds.l	1
 pongmem:	ds.l	1
+
+	DATA
 _framecounter:	dc.l	0
 
 	section	LOWCODE,CODE
