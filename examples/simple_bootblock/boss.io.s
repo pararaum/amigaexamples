@@ -74,7 +74,8 @@ list$:	jmp	trap1putc(pc)
 	jmp	trap1home(pc)
 	jmp	trap1clrscr(pc)
 	jmp	trap1scroll_up(pc)
-	rept	15
+	jmp	trap1output_hex(pc)
+	rept	14
 	illegal
 	illegal
 	endr
@@ -83,6 +84,12 @@ list$:	jmp	trap1putc(pc)
 	;; If we forget to increase this should be a gentle reminder.
 	illegal
 
+trap1output_hex:
+	move.l	d0,-(sp)	; Put on stack for C.
+	bsr	_ul2hex
+	addq.l	#4,sp		; Fix stack
+	move.l	d0,a0
+	bra	trap1write	; And output, tail recursion.
 
 trap1home:
 	moveq	#0,d0

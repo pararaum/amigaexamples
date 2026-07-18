@@ -92,8 +92,8 @@ clear$:
 
 	;; Chip memory chunks.
 	ChunkStructure	CHIP, 7, BOSSFIRSTCHIP, 512<<10
-	;; Slow memory chunks. After BOSS but leave some space for stack!
-	ChunkStructure	SLOW, 9, $c03000, $c7f000
+	;; Slow memory chunks. After BOSS (remember to check __BSS_END__!) but leave some space for stack!
+	ChunkStructure	SLOW, 9, $c05000, $c7f000
 	
 CONT_MARKER     equ     $FFFF           ; marks a "continuation" chunk
 
@@ -210,6 +210,7 @@ boss_memmanage_slowfree:
 ;;;	A6.l = pointer to memory structure
 ;;; Out: a0 = pointer to allocated memory or 0 on failure
 boss_memmanage_alloc_atA6:
+;;; TODO: check out of bounds! If the start address requested is outside of the memory range then no check should be performed.
 chunee$	equr	d4 ; Chunks needed
 chunum$	equr	d2 ; Number of first chunk
 	;;---- chunks_needed = ceil(size / CHUNK_SIZE) ----
@@ -221,6 +222,8 @@ chunum$	equr	d2 ; Number of first chunk
 	lsr.l	d0,d1		; d1 = number of chunks
         beq     fail$		; size 0 -> nothing to do
         move.l  d1,chunee$		; d4 = chunks needed
+	cmp.w	rsMEMCHUNK_memchunknum(a6),d4 ; Check if there are enough chunks!
+	bgt	fail$
 	move.l	rsMEMCHUNK_memstart(a6),a1 ; Start of memory
 	cmpa.l	a1,a0
 	blt.s	fail$

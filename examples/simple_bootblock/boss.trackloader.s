@@ -58,7 +58,13 @@ SAFETYBUFFERSIZE$:	equ	$20
 	add.l	rsManifestUnpackedSize(manifestR$),a0
 	lea.l	SAFETYBUFFERSIZE$(a0),a0
 	sub.l	rsManifestPackedSize(manifestR$),a0
-	move.l	a0,a3		; Load address into A3.
+	;; Warning! The packed size may be odd and this, of course,
+	;; does not work on a 68K! We added a buffer and now we just
+	;; clear the lowest bit to make the address even!
+	move.l	a0,d0
+	bclr	#0,d0		; Now we are even!
+	move.l	d0,a3		; Load address into A3 for later use.
+	move.l	d0,a0		; Destination address for track loader.
 	move.w	rsManifestStartSector(manifestR$),d0
 	move.w	rsManifestNumSectors(manifestR$),d1
 	BossIO	BossIOTrapTrackload

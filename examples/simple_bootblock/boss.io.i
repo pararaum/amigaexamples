@@ -12,7 +12,9 @@ BossIOTrapHome = 3
 BossIOTrapClrscr = 4
 ;;; Scroll screen up.
 BossIOTrapScrollUp = 5
-
+;;; Output a hexadecimal number
+;;; In: D0.l = value to output
+BossIOPrintHex = 6
 ;;; Trackload data.
 ;;; D0.w = start sector, D1.w = number of sectors to load, A0.l = data destination address
 BossIOTrapTrackload = 21
@@ -25,6 +27,12 @@ BossManifestLoad = 22
 	macro	BossIO
 	moveq	#\1,d7
 	trap	#1
+	endm
+
+	macro	BossIOnl
+	moveq	#10,d0
+	moveq	#7,d7
+	BossIO	BossIOTrapPutc
 	endm
 
 	macro	BossIOWrite
