@@ -13,6 +13,8 @@
 BOSSSCREENBITPLANE:	equ	$400
 ;;; We put the copperlist just behind the graphics memory.
 BOSSSCREENCOPPERLIST:	equ	BOSSSCREENBITPLANE+640/8*256
+;;; This is the first memory available for the allocation code.
+BOSSFIRSTCHIP:	equ	BOSSSCREENCOPPERLIST+256
 
 ;=============================================================================
 ; CHUNK-TABLE MEMORY ALLOCATOR  (Motorola 68000)
@@ -88,8 +90,10 @@ clear$:
 	rts
 	endm
 
-	ChunkStructure	CHIP, 7, $6000, 512<<10
-	ChunkStructure	SLOW, 9, $c10000, $c7f000
+	;; Chip memory chunks.
+	ChunkStructure	CHIP, 7, BOSSFIRSTCHIP, 512<<10
+	;; Slow memory chunks. After BOSS but leave some space for stack!
+	ChunkStructure	SLOW, 9, $c03000, $c7f000
 	
 CONT_MARKER     equ     $FFFF           ; marks a "continuation" chunk
 
