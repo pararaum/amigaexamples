@@ -16,6 +16,10 @@ BossIOTrapScrollUp = 5
 ;;; Trackload data.
 ;;; D0.w = start sector, D1.w = number of sectors to load, A0.l = data destination address
 BossIOTrapTrackload = 21
+;;; Load data from manifest.
+;;; In:	D0.l = id of entry to load
+;;; Out: D0.l and A0.l = address of memory (or zero)
+BossManifestLoad = 22
 
 ;;; General macro to call a BossIO trap.
 	macro	BossIO

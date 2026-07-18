@@ -16,6 +16,7 @@
 
 	XDEF	boss_trackloader_init
 	XDEF	boss_trackload_data
+	XDEF	boss_manifest_load
 
 SyncWord	Equ	$4489	; Default sync value.
 
@@ -33,6 +34,40 @@ rsDiskStructSize	rs
 current_diskstruct:	ds.b	rsDiskStructSize
 	even
 
+	CODE
+boss_manifest_load:
+manifestR$:	equr	a6
+allocatedR$:	equr	a2
+	BossMem	BossFindManifestEntry
+	move.l	a0,d0
+	tst.l	d0
+	bne.s	found$
+	move.l	d0,a0
+	rts
+	;;  Part was found, now get the memory.
+found$:	move.l	a0,manifestR$		; Manifest pointer in MANIFESTR$.
+SAFETYBUFFERSIZE$:	equ	$20
+	move.l	rsManifestUnpackedSize(manifestR$),d0
+	add.l	#SAFETYBUFFERSIZE$,d0	; Safety buffer.
+	move.l	rsManifestMemflags(manifestR$),d1 ; Where to put the data?
+	BossMem	BossMemTrapAllocDeluxe
+	move.l	a0,allocatedR$		; Put address into allocatedR$.
+	move.l	a0,d0
+	tst.l	d0		; Fail?
+	beq	end$
+	add.l	rsManifestUnpackedSize(manifestR$),a0
+	lea.l	SAFETYBUFFERSIZE$(a0),a0
+	sub.l	rsManifestPackedSize(manifestR$),a0
+	move.l	a0,a3		; Load address into A3.
+	move.w	rsManifestStartSector(manifestR$),d0
+	move.w	rsManifestNumSectors(manifestR$),d1
+	BossIO	BossIOTrapTrackload
+	move.l	allocatedR$,a1		; Destination
+	move.l	a3,a0
+	BossMem	BossMemDecompressZX0
+end$:	move.l	allocatedR$,a0
+	move.l	allocatedR$,d0
+	rts
 
 	code
 boss_trackloader_init:

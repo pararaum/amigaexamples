@@ -61,28 +61,11 @@ manifestcopyloop$:
 	BossIOWritelnS	"READY."
 	add.w	#1024,sp	; Restore old stack.
 	move.l	(sp)+,d0	; First part from stack.
-	BossMem	BossFindManifestEntry
-	move.l	a0,d0
+	;; Now load.
+	BossIO	BossManifestLoad
 	tst.l	d0
 	bne.s	found$
 	BossIOWritelnS "Finding of first part failed!"
 	bra	*
 	;;  Part was found, now get the memory.
-found$:	move.l	a0,a6		; Manifest pointer in A6.
-SAFETYBUFFERSIZE$:	equ	$20
-	move.l	rsManifestUnpackedSize(a6),d0
-	add.l	#SAFETYBUFFERSIZE$,d0	; Safety buffer.
-	move.l	rsManifestMemflags(a6),d1 ; Where to put the data?
-	BossMem	BossMemTrapAllocDeluxe
-	move.l	a0,a2		; Put address into a2.
-	add.l	rsManifestUnpackedSize(a6),a0
-	lea.l	SAFETYBUFFERSIZE$(a0),a0
-	sub.l	rsManifestPackedSize(a6),a0
-	move.l	a0,a3		; Load address into A3.
-	move.w	rsManifestStartSector(a6),d0
-	move.w	rsManifestNumSectors(a6),d1
-	BossIO	BossIOTrapTrackload
-	move.l	a2,a1		; Destination
-	move.l	a3,a0
-	BossMem	BossMemDecompressZX0
-	jmp	(a2)
+found$:	jmp	(a0)

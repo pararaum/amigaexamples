@@ -4,6 +4,8 @@
 	include boss.memorymanagement.i
 	include	boss.io.i
 
+	XREF	boss_manifest_load
+
 	XDEF	boss_io_init
 
 ;;; Include a nice font into the data segment.
@@ -77,6 +79,7 @@ list$:	jmp	trap1putc(pc)
 	illegal
 	endr
 	jmp	boss_trackload_data(pc)
+	jmp	boss_manifest_load(pc)
 	;; If we forget to increase this should be a gentle reminder.
 	illegal
 
