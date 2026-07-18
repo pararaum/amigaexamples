@@ -1,37 +1,45 @@
 ; -*- mode: asm -*-
 
+;;; Deluxe allocation trap.
+;;; In:	D0.L = bytes to allocate
+;;;	D1.L = flags
+;;;	 - either a destination address which is preferred (on 24 bits)
+;;;	 - 0 for do not care, allocated SLOW/FAST
+;;;	 - 0x8??????? (bit31 set) allocates CHIP memory
+;;; Out: A0 = address of memory
+BossMemTrapAllocDeluxe = 1
 ;;; In:	D0.L = bytes to allocate
 ;;; Out: A0 = address of memory
-BossMemTrapAlloc = 1
+BossMemTrapAlloc = 2
 ;;; A0 = address of memory to free
-BossMemTrapFree = 2
+BossMemTrapFree = 3
 ;;; In:	D0.L = bytes to allocate
 ;;; Out: A0 = address of memory
-BossMemTrapAllocSlow = 3
+BossMemTrapAllocSlow = 4
 ;;; A0 = address of memory to free
-BossMemTrapFreeSlow = 4
+BossMemTrapFreeSlow = 5
 ;;; In: D0.l = number of bytes requested
 ;;;	A0.l = address requested
 ;;; Out: A0 = address we got or 0 on failure
-BossMemTrapAllocChipAt = 5
+BossMemTrapAllocChipAt = 6
 ;;; In: D0.l = number of bytes requested
 ;;;	A0.l = address requested
 ;;; Out: A0 = address we got or 0 on failure
-BossMemTrapAllocSlowAt = 6
+BossMemTrapAllocSlowAt = 7
 ;;; In:	d0.w = number of words (max. 32767!)
 ;;;	A0 = source
 ;;;	A1 = destination
-BossMemTrapCopyWords = 7
+BossMemTrapCopyWords = 8
 ;;; In:	d0.w = number of words (max. 32767!)
 ;;;	A0 = destination
-BossMemTrapClearWords = 8
+BossMemTrapClearWords = 9
 ;;; In:	a0.l = start of compressed data
 ;;;     a1.l = start of decompression buffer
-BossMemDecompressZX0 = 9
+BossMemDecompressZX0 = 10
 ;;; Find an entry in the manifest list.
 ;;; In: d0.l = name of the entry
 ;;; Out: a0 = address of entry or 0
-BossFindManifestEntry = 10
+BossFindManifestEntry = 11
 
 
 	MACRO	BossMem

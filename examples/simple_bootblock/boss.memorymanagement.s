@@ -114,6 +114,7 @@ trap15code:
 	rte
 	;; Using JMP PC relative to make sure that each opcode takes 4 bytes!
 list$:	jmp	boss_memmanage_init(pc)
+	jmp	boss_memmanage_deluxealloc(pc)
 	jmp	boss_memmanage_chipalloc(pc)
 	jmp	boss_memmanage_chipfree(pc)
 	jmp	boss_memmanage_slowalloc(pc)
@@ -124,6 +125,27 @@ list$:	jmp	boss_memmanage_init(pc)
 	jmp	memclearword(pc)
 	jmp	zx0_decompress(pc)
 	jmp	find_manifest(pc)
+
+boss_memmanage_deluxealloc:
+	tst.l	d1	; Where to put the data?
+	bmi	useCHIP$
+	beq	useSLOW$
+	;; ...or a fixed destination address.
+	move.l	d1,a0
+	cmp.l	#$800000,d1
+	blt	useAbsCHIP$
+	BossMem	BossMemTrapAllocSlowAt
+	bra	end$
+useAbsCHIP$:
+	BossMem	BossMemTrapAllocChipAt
+	bra	end$
+useCHIP$:
+	BossMem	BossMemTrapAlloc
+	bra	end$
+useSLOW$:
+	BossMem	BossMemTrapAllocSlow
+end$:				; A0 has memory.
+	rts
 
 
 find_manifest:
