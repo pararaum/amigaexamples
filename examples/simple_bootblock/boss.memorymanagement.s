@@ -125,7 +125,7 @@ find_manifest:
 l1$:
 	cmp.l	(a0),d0		; Is this the entry we are looking for?
 	beq	found$
-	lea.l	rsManifest_Structsize(a0),a0 ; Skip to next entry.
+	lea.l	rsManifestStructsize(a0),a0 ; Skip to next entry.
 	dbeq	d1,l1$
 	sub.l	a0,a0		; Clear A0 as nothing was found.
 found$:	rts

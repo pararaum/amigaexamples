@@ -1,6 +1,6 @@
 #! /usr/bin/make -f
 
-TARGETS = boot_and_do_nothing.adf boot_and_load_track.adf boot_and_search_memory.adf boot_and_search_memory.raw.adf boot_salvadore.raw.adf bossdemo.adf
+TARGETS = boot_and_do_nothing.adf boot_and_load_track.adf boot_and_search_memory.adf bossdemo.adf
 # CURRENT is only used for run, which of the TARGETS is actually run?
 CURRENT = bossdemo.adf
 #Not used "./fix-bb.py $@" as bootblock is handled by `xdftool`.
@@ -21,24 +21,12 @@ boss:	boss.o boss.memorymanagement.o boss.io.o boss.trackloader.o boss.highlevel
 #boss:	boss.o
 	vlink $(VLINKFLAGS) -Tboss.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS) -L$$VBCC/vbcc_target_m68k-kick13/targets/m68k-kick13/lib -lvc
 
-boot_salvadore.track0.o: boot_salvadore.track0.s boss.zx0
-
 bossdemo.adf:	boot.bossboot.bootblock boss.zx0 resident.zx0 part0.zx0 assets.cfg
 	./diskmaster.py -o $@ $< boss.zx0
 
 
 %.bootblock: %.o
 	vlink $(VLINKFLAGS) -D STARTADDR=0 -Tall_in_one.x -nostdlib -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
-
-%.track0: %.track0.o
-	vlink $(VLINKFLAGS) -D STARTADDR=0 -Tall_in_one.x -nostdlib -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
-
-%.raw.adf: %.track0
-	printf "\e[31mRemoving '%s'\e[0m: " "$@"
-	rm -f $@
-	xdftool $@ create
-	dd conv=notrunc of=$@ < $<
-	./fix-bb.py $@
 
 %.adf: %.bootblock
 	xdftool $@ format "BootDisk"
@@ -55,6 +43,6 @@ run:
 
 .PHONY: clean run
 clean:
-	rm -f *.o *.adf *.bootblock *.lst *.sym *.track0 *.zx0
+	rm -f *.o *.adf *.bootblock *.lst *.sym *.zx0
 	rm -f $(TARGETS)
 	rm -f boss part0
