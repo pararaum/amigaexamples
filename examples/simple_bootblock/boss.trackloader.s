@@ -41,7 +41,7 @@ boss_trackloader_init:
 	lea	current_diskstruct,a0
 	move.w	d0,rsDiskPosition(a0)
 	move.w	d0,rsDiskStartTrack(a0)
-	move.l	#$500,rsDiskBuf(a0) ; Hard coded for now.
+	move.l	#BOSSSCREENBITPLANE,rsDiskBuf(a0) ; Hard coded for now.
 	;move.l	#rsDiskStructSize,d0
 	;BossMem	BossMemTrapAlloc
 	;move.l	a0,current_diskstruct

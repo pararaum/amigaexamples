@@ -6,10 +6,6 @@
 
 	XDEF	boss_io_init
 
-SCREENCOPLIST=$400
-;;; The screen bitplane is 640/8*256=20480 $5000 bytes large.
-SCREENBITPLANE=$480
-
 ;;; Include a nice font into the data segment.
 	DATA
 _FONT:	incbin	"Computing 60s Bold.ch8"
@@ -21,6 +17,8 @@ screen_col:	dc.w	0
 
 	data
 coplist:
+	;; Bitplane pointer points to our screen.
+	dc.w	bplpt,0,bplpt+2,0	; Filled by code.
 	dc.w	$0106,$0000,$01fc,$0000		; AGA compatible
 	;; Setting up display.
 	;; see also: http://cyberpingui.free.fr/tuto_graphics.htm
@@ -32,8 +30,6 @@ coplist:
 	dc.w	bpl1mod,$0000,bpl2mod,$0000
 	dc.w	color+0,$0172		  ; Dark green background.
 	dc.w	color+2,$06fb		  ; Light green foreground.
-	;; Bitplane pointer points to our screen.
-	dc.w	bplpt,SCREENBITPLANE>>16,bplpt+2,SCREENBITPLANE&$FFFF
 	dc.w	$FFFF,$FFFE		  ; Wait for end.
 coplist_end:
 
@@ -50,9 +46,13 @@ boss_io_init:
 init_custom:
 	;; Copy copper list.
 	lea.l	coplist(pc),a0
-	lea.l	SCREENCOPLIST,a1
+	lea.l	BOSSSCREENCOPPERLIST,a1
 	move.l  a1,cop1lc(a5)   ; Point copper to the Copperlist.
-	moveq	#(coplist_end-coplist)/2,d0
+	move.l	#BOSSSCREENBITPLANE,d0 ; Put screen address into d0, in order to...
+	move.w	d0,6(a0)	       ; ...to put the low word into the copper list and...
+	swap	d0
+	move.w	d0,2(a0)		; ...do the same with high word.
+	moveq	#(coplist_end-coplist)/2,d0 ; Now put length in D0 for trap.
 	BossMem	BossMemTrapCopyWords
 	;; Enable DMA.
 	move.w  #DMAF_SETCLR|DMAF_COPPER|DMAF_RASTER|DMAF_MASTER,dmacon(a5)
@@ -88,11 +88,11 @@ trap1home:
 	rts
 
 trap1clrscr:
-	BossMemClearWords	SCREENBITPLANE,640*256/8/2
+	BossMemClearWords	BOSSSCREENBITPLANE,640*256/8/2
 	bra	trap1home
 
 trap1scroll_up:
-	lea.l	SCREENBITPLANE,a1 ; Destination
+	lea.l	BOSSSCREENBITPLANE,a1 ; Destination
 	lea.l	640/8*8(a1),a0	  ; Source, top left position + one line.
 	move.w	#640/8,d0
 	BossMem	BossMemTrapCopyWords
@@ -110,7 +110,7 @@ trap1putc:
 	adda.w	d0,a0		; Points to character.
 	move.w	screen_row,d0
 	mulu	#640/8*8,d0	; 640 pixel per row, char is eight raster lines.
-	lea	SCREENBITPLANE,a1
+	lea	BOSSSCREENBITPLANE,a1
 	adda.w	d0,a1
 	add.w	screen_col,a1
 	moveq	#8-1,d0

@@ -6,6 +6,14 @@
 	xref	boss_manifest_entries
 	xref	boss_manifest_memory
 
+	XDEF	BOSSSCREENBITPLANE
+	XDEF	BOSSSCREENCOPPERLIST
+
+;;; Put this at the very beginning of the chip ram just behind the vectors. Vectors from $c0 to $3ff seem to be available.
+BOSSSCREENBITPLANE:	equ	$400
+;;; We put the copperlist just behind the graphics memory.
+BOSSSCREENCOPPERLIST:	equ	BOSSSCREENBITPLANE+640/8*256
+
 ;=============================================================================
 ; CHUNK-TABLE MEMORY ALLOCATOR  (Motorola 68000)
 ;=============================================================================
@@ -46,8 +54,7 @@
 ; - CHUNK_TABLE uses WORD entries (max 65535 chunks per single allocation).
 ;
 ;=============================================================================
-
-
+	
 	RSRESET
 rsMEMCHUNK_shift:	rs.w	1 ; log2(chunk size)
 rsMEMCHUNK_chunksize:	rs.w	1 ; 1<<above shift
@@ -134,15 +141,19 @@ found$:	rts
 
 ;;; Copy memory from a0, a1. D0 words are copied.
 memcopyword:
+	subq.w	#1,d0		; DBF works until -1!
+	bmi.s	end$		; Somebody used zero???
 l1$	move.w	(a0)+,(a1)+
 	dbf	d0,l1$
-	rts
+end$	rts
 
 ;;; Clear memory from a0 for d0 words.
 memclearword:
+	subq.w	#1,d0		; DBF works until -1!
+	bmi.s	end$		; Somebody used zero???
 l1$:	clr.w	(a0)+
 	dbf	d0,l1$
-	rts
+end$	rts
 
 
 boss_memmanage_chipalloc_at:

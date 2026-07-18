@@ -18,10 +18,12 @@ BossMemTrapAllocChipAt = 5
 ;;;	A0.l = address requested
 ;;; Out: A0 = address we got or 0 on failure
 BossMemTrapAllocSlowAt = 6
-;;; In:	d0.w = number of words
+;;; In:	d0.w = number of words (max. 32767!)
 ;;;	A0 = source
 ;;;	A1 = destination
 BossMemTrapCopyWords = 7
+;;; In:	d0.w = number of words (max. 32767!)
+;;;	A0 = destination
 BossMemTrapClearWords = 8
 ;;; In:	a0.l = start of compressed data
 ;;;     a1.l = start of decompression buffer
@@ -59,3 +61,8 @@ rsManifestPackedSize:	rs.l	1
 rsManifestUnpackedSize:	rs.l	1
 rsManifestMemflags:	rs.l	1
 rsManifestStructsize:	rs
+
+;;; Address of the copperlist that is used by BOSS.
+	PUBLIC	BOSSSCREENCOPPERLIST
+;;; Address of the BOSS screen memory.
+	PUBLIC	BOSSSCREENBITPLANE
