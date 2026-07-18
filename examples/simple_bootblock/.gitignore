@@ -1,6 +1,7 @@
 *.adf
 *.sym
 *.zx0
+*.bin
 *.bootblock
 boss
 part0
