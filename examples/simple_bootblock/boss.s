@@ -69,5 +69,6 @@ manifestcopyloop$:
 	bne.s	found$
 	BossIOWritelnS "Finding of first part failed!"
 	bra	*
-	;;  Part was found, now get the memory.
-found$:	jmp	(a0)
+found$:	;;  Part was found, now run.
+	lea.l	$c80000,a7	; Start with a fresh stack!
+	jmp	(a0)

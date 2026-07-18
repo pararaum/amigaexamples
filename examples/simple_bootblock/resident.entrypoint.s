@@ -20,6 +20,11 @@ pongmem:	ds.l	1
 
 entry:
 	bsr	setup_music
+	bsr	get_memory
+	jsr	_main
+	bra	*
+
+get_memory:
 	move.l	#$28000,d0
 	lea.l	$c20000,a0
 	BossMem	BossMemTrapAllocSlowAt
@@ -46,8 +51,9 @@ pingmemok$:
 	BossIOWritelnS	"Failed to allocate Pong memory!"
 	bra	*
 pongmemok$:
-	;; 	jsr	_main
-	bra	*
+	move.l	a7,d0
+	BossIO	BossIOPrintHex
+	BossIOnl
 	rts
 
 setup_music:

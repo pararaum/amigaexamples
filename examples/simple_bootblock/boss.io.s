@@ -42,6 +42,7 @@ boss_io_init:
 	move.l	a0,$84.w	; Set vector for TRAP#1.
 	bsr	init_custom
 	bsr	trap1clrscr
+	move.w	#20,screen_row	; We start at this row.
 	rts
 
 

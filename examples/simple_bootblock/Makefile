@@ -10,7 +10,7 @@ include ../config.mk
 
 all:	boss.zx0 part0.zx0 $(TARGETS)
 
-resident: resident.entrypoint.o
+resident: resident.entrypoint.o resident.o
 	vlink $(VLINKFLAGS) -D STARTADDR=0x6000 -Tall_in_one.x -nostdlib -symfile $@.sym -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
 
 part0.entry.s:  bassing.modified.mod.zx0
