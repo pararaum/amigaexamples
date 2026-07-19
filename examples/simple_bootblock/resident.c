@@ -5,7 +5,7 @@
 #include "boss.h"
 
 extern volatile struct Custom custom;
-extern volatile uint32_t framecounter;
+extern volatile uint16_t framecounter;
 
 static unsigned short copperlist4gfx[] = {
   CNOOP,0,CNOOP,0,	// Bitplane pointers, set by loop.

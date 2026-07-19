@@ -17,7 +17,8 @@ pingmem:	ds.l	1
 pongmem:	ds.l	1
 
 	DATA
-_framecounter:	dc.l	0
+_framecounter:	dc.w	0
+_totalframecounter:	dc.l	0
 
 	section	LOWCODE,CODE
 
@@ -75,7 +76,8 @@ regs$:	reg	d0-a6
 	lea.l	_custom,a6
 	move.w	#INTF_VERTB,intreq(a6)
 	jsr	_pt_PlayMusic
-	addq.l	#1,_framecounter
+	addq.l	#1,_totalframecounter
+	addq.w	#1,_framecounter
 	movem.l	(sp)+,regs$
 	rte
 
