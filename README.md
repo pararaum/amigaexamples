@@ -22,6 +22,7 @@ Links
  * https://github.com/Ozzyboshi/AmigaDemo_the_crows
  * http://www.powerprograms.nl/amiga/spr-layer.html
  * https://tetracorp.github.io/
+ * https://github.com/alfishe/amiga-bootcamp/tree/main
 
 Tool Links
 ==========
@@ -30,7 +31,11 @@ Tool Links
  * http://xi6.com/projects/asmx/
  * https://github.com/asmotor/asmotor
  * https://github.com/arnaud-carre/ldos
- * https://github.com/bebbo/amiga-gcc
+ * Bebbo Toolchain:
+   * https://github.com/bebbo/amiga-gcc (broken)
+   * https://franke.ms/amiga/amiga-gcc.wiki
+   * https://franke.ms/git/bebbo/amiga-gcc/README.md
+   * https://codeberg.org/bebbo/amiga-gcc
  * [DPaint.js](https://www.stef.be/dpaint "https://www.stef.be/dpaint")
 
 Graphics
