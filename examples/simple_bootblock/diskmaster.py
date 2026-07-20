@@ -201,11 +201,19 @@ def compress_with_salvador(src_path: str, salvador_bin: str = "salvador") -> byt
     """Compress src_path with salvador, return the packed bytes.
 
     """
+    rebuild = False
     out_path = src_path + ".zx0"
+    src_stats = os.stat(src_path)
     try:
         stats = os.stat(out_path)
         #print(f"\tUsing file {out_path} with {stats.st_size} bytes.")
     except FileNotFoundError:
+        rebuild = True
+    if not rebuild and stats.st_mtime < src_stats.st_mtime:
+        rebuild = True
+    if rebuild:
+        # I do know that make can do this but it is very convenient to
+        # have the functionality in this tool as well...
         cmd = [salvador_bin, src_path, out_path]
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
