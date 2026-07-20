@@ -12,9 +12,18 @@ BossIOTrapHome = 3
 BossIOTrapClrscr = 4
 ;;; Scroll screen up.
 BossIOTrapScrollUp = 5
-;;; Output a hexadecimal number
+;;; Output a hexadecimal number.
 ;;; In: D0.l = value to output
 BossIOPrintHex = 6
+;;; Set foreground colour.
+;;; In:	D0.w = foreground colour
+BossIOForeground = 7
+;;; Set background colour.
+;;; In:	D0.w = background colour
+BossIOBackground = 8
+;;; Dump current register contents.
+BossIODumpRegisters = 9
+
 ;;; Trackload data.
 ;;; D0.w = start sector, D1.w = number of sectors to load, A0.l = data destination address
 BossIOTrapTrackload = 21

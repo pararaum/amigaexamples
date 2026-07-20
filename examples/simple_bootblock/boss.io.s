@@ -30,10 +30,16 @@ coplist:
 	dc.w	bplcon1,$0000,bplcon2,$0000
 	dc.w	bplcon3,$0000
 	dc.w	bpl1mod,$0000,bpl2mod,$0000
+coplist_color00:
 	dc.w	color+0,$0172		  ; Dark green background.
+coplist_color01:
 	dc.w	color+2,$06fb		  ; Light green foreground.
 	dc.w	$FFFF,$FFFE		  ; Wait for end.
 coplist_end:
+;;; This produces an error message: Reference to undefined symbol _SDA_BASE_. Why?
+;;; coplist_color00_offset = coplist_end - coplist
+coplist_color00_offset:	equ	60
+coplist_color01_offset:	equ	62
 
 
 	code
@@ -69,6 +75,7 @@ trap1code:
 	jsr	list$(PC,d7.w)
 	movem.l	(sp)+,d2-d7/a2-a6
 	rte
+	;; Use JMP because BSR may be optimised to BSR.S!
 list$:	jmp	trap1putc(pc)
 	jmp	trap1write(pc)
 	jmp	trap1writeln(pc)
@@ -76,7 +83,10 @@ list$:	jmp	trap1putc(pc)
 	jmp	trap1clrscr(pc)
 	jmp	trap1scroll_up(pc)
 	jmp	trap1output_hex(pc)
-	rept	14
+	jmp	trap1foreground(pc)
+	jmp	trap1background(pc)
+	jmp	trap1dumpregs(pc)
+	rept	11
 	illegal
 	illegal
 	endr
@@ -84,6 +94,38 @@ list$:	jmp	trap1putc(pc)
 	jmp	boss_manifest_load(pc)
 	;; If we forget to increase this should be a gentle reminder.
 	illegal
+
+trap1dumpregs:
+	lsr.w	#2,d7		; Restore.
+	move.l	a7,oldstack$
+	movem.l	d0-a7,-(sp)	; Put *everything* on stack.
+	moveq	#0,d6
+l1$:	move.l	0(a7,d6.l),-(sp)
+	bsr	_ul2hex
+	addq.l	#4,sp		; Fix stack
+	move.l	d0,a0
+	bsr	trap1write
+	REPT	2
+	moveq	#' ',d0
+	bsr	trap1putc
+	ENDR
+	addq.w	#4,d6
+	cmp.w	#16*4,d6
+	bne	l1$
+	move.l	oldstack$(pc),a7
+	rts
+	PUSHSECTION
+	BSS
+oldstack$:	ds.l	1
+	POPSECTION
+
+trap1background:
+	move.l	d0,BOSSSCREENCOPPERLIST+coplist_color00_offset
+	rts
+
+trap1foreground:
+	move.l	d0,BOSSSCREENCOPPERLIST+coplist_color01_offset
+	rts
 
 trap1output_hex:
 	move.l	d0,-(sp)	; Put on stack for C.

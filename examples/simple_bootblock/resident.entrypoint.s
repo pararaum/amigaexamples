@@ -23,6 +23,7 @@ _totalframecounter:	dc.l	0
 	section	LOWCODE,CODE
 
 entry:
+	BossIO	BossIODumpRegisters
 	bsr	setup_music
 	bsr	get_memory
 	jsr	_main
