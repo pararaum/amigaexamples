@@ -8,7 +8,24 @@ songmem:
 	ds.l	1
 
 	section	LOWCODE,CODE
+	jmp	part_init(pc)
+	jmp	part_run(pc)
+	jmp	part_teardown(pc)
+	jmp	part_vbirq(pc)
+	;; Use this if nothing to do.
+	rts
+	nop
+	;; or RTS RTS, ...
 
+	CODE
+part_run:
+	rts
+part_teardown:
+	rts
+part_vbirq:
+	rts
+
+part_init:
 	move.l	#54810,d0
 	BossMem	BossMemTrapAlloc
 	move.l	a0,songmem
