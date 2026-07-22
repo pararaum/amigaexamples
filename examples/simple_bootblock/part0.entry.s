@@ -8,9 +8,9 @@ songmem:
 	ds.l	1
 
 	section	LOWCODE,CODE
-	jmp	part_init(pc)
-	jmp	part_run(pc)
-	jmp	part_teardown(pc)
+	jmp	_part_init(pc)
+	jmp	_main(pc)
+	jmp	_part_teardown(pc)
 	jmp	part_vbirq(pc)
 	;; Use this if nothing to do.
 	rts
@@ -18,10 +18,6 @@ songmem:
 	;; or RTS RTS, ...
 
 	CODE
-part_run:
-	rts
-part_teardown:
-	rts
 part_vbirq:
 	rts
 
