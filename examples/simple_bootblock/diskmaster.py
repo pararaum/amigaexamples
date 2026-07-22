@@ -68,6 +68,11 @@ MEM_ANY  = 0x00000000
 # address will ever have bit 31 set. That makes this value unambiguous
 # against any hex destination address someone specifies explicitly.
 MEM_CHIP = 0x80000000
+# Bit 30, ORed into an explicit hex address, tells the loader the address
+# is already reserved (e.g. a fixed hardware location) and must not be
+# passed to the memory allocator. Also safe: real addresses only use
+# bits 0-23.
+NO_ALLOC_FLAG = 0x40000000
 
 
 @dataclass
@@ -91,10 +96,14 @@ class Asset:
 #     asset PT01 "parts/intro.bin"   mem=any
 #     asset MUS1 "assets/track1.mod" mem=chip
 #     asset LOGO "assets/logo.raw"   mem=0x40000
+#     asset COPL "parts/copper.bin"  mem=0x40 alloc=no
 #
 # mem= accepts 'any' (loader picks the address), 'chip' (must be chip
 # RAM, loader picks the address), or a hex address (asset must land at
 # that exact destination address - see MEM_ANY/MEM_CHIP sentinels below).
+# alloc=no (only valid with an explicit hex mem= address) marks that
+# address as already reserved, so the loader must not allocate it -
+# signaled to the loader by setting bit 30 of mem_flags (NO_ALLOC_FLAG).
 #
 # Arpeggio (apt install python3-arpeggio) builds a memoizing recursive
 # descent PEG parser from the grammar functions below - this is what
@@ -182,6 +191,30 @@ def parse_asset_file(path_: str) -> list[Asset]:
                     f"asset {asset_name!r}: mem=0x{mem_flags:X} has bits set "
                     f"above the 24-bit Amiga address range"
                 )
+
+        # alloc=no means "the given mem= address is already reserved,
+        # don't allocate it" - signaled to the loader by setting bit 30
+        # (OR with 0x40000000). Only meaningful together with an explicit
+        # hex address, since 'any'/'chip' don't name a real address to
+        # skip allocation for.
+        alloc_str = attrs.get("alloc", "yes").lower()
+        if alloc_str in ("yes", "true", "1"):
+            no_alloc = False
+        elif alloc_str in ("no", "false", "0"):
+            no_alloc = True
+        else:
+            raise ValueError(
+                f"asset {asset_name!r}: alloc={alloc_str!r} is not "
+                f"'yes' or 'no'"
+            )
+
+        if no_alloc:
+            if mem_key in _MEM_NAMES:
+                raise ValueError(
+                    f"asset {asset_name!r}: alloc=no requires an explicit "
+                    f"hex mem= address, not mem={mem_str!r}"
+                )
+            mem_flags |= NO_ALLOC_FLAG
 
         assets.append(Asset(
             name=asset_name,

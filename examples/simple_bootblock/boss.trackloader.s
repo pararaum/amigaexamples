@@ -37,7 +37,7 @@ current_diskstruct:	ds.b	rsDiskStructSize
 	CODE
 boss_manifest_load:
 manifestR$:	equr	a6
-allocatedR$:	equr	a2
+allocatedR$:	equr	a2	; Here we store the memory of the allocated memory.
 	BossMem	BossFindManifestEntry
 	move.l	a0,d0
 	tst.l	d0
@@ -47,14 +47,22 @@ allocatedR$:	equr	a2
 	;;  Part was found, now get the memory.
 found$:	move.l	a0,manifestR$		; Manifest pointer in MANIFESTR$.
 SAFETYBUFFERSIZE$:	equ	$20
+	move.l	rsManifestMemflags(manifestR$),d1 ; Where to put the data?
+	and.l	#$40000000,d1			  ; Is the no alloc bit set?
+	beq	allocate$
+	move.l	rsManifestMemflags(manifestR$),d1 ; Where to put the data?
+	and.l	#$00ffffff,d1			  ; Lowest 24 bits.
+	move.l	d1,allocatedR$
+	bra	skip_allocation$
+allocate$:			; An allocation has to be performed.
 	move.l	rsManifestUnpackedSize(manifestR$),d0
 	add.l	#SAFETYBUFFERSIZE$,d0	; Safety buffer.
-	move.l	rsManifestMemflags(manifestR$),d1 ; Where to put the data?
 	BossMem	BossMemTrapAllocDeluxe
 	move.l	a0,allocatedR$		; Put address into allocatedR$.
 	move.l	a0,d0
 	tst.l	d0		; Fail?
 	beq	end$
+skip_allocation$:
 	add.l	rsManifestUnpackedSize(manifestR$),a0
 	lea.l	SAFETYBUFFERSIZE$(a0),a0
 	sub.l	rsManifestPackedSize(manifestR$),a0
