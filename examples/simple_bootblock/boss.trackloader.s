@@ -55,6 +55,7 @@ SAFETYBUFFERSIZE$:	equ	$20
 	move.l	d1,allocatedR$
 	bra	skip_allocation$
 allocate$:			; An allocation has to be performed.
+	move.l	rsManifestMemflags(manifestR$),d1 ; Where to put the data?
 	move.l	rsManifestUnpackedSize(manifestR$),d0
 	add.l	#SAFETYBUFFERSIZE$,d0	; Safety buffer.
 	BossMem	BossMemTrapAllocDeluxe
