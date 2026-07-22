@@ -8,20 +8,25 @@ CURRENT = bossdemo.adf
 include ../config.mk
 
 
-all:	boss.zx0 part0.zx0 $(TARGETS)
+all:	boss.zx0 part0.c20000.bin.zx0 $(TARGETS)
 
 resident: resident.entrypoint.o resident.o
 	vlink $(VLINKFLAGS) -D STARTADDR=0x6000 -Tall_in_one.x -nostdlib -symfile $@.sym -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
 
 part0.entry.s:  bassing.modified.mod.zx0
-part0:	part0.o part0.entry.o
-	vlink $(VLINKFLAGS) -D STARTADDR=0xc60000 -Tall_in_one.x -nostdlib -symfile $@.sym -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
+
+%.c20000.bin:	%.o %.entry.o
+	vlink $(VLINKFLAGS) -D STARTADDR=0xc20000 -Tall_in_one.x -nostdlib -symfile $@.sym -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
+%.c50000.bin:	%.o %.entry.o
+	vlink $(VLINKFLAGS) -D STARTADDR=0xc50000 -Tall_in_one.x -nostdlib -symfile $@.sym -b rawbin $(filter %.o, $^) -o $@ $(LIBS)
+
+
 
 boss:	boss.o boss.memorymanagement.o boss.io.o boss.trackloader.o boss.highlevel.o
 #boss:	boss.o
 	vlink $(VLINKFLAGS) -Tboss.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS) -L$$VBCC/vbcc_target_m68k-kick13/targets/m68k-kick13/lib -lvc
 
-bossdemo.adf:	boot.bossboot.bootblock boss.zx0 resident.zx0 part0.zx0 assets.cfg rogal.under_the_bridge.scaled.3bitplane.bin dream_08_wip_268x256_jok.3bitplane.bin
+bossdemo.adf:	boot.bossboot.bootblock boss.zx0 assets.cfg resident.zx0 part0.c20000.bin.zx0
 	./diskmaster.py -o $@ $< boss.zx0
 
 
