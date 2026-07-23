@@ -4,12 +4,12 @@
 #include <t7d/customchips.h>
 #include "boss.h"
 
-typedef void (*partfunctionptr)(void);
+typedef void (*partfunctionptr)(__reg("a0") struct DemoData *dd);
 
 #define NPARTS 1
 
 extern volatile struct Custom custom;
-extern volatile uint16_t framecounter;
+extern volatile struct DemoData demodata;
 
 int main() {
   partfunctionptr part_init, part_run, part_teardown;
@@ -34,11 +34,13 @@ int main() {
     BossPutc('\n');
     BossPrintHex((uint32_t)part_teardown);
     BossPutc('\n');
-    part_init(); // Initialise the next part.
-    part_run(); // Run the next part.
+    //
+    part_init(&demodata); // Initialise the next part.
+    part_run(&demodata); // Run the next part.
     //...
-    part_teardown(); // And tear down the part.
+    part_teardown(&demodata); // And tear down the part.
   }
+  BossResetCopper();
   while(1);
   return 0;
 }

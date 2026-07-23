@@ -4,12 +4,18 @@
 	include	"boss.memorymanagement.i"
 	include	"boss.io.i"
 
-	xdef	_framecounter
+	xdef	_demodata
 ;;; We will put this part into chipmem via BOSS.
 
 ;;; Memory layout:
 ;;; c20000-c4ffff (format "%x" (- #xc47fff #xc20000))"27fff"
 ;;; c50000-c7f000 (format "%x" (- #xc7f000 #xc50000))"2f000"
+
+	rsreset
+rsResident_framecounter:	rs.w	0
+rsResident_totalframecounter:	rs.l	0
+rsResidentSize:	rs
+
 
 ;;; Warning! When using BSS our linkerscript will put it into the file!
 	BSS
@@ -17,17 +23,17 @@ pingmem:	ds.l	1
 pongmem:	ds.l	1
 
 	DATA
-_framecounter:	dc.w	0
-_totalframecounter:	dc.l	0
+_demodata:
+	ds.b	rsResidentSize
 
 	section	LOWCODE,CODE
-	jmp	entry(pc)
+	jmp	entrypoint(pc)
 	rts
 	rts
 	rts
 	rts
 
-entry:
+entrypoint:
 	BossIO	BossIODumpRegisters
 	bsr	setup_music
 	bsr	get_memory
@@ -82,8 +88,9 @@ regs$:	reg	d0-a6
 	lea.l	_custom,a6
 	move.w	#INTF_VERTB,intreq(a6)
 	jsr	_pt_PlayMusic
-	addq.l	#1,_totalframecounter
-	addq.w	#1,_framecounter
+	lea.l	_demodata,a0
+	addq.l	#1,rsResident_totalframecounter(a0)
+	addq.w	#1,rsResident_framecounter(a0)
 	movem.l	(sp)+,regs$
 	rte
 
