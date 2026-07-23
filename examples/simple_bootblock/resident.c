@@ -1,10 +1,10 @@
-#include <stdint.h>
 #include <string.h>
 #include <hardware/custom.h>
 #include <t7d/customchips.h>
 #include "boss.h"
+#include "resident.h"
 
-typedef void (*partfunctionptr)(__reg("a0") struct DemoData *dd);
+typedef void (*partfunctionptr)(__reg("a0") volatile struct DemoData *dd);
 
 #define NPARTS 1
 

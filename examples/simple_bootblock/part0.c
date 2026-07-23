@@ -4,6 +4,7 @@
 #include <hardware/dmabits.h>
 #include <t7d/customchips.h>
 #include "boss.h"
+#include "resident.h"
 
 extern volatile struct Custom custom;
 extern volatile uint16_t framecounter;
@@ -26,7 +27,7 @@ static unsigned short copperlist4gfx[] = {
   0xFFFF,0xFFFE
 };
 
-void part_init(void) {
+void part_init(__reg("a0") volatile struct DemoData *demodata) {
   int i;
   uint32_t baddr; // Bitplane address.
   uint16_t bplpt = BPLPT; // Bitplane pointer.
@@ -55,13 +56,14 @@ void part_init(void) {
   framecounter = 0;
 }
 
-void part_teardown(void) {
+void part_teardown(__reg("a0") volatile struct DemoData *demodata) {
   BossMemFree(gfx);
   BossMemFree(copperlist);
 }
 
-int main() {
-  while(framecounter < 325) ;
-  BossWriteln("C is leaving.\n");
+int main(__reg("a0") volatile struct DemoData *demodata) {
+  BossPrintHex((uint32_t)demodata);
+  while(demodata->framecounter < 325) ;
+  BossWriteln("\nC is leaving.\n");
   return 0;
 }
