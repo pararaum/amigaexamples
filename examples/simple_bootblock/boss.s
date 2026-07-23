@@ -14,8 +14,6 @@
 	xdef	boss_manifest_memory
 
 	data
-trackloadtext:
-	dc.b	"Trackloading %x..%x to %x.",10,0
 	even
 
 	bss
@@ -46,7 +44,7 @@ manifestcopyloop$:
 	dbf	d0,manifestcopyloop$
 	bsr	boss_memmanage_init
 	bsr	boss_io_init
-	BossIOWritelnS	"Booting BOSS..."
+	BossIOWritelnS	"Initialising BOSS..."
 	bsr	boss_trackloader_init
 	;; Now copy manifest at designated memory.
 	move.w	boss_manifest_entries,d0

@@ -76,7 +76,8 @@ trap1code:
 	movem.l	(sp)+,d2-d7/a2-a6
 	rte
 	;; Use JMP because BSR may be optimised to BSR.S!
-list$:	jmp	trap1putc(pc)
+list$:	jmp	trap1init_custom(pc)
+	jmp	trap1putc(pc)
 	jmp	trap1write(pc)
 	jmp	trap1writeln(pc)
 	jmp	trap1home(pc)
@@ -86,7 +87,7 @@ list$:	jmp	trap1putc(pc)
 	jmp	trap1foreground(pc)
 	jmp	trap1background(pc)
 	jmp	trap1dumpregs(pc)
-	rept	11
+	rept	10
 	illegal
 	illegal
 	endr
@@ -94,6 +95,12 @@ list$:	jmp	trap1putc(pc)
 	jmp	boss_manifest_load(pc)
 	;; If we forget to increase this should be a gentle reminder.
 	illegal
+
+trap1init_custom:
+	bsr	init_custom
+	lea.l	BOSSSCREENCOPPERLIST,a1
+	lea.l	BOSSSCREENBITPLANE,a0
+	rts
 
 trap1dumpregs:
 	lsr.w	#2,d7		; Restore.
@@ -147,7 +154,7 @@ trap1clrscr:
 trap1scroll_up:
 	lea.l	BOSSSCREENBITPLANE,a1 ; Destination
 	lea.l	640/8*8(a1),a0	  ; Source, top left position + one line.
-	move.w	#640/8,d0
+	move.w	#640/8/2,d0
 	BossMem	BossMemTrapCopyWords
 	rts
 

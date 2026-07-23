@@ -1,28 +1,32 @@
 ; -*- mode: asm -*-
 
+;;; Reset copperlist: reset the copperlist and enable bitplane DMA. Attention, no clearing of screen is done!
+;;; Out: A0 = address of copperlist
+;;;	 A1 = address of bitplane memory
+BossIOTrapResetCopper = 0
 ;;; D0 = character to output
-BossIOTrapPutc = 0
+BossIOTrapPutc = 1
 ;;; A0 = string to output
-BossIOTrapWrite = 1
+BossIOTrapWrite = 2
 ;;; A0 = string to output, append a NL.
-BossIOTrapWriteln = 2
+BossIOTrapWriteln = 3
 ;;; Bring cursor to (0, 0).
-BossIOTrapHome = 3
+BossIOTrapHome = 4
 ;;; Clear Screen. Cursor to (0, 0).
-BossIOTrapClrscr = 4
+BossIOTrapClrscr = 5
 ;;; Scroll screen up.
-BossIOTrapScrollUp = 5
+BossIOTrapScrollUp = 6
 ;;; Output a hexadecimal number.
 ;;; In: D0.l = value to output
-BossIOPrintHex = 6
+BossIOPrintHex = 7
 ;;; Set foreground colour.
 ;;; In:	D0.w = foreground colour
-BossIOForeground = 7
+BossIOForeground = 8
 ;;; Set background colour.
 ;;; In:	D0.w = background colour
-BossIOBackground = 8
+BossIOBackground = 9
 ;;; Dump current register contents.
-BossIODumpRegisters = 9
+BossIODumpRegisters = 10
 
 ;;; Trackload data.
 ;;; D0.w = start sector, D1.w = number of sectors to load, A0.l = data destination address
