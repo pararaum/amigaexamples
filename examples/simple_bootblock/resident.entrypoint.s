@@ -25,6 +25,7 @@ pongmem:	ds.l	1
 	DATA
 _demodata:
 	ds.b	rsResidentSize
+	even
 
 	section	LOWCODE,CODE
 	jmp	entrypoint(pc)
