@@ -12,7 +12,8 @@ extern volatile struct Custom custom;
 extern volatile uint16_t framecounter;
 
 int main() {
-  partfunctionptr nextpart;
+  partfunctionptr part_init, part_run, part_teardown;
+  partfunctionptr part;
   int partcounter;
   
   BossWriteln("Loading parts.");
@@ -22,15 +23,21 @@ int main() {
     } else {
       BossWriteln("Loading odd part at $c50000.");
     }
-    nextpart = BossManifestLoad(0x50543030);
-    BossPrintHex((uint32_t)nextpart);
+    part = BossManifestLoad(0x50543030);
+    part_init = part;
+    part_run = (partfunctionptr)((uint32_t)(part) + 4);
+    part_teardown = (partfunctionptr)((uint32_t)(part) + 8);
+    //
+    BossPrintHex((uint32_t)part_init);
     BossPutc('\n');
-    nextpart = (partfunctionptr)((uint32_t)nextpart + 4);
-    BossPrintHex((uint32_t)nextpart);
+    BossPrintHex((uint32_t)part_run);
     BossPutc('\n');
-    nextpart = (partfunctionptr)((uint32_t)nextpart + 4);
-    BossPrintHex((uint32_t)nextpart);
+    BossPrintHex((uint32_t)part_teardown);
     BossPutc('\n');
+    part_init(); // Initialise the next part.
+    part_run(); // Run the next part.
+    //...
+    part_teardown(); // And tear down the part.
   }
   while(1);
   return 0;
