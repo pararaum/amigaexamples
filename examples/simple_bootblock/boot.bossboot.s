@@ -23,7 +23,7 @@ CUSTOMADDRES:	equ	$DFF000
 	;; In A6 we have the Exec base.
 	jsr	_LVOForbid(a6)	  ; No more task switching.
 	lea	CUSTOMADDRES,CUSTOM	; Custom base in A5.
-	move.w	#$00ff,color(CUSTOM)
+	move.w	#$0cff,color(CUSTOM)
 	move.l	#BOSSDISKSIZE,d0	      ; Memory size
 	moveq	#MEMF_CHIP,d1		      ; We *must* use chip memory.
 	jsr	_LVOAllocMem(a6)
@@ -54,7 +54,7 @@ CUSTOMADDRES:	equ	$DFF000
 	jsr     _LVODoIO(a6)          ; a6 = exec base, available at boot time
 	tst.l   d0
 	bne     boot_fail
-	move.w	#$000f,color(CUSTOM)
+	move.w	#$08ff,color(CUSTOM)
 	move.w	#$7fff,intena(CUSTOM) ; Disable interrupts.
 	move.w	#$7fff,intreq(CUSTOM) ; Disable interrupt requests.
 	move.w	#$7fff,dmacon(CUSTOM) ; Disable DMA.
@@ -67,7 +67,7 @@ super$:				  ; Supervisor mode with A7=SP at end of memory.
 	add.l	#BOSSMARGIN,a0
 	lea.l	DESTINATIONBOSS,a1
 	bsr	zx0_decompress
-	move.w	#$000a,color(CUSTOM)
+	move.w	#$00ff,color(CUSTOM)
 	;; Init the BOSS.
 	move.l	MEMADDR,a0
 	move.l	#"RESI",d0
