@@ -21,6 +21,11 @@ _framecounter:	dc.w	0
 _totalframecounter:	dc.l	0
 
 	section	LOWCODE,CODE
+	jmp	entry(pc)
+	rts
+	rts
+	rts
+	rts
 
 entry:
 	BossIO	BossIODumpRegisters

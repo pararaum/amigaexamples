@@ -8,6 +8,8 @@
 
 	XDEF	boss_io_init
 
+LOWEST_SCREEN_ROW:	equ	32
+
 ;;; Include a nice font into the data segment.
 	DATA
 _FONT:	incbin	"Computing 60s Bold.ch8"
@@ -154,8 +156,11 @@ trap1clrscr:
 trap1scroll_up:
 	lea.l	BOSSSCREENBITPLANE,a1 ; Destination
 	lea.l	640/8*8(a1),a0	  ; Source, top left position + one line.
-	move.w	#640/8/2,d0
+	move.w	#640/8/2*(256-8),d0
 	BossMem	BossMemTrapCopyWords
+	lea.l	BOSSSCREENBITPLANE+640/8*(256-8),a0 ; Destination
+	move.w	#8*640/8/2,d0			; Clear 8 rows.
+	BossMem	BossMemTrapClearWords
 	rts
 
 ;;; D0=char
@@ -183,7 +188,7 @@ l1$:	move.b	(a0)+,(a1)
 	cmp.w	#80,d0		; Right border reached?
 	blt.s	less80$		; No, every thing is OK.
 	addq.w	#1,screen_row	; Move to next row.
-	cmp.w	#32,screen_row	; Have we left the lowest row?
+	cmp.w	#LOWEST_SCREEN_ROW,screen_row	; Have we left the lowest row?
 	blt.s	norowadjust$
 	subq.w	#1,screen_row	; We are back on the visible area.
 	bsr	trap1scroll_up
@@ -198,6 +203,10 @@ charCR$:
 	rts
 charLF$:
 	addq.w	#1,screen_row
+	cmp.w	#LOWEST_SCREEN_ROW,screen_row	; Have we left the lowest row?
+	blt.s	charCR$
+	subq.w	#1,screen_row	; We are back on the visible area.
+	bsr	trap1scroll_up
 	bra.s	charCR$
 
 trap1write:

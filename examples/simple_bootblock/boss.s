@@ -67,6 +67,7 @@ manifestcopyloop$:
 	BossIOWritelnS "Finding of first part failed!"
 	bra	*
 found$:	;;  Part was found, now run.
+	;; We will jump as if there were a JMP trampoline so that running a single part is easily done by replacing the resident code with a part.
 	lea.l	$c80000,a7	; Start with a fresh stack!
 	move.l	a0,-(a7)
 	jsr	(a0)		; Jump to first function, maybe init().

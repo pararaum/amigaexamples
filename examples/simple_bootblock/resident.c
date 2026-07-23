@@ -4,13 +4,15 @@
 #include <t7d/customchips.h>
 #include "boss.h"
 
+typedef void (*partfunctionptr)(void);
+
 #define NPARTS 1
 
 extern volatile struct Custom custom;
 extern volatile uint16_t framecounter;
 
 int main() {
-  void *nextpart;
+  partfunctionptr nextpart;
   int partcounter;
   
   BossWriteln("Loading parts.");
@@ -22,6 +24,14 @@ int main() {
     }
     nextpart = BossManifestLoad(0x50543030);
     BossPrintHex((uint32_t)nextpart);
+    BossPutc('\n');
+    nextpart = (partfunctionptr)((uint32_t)nextpart + 4);
+    BossPrintHex((uint32_t)nextpart);
+    BossPutc('\n');
+    nextpart = (partfunctionptr)((uint32_t)nextpart + 4);
+    BossPrintHex((uint32_t)nextpart);
+    BossPutc('\n');
   }
+  while(1);
   return 0;
 }
