@@ -8,13 +8,12 @@
 	XREF	boss_memmanage_init
 	XREF	boss_io_init
 
-
 	XDEF	BOSS_MAIN_INIT
 	xdef	boss_manifest_entries
 	xdef	boss_manifest_memory
 
-	data
-	even
+MAGIC_ROMEND        EQU $01000000   ;End of Kickstart ROM
+MAGIC_SIZEOFFSET    EQU -$14        ;Offset from end of ROM to Kickstart size
 
 	bss
 ;;; This stores the number of available manifest entries.
@@ -69,4 +68,22 @@ manifestcopyloop$:
 	bra	*
 found$:	;;  Part was found, now run.
 	lea.l	$c80000,a7	; Start with a fresh stack!
-	jmp	(a0)
+	move.l	a0,-(a7)
+	jsr	(a0)		; Jump to first function, maybe init().
+	move.l	(a7),a0
+	jsr	4(a0)		; Jump to second function, maybe run().
+	move.l	(a7)+,a0
+	jsr	8(a0)		; Jump to third function, maybe teardown().
+
+;	https://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node02E3.html
+	bra	GoAway
+;-------------- MagicResetCode ---------DO NOT CHANGE-----------------------
+        CNOP    0,4                     ;IMPORTANT! Longword align!
+GoAway: lea.l   MAGIC_ROMEND,a0         ;(end of ROM)
+        sub.l   MAGIC_SIZEOFFSET(a0),a0 ;(end of ROM)-(ROM size)=PC
+        move.l  4(a0),a0                ;Get Initial Program Counter
+        subq.l  #2,a0                   ;now points to second RESET
+        reset                           ;first RESET instruction
+        jmp     (a0)                    ;CPU Prefetch executes this
+;---------------------------------------DO NOT CHANGE-----------------------
+        END
