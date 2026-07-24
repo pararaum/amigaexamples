@@ -12,8 +12,9 @@
 ;;; c50000-c7f000 (format "%x" (- #xc7f000 #xc50000))"2f000"
 
 	rsreset
-rsResident_framecounter:	rs.w	0
-rsResident_totalframecounter:	rs.l	0
+rsResident_framecounter:	rs.w	1
+rsResident_totalframecounter:	rs.l	1
+rsResident_current_part:	rs.l	1
 rsResidentSize:	rs
 
 
@@ -39,7 +40,7 @@ entrypoint:
 	bsr	setup_music
 	bsr	get_memory
 	jsr	_main
-	bra	*
+	rts
 
 get_memory:
 	move.l	#$28000,d0
@@ -88,6 +89,12 @@ regs$:	reg	d0-a6
 	movem.l	regs$,-(sp)
 	lea.l	_custom,a6
 	move.w	#INTF_VERTB,intreq(a6)
+	lea.l	_demodata,a0
+	tst.l	rsResident_current_part(a0)
+	beq	no_current$
+	move.l	rsResident_current_part(a0),a1 ; Get the current part memory pointer into A1.
+	jsr	12(a1)			       ; This should be the vertical blank.
+no_current$:
 	jsr	_pt_PlayMusic
 	lea.l	_demodata,a0
 	addq.l	#1,rsResident_totalframecounter(a0)

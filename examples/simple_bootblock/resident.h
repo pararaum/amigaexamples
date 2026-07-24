@@ -4,7 +4,11 @@
 
 struct DemoData {
   uint16_t framecounter; // Will be reset at the start of each part.
-  uint16_t totalframecounter; // Frames since the beginning of time.
+  uint32_t totalframecounter; // Frames since the beginning of time.
+  void *current_part; // Pointer to the memory of the current part,
+		      // vertical blank uses this to get the right
+		      // part. Set to zero if nothing should be
+		      // called.
 };
 
 #endif

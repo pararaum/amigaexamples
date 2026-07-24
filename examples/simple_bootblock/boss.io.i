@@ -54,11 +54,12 @@ BossManifestLoad = 22
 	
 	macro	BossIOWriteS
 	DATA
-.l\@:	dc.b	\1
+BossIOWriteS_DATA_\@:
+	dc.b	\1
 	dc.b	0
 	even
 	CODE
-	move.l	#.l\@,a0
+	move.l	#BossIOWriteS_DATA_\@,a0
 	BossIO	BossIOTrapWrite
 	endm
 

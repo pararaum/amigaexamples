@@ -36,11 +36,14 @@ int main() {
     BossPutc('\n');
     //
     part_init(&demodata); // Initialise the next part.
+    demodata.current_part = part;
     part_run(&demodata); // Run the next part.
     //...
     part_teardown(&demodata); // And tear down the part.
   }
+  demodata.current_part = 0;
   BossResetCopper();
-  while(1);
+  demodata.framecounter = 0;
+  while(demodata.framecounter < 50*6) ;
   return 0;
 }

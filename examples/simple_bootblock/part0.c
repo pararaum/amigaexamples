@@ -12,6 +12,8 @@ extern volatile uint16_t framecounter;
 unsigned short *gfx; //!< memory allocated for the graphics
 unsigned short *copperlist; //!< memory allocated for the copperlist
 
+unsigned short current_colours[32]; // Array for the current colours.
+
 static unsigned short copperlist4gfx[] = {
   CNOOP,0,CNOOP,0,	// Bitplane pointers, set by loop.
   CNOOP,0,CNOOP,0,
@@ -49,11 +51,35 @@ void part_init(__reg("a0") volatile struct DemoData *demodata) {
       baddr += 320/8; // Next row, please.
     }
     custom.cop1lc = (uint32_t)copperlist;
-    for(i = 0; i < 8; ++i) {
-      custom.color[i] = gfx[i];
+    for(i = 0; i < 32; ++i) {
+      custom.color[i] = 0;
+      current_colours[i] = 0;
     }
   }
   framecounter = 0;
+}
+
+void fade_to(unsigned short *target) {
+  unsigned short c, r, g, b, tr, tg, tb;
+  unsigned short *col;
+  short i;
+
+  for(i = 0, col = &current_colours[0]; i < 32; ++i) {
+    c = *col;
+    r = (c >> 8) & 0xf;
+    g = (c >> 4) & 0xf;
+    b = (c) & 0xf;
+    c = *target++;
+    tr = (c >> 8) & 0xf;
+    tg = (c >> 4) & 0xf;
+    tb = (c) & 0xf;
+    if(r > tr) --r; else if(r < tr) ++r;
+    if(g > tg) --g; else if(g < tg) ++g;
+    if(b > tb) --b; else if(b < tb) ++b;
+    c = (r << 8) | (g << 4) | b;
+    *col++ = c;
+    custom.color[i] = c;
+  }
 }
 
 void part_teardown(__reg("a0") volatile struct DemoData *demodata) {
@@ -61,9 +87,22 @@ void part_teardown(__reg("a0") volatile struct DemoData *demodata) {
   BossMemFree(copperlist);
 }
 
+
+void part_vbirq(__reg("a0") volatile struct DemoData *demodata) {
+  if((demodata->framecounter & 3) == 3) {
+    fade_to(&gfx[0]);
+  }
+}
+
+
 int main(__reg("a0") volatile struct DemoData *demodata) {
+  short i;
+
   BossPrintHex((uint32_t)demodata);
   while(demodata->framecounter < 325) ;
+  for(i = 0; i < 8; ++i) gfx[i] = 0;
+  demodata->framecounter = 0;
+  while(demodata->framecounter < 16*4+25) ;  
   BossWriteln("\nC is leaving.\n");
   return 0;
 }
