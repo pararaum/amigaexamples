@@ -6,6 +6,8 @@
 #include "boss.h"
 #include "resident.h"
 
+#define NOBITPLANES 5
+
 extern volatile struct Custom custom;
 extern volatile uint16_t framecounter;
 
@@ -22,10 +24,10 @@ static unsigned short copperlist4gfx[] = {
   CNOOP,0,CNOOP,0,
   DIWSTRT,0x2C81,DIWSTOP,0x2CC1,
   DDFSTRT, 0X0038,DDFSTOP,0X00D0,
-  BPLCON0,(3<<12)|0X200,
+  BPLCON0,(NOBITPLANES<<12)|0X200, // 5 Bitplanes.
   BPLCON1,0X0000,BPLCON2,0X0000,
   BPLCON3,0X0000,
-  BPL1MOD,320/8*(3-1),BPL2MOD,320/8*(3-1),
+  BPL1MOD,320/8*(NOBITPLANES-1),BPL2MOD,320/8*(NOBITPLANES-1),
   0xFFFF,0xFFFE
 };
 
@@ -41,8 +43,8 @@ void part_init(__reg("a0") volatile struct DemoData *demodata) {
   if((copperlist = BossMemAlloc(100)) != 0) {
     memcpy(copperlist, copperlist4gfx, sizeof(copperlist4gfx));
     unsigned short *cptr = copperlist;
-    baddr = (uint32_t)&gfx[8];
-    for(i = 0; i < 3; ++i) {
+    baddr = (uint32_t)&gfx[32];
+    for(i = 0; i < NOBITPLANES; ++i) {
       *cptr++ = bplpt;
       *cptr++ = baddr >> 16;
       *cptr++ = bplpt + 2;

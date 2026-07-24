@@ -26,13 +26,18 @@ boss:	boss.o boss.memorymanagement.o boss.io.o boss.trackloader.o boss.highlevel
 #boss:	boss.o
 	vlink $(VLINKFLAGS) -Tboss.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS) -L$$VBCC/vbcc_target_m68k-kick13/targets/m68k-kick13/lib -lvc
 
-bossdemo.adf:	boot.bossboot.bootblock boss.zx0 assets.cfg resident.zx0 part0.c20000.bin.zx0
+bossdemo.adf:	boot.bossboot.bootblock boss.zx0 assets.cfg resident.zx0 part0.c20000.bin rogal.under_the_bridge.scaled.5bitplane.bin dream_08_wip_268x256_jok.5bitplane.bin
 	./diskmaster.py -o $@ $< boss.zx0
+
+
+%.5bitplane.bin: %.png
+	convert_img2raw -O bin -B 5 -p -b $< > $@
+%.5bitplane.bin: %.iff
+	convert_img2raw -O bin -B 5 -p -b $< > $@
 
 
 %.3bitplane.bin: %.png
 	convert_img2raw -O bin -B 3 -p -b $< > $@
-
 %.3bitplane.bin: %.iff
 	convert_img2raw -O bin -B 3 -p -b $< > $@
 
@@ -54,6 +59,6 @@ run:
 
 .PHONY: clean run
 clean:
-	rm -f *.o *.adf *.bootblock *.lst *.sym *.zx0
+	rm -f *.o *.adf *.bootblock *.lst *.sym *.zx0 *.bin
 	rm -f $(TARGETS)
-	rm -f boss part0
+	rm -f boss resident part0
