@@ -244,6 +244,7 @@ exit$:	rts
 
 ;;; Read the current track and decode the sectors.
 read_and_decode:
+	lea	$dff000,a5
 	btst	#5,$bfe001	; Await Disk ready.
 	bne.s	read_and_decode
 	move.w	#$2991,d0

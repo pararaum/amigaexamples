@@ -26,7 +26,7 @@ boss:	boss.o boss.memorymanagement.o boss.io.o boss.trackloader.o boss.highlevel
 #boss:	boss.o
 	vlink $(VLINKFLAGS) -Tboss.x -nostdlib -b rawbin -symfile $@.sym $^ -o $@ $(LIBS) -L$$VBCC/vbcc_target_m68k-kick13/targets/m68k-kick13/lib -lvc
 
-bossdemo.adf:	boot.bossboot.bootblock boss.zx0 assets.cfg resident.zx0 part0.c20000.bin rogal.under_the_bridge.scaled.5bitplane.bin dream_08_wip_268x256_jok.5bitplane.bin
+bossdemo.adf:	boot.bossboot.bootblock boss.zx0 assets.cfg resident.zx0 part0.c20000.bin rogal.under_the_bridge.scaled.5bitplane.bin dream_08_wip_268x256_jok.5bitplane.bin LastOneClosesTheDoors.5bitplane.bin wilderness_preview-pikku_jok.5bitplane.bin
 	./diskmaster.py -o $@ $< boss.zx0
 
 

@@ -8,10 +8,14 @@
 
 #define NOBITPLANES 5
 
-extern volatile struct Custom custom;
-extern volatile uint16_t framecounter;
+enum DemoStates {
+  StateWait,
+  StateFade
+} demo_state;
 
-unsigned short *gfx; //!< memory allocated for the graphics
+extern volatile struct Custom custom;
+
+unsigned short *gfx; //!< memory allocated for the graphics, first the 32 colours than bitplane data
 unsigned short *copperlist; //!< memory allocated for the copperlist
 
 unsigned short current_colours[32]; // Array for the current colours.
@@ -31,34 +35,40 @@ static unsigned short copperlist4gfx[] = {
   0xFFFF,0xFFFE
 };
 
+
+void fix_copperlist_bitplanepointers(uint32_t bpladdr) {
+  short i;
+  uint16_t bplpt = BPLPT; // Bitplane pointer.
+  unsigned short *cptr = copperlist;
+
+  for(i = 0; i < NOBITPLANES; ++i) {
+    *cptr++ = bplpt;
+    *cptr++ = bpladdr >> 16;
+    *cptr++ = bplpt + 2;
+    *cptr++ = bpladdr;
+    bplpt += 4;
+    bpladdr += 320/8; // Next row, please.
+  }
+}
+
+
 void part_init(__reg("a0") volatile struct DemoData *demodata) {
   int i;
-  uint32_t baddr; // Bitplane address.
-  uint16_t bplpt = BPLPT; // Bitplane pointer.
-  
-  gfx = BossManifestLoad(0x47465831UL);
+
+  demo_state = StateWait;
+  gfx = BossManifestLoad(0x47465830UL);
   BossWrite("Asset was loaded at $");
   BossPrintHex((unsigned long)gfx);
   BossPutc('\n');
   if((copperlist = BossMemAlloc(100)) != 0) {
     memcpy(copperlist, copperlist4gfx, sizeof(copperlist4gfx));
-    unsigned short *cptr = copperlist;
-    baddr = (uint32_t)&gfx[32];
-    for(i = 0; i < NOBITPLANES; ++i) {
-      *cptr++ = bplpt;
-      *cptr++ = baddr >> 16;
-      *cptr++ = bplpt + 2;
-      *cptr++ = baddr;
-      bplpt += 4;
-      baddr += 320/8; // Next row, please.
-    }
+    fix_copperlist_bitplanepointers((uint32_t)&gfx[32]);
     custom.cop1lc = (uint32_t)copperlist;
     for(i = 0; i < 32; ++i) {
       custom.color[i] = 0;
       current_colours[i] = 0;
     }
   }
-  framecounter = 0;
 }
 
 void fade_to(unsigned short *target) {
@@ -91,20 +101,48 @@ void part_teardown(__reg("a0") volatile struct DemoData *demodata) {
 
 
 void part_vbirq(__reg("a0") volatile struct DemoData *demodata) {
-  if((demodata->framecounter & 3) == 3) {
-    fade_to(&gfx[0]);
+  if(demo_state == StateFade) {
+    if((demodata->framecounter & 3) == 3) {
+      fade_to(&gfx[0]);
+    }
   }
 }
 
 
-int main(__reg("a0") volatile struct DemoData *demodata) {
-  short i;
-
-  BossPrintHex((uint32_t)demodata);
-  while(demodata->framecounter < 325) ;
-  for(i = 0; i < 8; ++i) gfx[i] = 0;
+void wait_frames(volatile struct DemoData *demodata, uint16_t frames) {
   demodata->framecounter = 0;
-  while(demodata->framecounter < 16*4+25) ;  
+  while(demodata->framecounter < frames) ;
+}
+
+
+int main(__reg("a0") volatile struct DemoData *demodata) {
+  int i;
+  unsigned short *next_gfx;
+  unsigned short *old_gfx;
+
+  wait_frames(demodata, 50); // Wait one second.
+  demo_state = StateFade;
+  __asm("	move.l	$4.w,$4.w");
+  for(i = 1; i <= 3; ++i) {
+    demodata->framecounter = 0; // Clear the democounter.
+    next_gfx = BossManifestLoad(0x47465830UL + i); // Load next image.
+    if(next_gfx == 0) {
+      BossWriteln("Loading failed!");
+    }
+    while(demodata->framecounter < 10 * 50); // Wait 10s no matter the loading time.
+    memset(gfx, 0, 32 * 2); // Set all target colours to black.
+    wait_frames(demodata, 16 * 4 + 25); // Wait for fading to be done.
+    demo_state = StateWait; // Disable fading for a moment.
+    fix_copperlist_bitplanepointers((uint32_t)&next_gfx[32]);
+    old_gfx = gfx;
+    gfx = next_gfx;
+    BossMemFree(old_gfx);
+    demo_state = StateFade;
+  }
+  wait_frames(demodata, 10 * 50);
+  memset(gfx, 0, 32 * 2); // Set all target colours to black.
+  wait_frames(demodata, 16 * 4 + 50); // Wait for fading to be done.
+
   BossWriteln("\nC is leaving.\n");
   return 0;
 }
