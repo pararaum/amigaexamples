@@ -37,7 +37,17 @@ static unsigned short copperlist4gfx[] = {
   0xFFFF,0xFFFE
 };
 
-
+const char final_message[] =
+  "\n\nThe BOSS demo\n"
+  "=============\n\n"
+  "A simple experience of BOSS, the Basic Operating System Simulacrum.\n"
+  "Enjoy some nice graphics and a nice beer.\n\n"
+  "(C) 2026 The 7th Division\n\n"
+  "Code: Pararaum\n"
+  "Graphics: Jok, Rogal, Pararaum\n"
+  "Music: Ancient ?\n"
+  "Font: DamienG\n"
+  ;
 void fix_copperlist_bitplanepointers(uint32_t bpladdr) {
   short i;
   uint16_t bplpt = BPLPT; // Bitplane pointer.
@@ -129,5 +139,6 @@ int main(__reg("a0") volatile struct DemoData *demodata) {
   memset(gfx, 0, PALETTESIZE * 2); // Set all target colours to black.
   wait_frames(demodata, 16 * 4 + 50); // Wait for fading to be done.
   demo_state = StateWait;
+  BossWriteln(final_message);
   return 0;
 }
