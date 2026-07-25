@@ -267,84 +267,77 @@ fail$:	moveq	#0,d0
 	move.l	d0,a0
 	rts
 
-;=============================================================================
+;;; Allocate memory, memory information structure in A6
 ;;; In:	d0.l = number of bytes requested
 ;;;	a6.l = pointer to memory structure
-; Out: a0   = pointer to allocated memory, or 0 if the request failed
-;             (no run of free chunks was large enough)
-; Modifies: d1-d4/a1
-;=============================================================================
+;;; Out: a0.l  = pointer to allocated memory, or 0 if the request failed
+;;; Modifies: d1-d4/a1
 boss_memmanage_allocA6:
-	;;---- chunks_needed = ceil(size / CHUNK_SIZE) ----
+chunks_needed$:	equr	D4	; WORD value.
+start_index$:	equr	D3
+freerun_len$:	equr	D2
+	;; Calculate the number of chunks needed, aka ceil(size / CHUNK_SIZE) ----
 	moveq	#0,d1
-        move.w 	rsMEMCHUNK_chunksize(a6),d1 ; d1 = chunksize in L.
+	move.w	rsMEMCHUNK_chunksize(a6),d1 ; d1 = chunksize in L.
 	subq.l	#1,d1
-	add.l	d0,d1
+	add.l	d0,d1		; d1 = number of bytes filled to chunk lenght minus one
 	;; Afterwards 0 will be 0 but 1 (a single byte) will occupy at least one chunk.
-        move.w	rsMEMCHUNK_shift(a6),d0
+	move.w	rsMEMCHUNK_shift(a6),d0 ; How many bits to shift for chunk size.
 	lsr.l	d0,d1		; d1 = number of chunks
-        beq     ma_fail                 ; size 0 -> nothing to do
-        move.l  d1,d4                   ; d4 = chunks needed
-
-	;;---- scan CHUNK_TABLE for a run of d4 consecutive zeros ----
-        lea     rsMEMCHUNK_memchunks(a6),a1	; a1 = table scan pointer
-        moveq   #0,d2                   	; d2 = current free-run length
-        moveq   #0,d3                   	; d3 = start index of run
-        moveq   #0,d0                   	; d0 = current chunk index
-
-ma_scan:
-        cmp.l   rsMEMCHUNK_memchunknum(a6),d0
-        bge     ma_fail                 ; ran off the end, no room
-
-        tst.w   (a1)
-        bne     ma_broken                ; non-zero -> run resets
-
-	;;this chunk is free
-        tst.l   d2
-        bne     ma_grow
-        move.l  d0,d3                    ; first free chunk of a new run
-ma_grow:
-        addq.l  #1,d2
-        cmp.l   d4,d2
-        bge     ma_found                 ; run is now big enough
-        bra     ma_next
-
-ma_broken:
-        moveq   #0,d2                    ; run interrupted, start over
-
-ma_next:
-        addq.l  #1,d0
-        addq.l  #2,a1                    ; word-sized entries
-        bra     ma_scan
-
-	;; ---- found a run of d4 free chunks starting at chunk index d3 ----
-ma_found:
-        lea     rsMEMCHUNK_memchunks(a6),a1
-        move.l  d3,d0
-        add.l   d0,d0                    ; *2 -> byte offset into table
-        adda.l  d0,a1                    ; a1 -> table entry of start
-
-        move.w  d4,(a1)+                 ; store block size at start
-        move.l  d4,d1
-        subq.l  #1,d1                    ; remaining entries to mark
-        beq     ma_addr
-ma_markcont:
-        move.w  #CONT_MARKER,(a1)+
-        subq.l  #1,d1
-        bne     ma_markcont
-
-ma_addr:
-        move.l  d3,d0		; d0 = start index of run, see above.
+	beq	alloc_fail$	; Size = 0? Yes, nothing to do.
+	move.w	d1,chunks_needed$	; chunks_needed$ = chunks needed, this is now a WORD!
+	;; Scan table of chunks for a run of chunks_needed$ consecutive zeros.
+	lea	rsMEMCHUNK_memchunks(a6),a1	; a1 = table scan pointer
+	moveq	#0,freerun_len$			; freerun_len$ = current free-run length
+	moveq	#0,start_index$			; start_index$ = start index of run
+	moveq	#0,d0				; d0 = current chunk index
+scanloop$:
+	cmp.w	rsMEMCHUNK_memchunknum(a6),d0 ; End reached?
+	bge	alloc_fail$		    ; ran off the end, no room
+	;; Memory available?
+	tst.w	(a1)
+	bne	abort_run$	; Chunk was occupied, we have to abort the current run.
+	;; Chunk was free.
+	tst.w	freerun_len$	; Is this the first in the run?
+	bne	not_first_chunk$:
+	move.w	d0,start_index$	; Store start index of the free run.
+not_first_chunk$:
+	addq.l	#1,freerun_len$	; Increment run length.
+	cmp.w	chunks_needed$,freerun_len$
+	bge	found_space$	; There is enough space available!
+	bra	continue_run$
+abort_run$:
+	moveq	#0,freerun_len$	; Chunk is occupied, start again.
+continue_run$:
+	addq.l	#1,d0		; Increment chunk index.
+	addq.l	#2,a1		; Go to next table entry, remember these are WORDs.
+	bra	scanloop$
+	;; We have found a run of chunks_needed$ free chunks starting at chunk index start_index$. We need to fill with <length>,$FFFF,$FFFF,...
+found_space$:
+	lea	rsMEMCHUNK_memchunks(a6),a1
+	move.w	start_index$,d0
+	lsl.w	#1,d0		; Index to which WORD?
+	adda.w	d0,a1		; A1 = pointer to the chunk table-entry.
+	move.w	chunks_needed$,(a1)+ ; That many chunks were needed.
+	move.w	chunks_needed$,d1
+	subq.w	#1,d1		; Number of entries we have to mark with $FFFF, remember that this may be zero!
+	beq	calc_and_ret_addr$
+	moveq	#1,d0		; D0 = $FFFFFFFF, we need only 16 bits.
+l1$:	move.w	d0,(a1)+
+	subq.l	#1,d1
+	bne	l1$
+calc_and_ret_addr$:
+	moveq	#0,d0
+	move.l	start_index$,d0		; d0 = start index of run, see above.
 	move.w	rsMEMCHUNK_shift(a6),d1
-        lsl.l   d1,d0          ; chunk index -> byte offset
-        move.l	rsMEMCHUNK_memstart(a6),a0 ; Start address of memory.
-        adda.l  d0,a0                    ; a0 = pointer to give caller
-        rts
-
-ma_fail:
-        moveq   #0,d0
-        move.l  d0,a0                    ; return NULL
-        rts
+	lsl.l	d1,d0			; Calculate byte offset into memory.
+	move.l	rsMEMCHUNK_memstart(a6),a0 ; Start address of memory.
+	adda.l	d0,a0			 ; a0 = pointer to give caller
+	rts
+alloc_fail$:
+	moveq	#0,d0
+	move.l	d0,a0			 ; return NULL
+	rts
 
 
 ;;; Free an allocated memory.
