@@ -126,18 +126,22 @@ int main(__reg("a0") volatile struct DemoData *demodata) {
   for(i = 1; i <= 3; ++i) {
     demodata->framecounter = 0; // Clear the democounter.
     next_gfx = BossManifestLoad(0x47465830UL + i); // Load next image.
+    BossWrite("next_gfx = ");
+    BossPrintHex((unsigned long)next_gfx);
+    BossPutc('\n');
     if(next_gfx == 0) {
       BossWriteln("Loading failed!");
+    } else {
+      while(demodata->framecounter < 10 * 50); // Wait 10s no matter the loading time.
+      memset(gfx, 0, 32 * 2); // Set all target colours to black.
+      wait_frames(demodata, 16 * 4 + 25); // Wait for fading to be done.
+      demo_state = StateWait; // Disable fading for a moment.
+      fix_copperlist_bitplanepointers((uint32_t)&next_gfx[32]);
+      old_gfx = gfx;
+      gfx = next_gfx;
+      BossMemFree(old_gfx);
+      demo_state = StateFade;
     }
-    while(demodata->framecounter < 10 * 50); // Wait 10s no matter the loading time.
-    memset(gfx, 0, 32 * 2); // Set all target colours to black.
-    wait_frames(demodata, 16 * 4 + 25); // Wait for fading to be done.
-    demo_state = StateWait; // Disable fading for a moment.
-    fix_copperlist_bitplanepointers((uint32_t)&next_gfx[32]);
-    old_gfx = gfx;
-    gfx = next_gfx;
-    BossMemFree(old_gfx);
-    demo_state = StateFade;
   }
   wait_frames(demodata, 10 * 50);
   memset(gfx, 0, 32 * 2); // Set all target colours to black.

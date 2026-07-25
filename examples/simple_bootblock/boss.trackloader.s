@@ -27,7 +27,7 @@ rsDiskStartTrack	rs.w	1
 rsDiskStartSector	rs.w	1
 rsDiskEndTrack		rs.w	1 ; End track to reach.
 rsDiskEndSector		rs.w	1
-rsDiskBuf		rs.l	1		 ; Pointer to the Memory for the track buffer, must be in CHIP.
+rsDiskBuf		rs.l	1 ; Pointer to the Memory for the track buffer, must be in CHIP.
 rsDiskStructSize	rs
 
 	BSS
@@ -243,6 +243,9 @@ exit$:	rts
 
 
 ;;; Read the current track and decode the sectors.
+;;; In: d3.w = start sector
+;;;	d4.w = end sector
+;;;	a4.l = current dist structure
 read_and_decode:
 	lea	$dff000,a5
 	btst	#5,$bfe001	; Await Disk ready.
@@ -265,6 +268,7 @@ dmawait$:
 ;;; In:	a0 = destination address
 ;;; 	d3 = start sector
 ;;; 	d4 = end sector
+;;; 	a4 = current disk structure
 ;;; Modifies: d0-d4,d0-a1
 ;;; TODO: Return or check if the track was right.
 decode_mfm:
