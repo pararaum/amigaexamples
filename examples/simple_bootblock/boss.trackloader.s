@@ -142,6 +142,7 @@ curdisstrptr$ equr A4
 	and.l	#$0000ffff,d1	; If there is something in the upper bits remove it!
 	and.l	#$0000ffff,d0	; If there is something in the upper bits remove it!
 	add.w	d0,d1	      ; Add start sector to number of blocks. This gives us the last block in d1.
+	subq.w	#1,d1	      ; We need a closed interval, so decoding has to stop on the last sector.
 	divu	#11,d1
 	divu.w	#11,d0	    ; Divide d0 by 11 (no of sectors per track) to get cylinder/track.
 	;; D0 = rrrrqqqq, quotient in the lower bits, remainder in the most significant 16 bits.
@@ -152,6 +153,8 @@ curdisstrptr$ equr A4
 	move.w	d1,rsDiskEndTrack(curdisstrptr$)
 	swap	d1
 	move.w	d1,rsDiskEndSector(curdisstrptr$)
+;;; d0=10,d1=2: [10..11] → 0/10,1/0
+;;; d0=10,d1=1: [10..10] → 0/10,0/10
 	rts
 
 ;;; In: d0.w = destination track
@@ -245,7 +248,7 @@ finished$:
 exit$:	rts
 
 
-;;; Read the current track and decode the sectors.
+;;; Read the current track and decode the sectors. This is a closed interval!
 ;;; In: d3.w = start sector
 ;;;	d4.w = end sector
 ;;;	a4.l = current dist structure
@@ -270,7 +273,7 @@ dmawait$:
 ;;; Decode MFM track.
 ;;; In:	a0 = destination address
 ;;; 	d3 = start sector
-;;; 	d4 = end sector
+;;; 	d4 = end sector (last sector read!)
 ;;; 	a4 = current disk structure
 ;;; Modifies: d0-d4,d0-a1
 ;;; TODO: Return or check if the track was right.
