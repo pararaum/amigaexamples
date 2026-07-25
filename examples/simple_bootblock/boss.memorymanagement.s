@@ -358,37 +358,30 @@ ma_fail:
 ; the BOSS system will dump registers and stop.
 boss_memmanage_freeA6:
 	;; ---- chunk index = (a0 - MEM_POOL) / CHUNK_SIZE ----
-        move.l  a0,d0
-        move.l	rsMEMCHUNK_memstart(a6),a1
-        sub.l   a1,d0		; d0 = offset of memory in the memory block
+	move.l	a0,d0
+	move.l	rsMEMCHUNK_memstart(a6),a1 ; A1 = memory start.
+	sub.l	a1,d0		; d0 = offset of memory in the memory block
 	move.w	rsMEMCHUNK_shift(a6),d1
-        lsr.l   d1,d0		; d0 = which chunk is it?
+	lsr.l	d1,d0		; d0 = which chunk is it?
 	
-        lea     rsMEMCHUNK_memchunks(a6),a1
-        move.l  d0,d1
-        add.l   d1,d1                    ; *2 -> byte offset
-        adda.l  d1,a1                    ; a1 -> table entry
-
-        move.w  (a1),d2
-        cmp.w   #CONT_MARKER,d2
-        beq     mf_bad                   ; mid-block pointer, reject
-        tst.w   d2
-        beq     mf_bad                   ; already free / invalid
-
-	;; ---- d2 = number of chunks to clear ----
-	moveq	#0,d0		; Clear D0 for freeing chunks.
-        move.w  d0,(a1)+
-        subq.w  #1,d2
-        beq     mf_done
-mf_clear:
-        move.w  d0,(a1)+
-        subq.w  #1,d2
-        bne     mf_clear
-
-mf_done:
-        rts
-
-mf_bad:
+	lea	rsMEMCHUNK_memchunks(a6),a1
+	move.l	d0,d1
+	lsl.l	#1,d1		; Table of words, so multiply by 2.
+	adda.l	d1,a1		; A1 = points to table entry of chunk.
+	;; Check if we have the correct chunk.
+	move.w	(a1),d2
+	cmp.w	#CONT_MARKER,d2
+	beq	bad_free$	; This is in the middle of an allocation, something went wrong.
+	tst.w	d2
+	beq	bad_free$	; This chunk is free, something went wrong.
+	;; Now D2 contains the number of chunks to free (unsigned short).
+	moveq	#0,d0		; CLR.L D0
+clearloop$:
+	move.w	d0,(a1)+
+	subq.w	#1,d2
+	bne	clearloop$
+	rts
+bad_free$:
 	BossIO	BossIODumpRegisters
 	BossIOWritelnS "Memory free failed!"
 	move.w	#$0f00,d0
