@@ -138,9 +138,10 @@ SelDF0MotOff:
 ;;; Out: modifies disk information structure, sets start/end track and start/end sector (0..10)
 ;;; Modifies: d0-d2
 trackload_calc_start_end_tracks:
-curdisstrptr$ equr A4
-	and.l	#$0000ffff,d1	; If there is something in the upper bits remove it!
-	and.l	#$0000ffff,d0	; If there is something in the upper bits remove it!
+curdisstrptr$:	equr A4
+	move.l	#$0000ffff,d2
+	and.l	d2,d1		; If there is something in the upper bits remove it!
+	and.l	d2,d0	; If there is something in the upper bits remove it!
 	add.w	d0,d1	      ; Add start sector to number of blocks. This gives us the last block in d1.
 	subq.w	#1,d1	      ; We need a closed interval, so decoding has to stop on the last sector.
 	divu	#11,d1
@@ -292,7 +293,7 @@ syncsearch$:
 	bne.s	syncsearch$
 	cmp.w	(a1),d5		; Are there two sync words in a row?
 	beq.s	syncsearch$
-	move.l	(a1),d0		; Movel two MFM encoded longwords into d0 and d1.
+	move.l	(a1),d0		; Move two MFM encoded longwords into d0 and d1.
 	move.l	4(a1),d1
 	and.l	d7,d0
 	asl.l	#1,d0
