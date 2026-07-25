@@ -99,6 +99,7 @@ list$:	jmp	trap1init_custom(pc)
 	illegal
 
 trap1init_custom:
+	lea	$DFF000,a5
 	bsr	init_custom
 	lea.l	BOSSSCREENCOPPERLIST,a1
 	lea.l	BOSSSCREENBITPLANE,a0
