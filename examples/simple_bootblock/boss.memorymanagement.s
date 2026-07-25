@@ -1,5 +1,6 @@
 
 	include boss.memorymanagement.i
+	include boss.io.i
 
 	XDEF	boss_memmanage_init
 
@@ -346,19 +347,15 @@ ma_fail:
         rts
 
 
-;=============================================================================
-; mem_free
-;
+;;; Free an allocated memory.
 ;;; In:	a0 = pointer previously returned by mem_alloc
 ;;;	a6.l = pointer to memory structure
-; Out: -
-; Modifies: d0-d2/a0-a1
+;;; Out: -
+;;; Modifies: d0-d2/a0-a1
 ;
-; If a0 does not point to the start of a live allocation (e.g. it points
-; into the middle of a block, or the block was already freed), the call
-; is a no-op. mf_bad is the spot to extend with real error reporting
-; (e.g. return a status code in d0) if you need it.
-;=============================================================================
+; If a0 does not point to the start of a live allocation (e.g. it
+; points into the middle of a block, or the block was already freed),
+; the BOSS system will dump registers and stop.
 boss_memmanage_freeA6:
 	;; ---- chunk index = (a0 - MEM_POOL) / CHUNK_SIZE ----
         move.l  a0,d0
@@ -392,5 +389,10 @@ mf_done:
         rts
 
 mf_bad:
-	;;bad pointer / double free
-        rts
+	BossIO	BossIODumpRegisters
+	BossIOWritelnS "Memory free failed!"
+	move.w	#$0f00,d0
+	BossIO	BossIOBackground
+	move.w	#$0ff3,d0
+	BossIO	BossIOBackground
+        bra	*
