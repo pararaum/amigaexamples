@@ -36,6 +36,8 @@ current_diskstruct:	ds.b	rsDiskStructSize
 
 	CODE
 boss_manifest_load:
+SAFETYBUFFERSIZE$:	equ	$20 ; Just in case the decompression algorithm overruns the buffer...
+SECTORSLACK$:	equ	$200 ; We *always* read whole sectors so make enough room for them!
 manifestR$:	equr	a6
 allocatedR$:	equr	a2	; Here we store the memory of the allocated memory.
 	BossMem	BossFindManifestEntry
@@ -46,7 +48,6 @@ allocatedR$:	equr	a2	; Here we store the memory of the allocated memory.
 	rts
 	;;  Part was found, now get the memory.
 found$:	move.l	a0,manifestR$		; Manifest pointer in MANIFESTR$.
-SAFETYBUFFERSIZE$:	equ	$20
 	move.l	rsManifestMemflags(manifestR$),d1 ; Where to put the data?
 	and.l	#$40000000,d1			  ; Is the no alloc bit set?
 	beq	allocate$
@@ -56,8 +57,10 @@ SAFETYBUFFERSIZE$:	equ	$20
 	bra	skip_allocation$
 allocate$:			; An allocation has to be performed.
 	move.l	rsManifestMemflags(manifestR$),d1 ; Where to put the data?
-	move.l	rsManifestUnpackedSize(manifestR$),d0
-	add.l	#SAFETYBUFFERSIZE$,d0	; Safety buffer.
+	move.l	rsManifestUnpackedSize(manifestR$),a0
+	move.w	#SECTORSLACK$,d0
+	lea.l	SAFETYBUFFERSIZE$(a0,d0.w),a0
+	move.l	a0,d0
 	BossMem	BossMemTrapAllocDeluxe
 	move.l	a0,allocatedR$		; Put address into allocatedR$.
 	move.l	a0,d0
