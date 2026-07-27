@@ -17,47 +17,48 @@ BOSSSCREENCOPPERLIST:	equ	BOSSSCREENBITPLANE+640/8*256
 ;;; This is the first memory available for the allocation code.
 BOSSFIRSTCHIP:	equ	BOSSSCREENCOPPERLIST+256
 
-;=============================================================================
 ; CHUNK-TABLE MEMORY ALLOCATOR  (Motorola 68000)
-;=============================================================================
+; ==============================================
 ;
 ; DESIGN
 ; ------
-; The memory pool is divided into fixed-size chunks (CHUNK_SIZE bytes each,
-; 128 by default). Instead of a plain free/used *bitmap*, each chunk has a
-; 16-bit entry in CHUNK_TABLE:
+; 
+; The memory pool is divided into fixed-size chunks. Instead of a
+; plain free/used bitmap, each chunk has a 16-bit entry in the
+; corresponding chunk table:
 ;
-;     entry == 0        -> chunk is FREE
-;     entry == $FFFF     -> chunk is a CONTINUATION of an allocation that
-;                           started at an earlier chunk (occupied, but not
-;                           the block's start)
-;     entry == 1..$FFFE  -> chunk is the START of an allocation, and the
-;                           value is the number of consecutive chunks
-;                           (including this one) that belong to it
+;     entry == 0:        chunk is free
+;     entry == $FFFF:    chunk is a continuation of an allocation that
+;                        started at an earlier chunk (occupied, but not
+;                        the block's start)
+;     entry == 1..$FFFE: chunk is the start of an allocation, and the
+;                        value is the number of consecutive chunks
+;                        (including this one) that belong to it
 ;
-; SEARCH ALGORITHM (mem_alloc)
-; -----------------------------
-; Same idea as scanning a free-bitmap for N consecutive free bits: walk the
-; table from the start, counting a run of consecutive zero (free) entries.
-; As soon as the run reaches the number of chunks requested, that run is
-; used (first-fit). Any non-zero entry (used or continuation) resets the
-; run length back to zero.
+; Ssearch algorithm for allocation
+; --------------------------------
+; 
+; The number of needed chunks N is calculated and the table is walked
+; until N consecutive chunks could be found.  As soon as the run
+; reaches the number of chunks requested, that run is used making this
+; a first-fit algorithm. Any non-zero entry (used or continuation)
+; resets the run length back to zero. Nothing more sophisticated is
+; used because this is fast and should be good enough.
 ;
-; FREEING (mem_free)
-; -------------------
-; Because the block's *size* is stored right there at its start entry, no
-; header/footer needs to live in the user's memory and no block list needs
-; to be walked: look up the chunk index for the pointer, read the count,
-; and zero that many table entries. Adjacent free runs need no explicit
-; coalescing -- the scanner in mem_alloc already treats consecutive zero
-; entries as one contiguous free run regardless of how they became free.
+; Freeing
+; --------
+; 
+; The chunk number is calculated and a lookup in the table gets the
+; number of allocated chunks for this memory allocation. These chunks
+; are freed by setting them to zero in the allocation table.
 ;
-; NOTES
-; ---------------------------------------
-; - CHUNK_TABLE uses WORD entries (max 65535 chunks per single allocation).
-;
-;=============================================================================
-	
+; Notes
+; -----
+; 
+; The chunk table uses WORD entries. As we have different types of
+; memory multiple tables are needed.
+
+
 	RSRESET
 rsMEMCHUNK_shift:	rs.w	1 ; log2(chunk size)
 rsMEMCHUNK_chunksize:	rs.w	1 ; 1<<above shift
@@ -299,7 +300,7 @@ scanloop$:
 	bne	abort_run$	; Chunk was occupied, we have to abort the current run.
 	;; Chunk was free.
 	tst.w	freerun_len$	; Is this the first in the run?
-	bne	not_first_chunk$:
+	bne	not_first_chunk$
 	move.w	d0,start_index$	; Store start index of the free run.
 not_first_chunk$:
 	addq.l	#1,freerun_len$	; Increment run length.
@@ -380,5 +381,5 @@ bad_free$:
 	move.w	#$0f00,d0
 	BossIO	BossIOBackground
 	move.w	#$0ff3,d0
-	BossIO	BossIOBackground
+	BossIO	BossIOForeground
         bra	*
