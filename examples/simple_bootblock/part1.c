@@ -75,9 +75,7 @@ void part_init(__reg("a0") volatile struct DemoData *demodata) {
   if((copperlist = BossMemAlloc(100)) != 0) {
     memcpy(copperlist, copperlist4gfx, sizeof(copperlist4gfx));
     fix_copperlist_bitplanepointers((uint32_t)&gfx[PALETTESIZE]);
-    custom.cop1lc = (uint32_t)copperlist;
     for(i = 0; i < PALETTESIZE; ++i) {
-      custom.color[i] = 0;
       current_colours[i] = 0;
     }
   }
@@ -106,6 +104,14 @@ void fade_to(unsigned short *target) {
   }
 }
 
+
+void part_finalise(__reg("a0") volatile struct DemoData *demodata) {
+  memset(gfx, 0, PALETTESIZE * 2); // Set all target colours to black.
+  wait_frames(demodata, 16 * 4 + 50); // Wait for fading to be done.
+  demo_state = StateWait;
+}
+
+
 void part_teardown(__reg("a0") volatile struct DemoData *demodata) {
   BossMemFree(gfx);
   BossMemFree(copperlist);
@@ -132,13 +138,10 @@ int main(__reg("a0") volatile struct DemoData *demodata) {
   unsigned short *next_gfx;
   unsigned short *old_gfx;
 
-  wait_frames(demodata, 50); // Wait one second.
+  custom.cop1lc = (uint32_t)copperlist; // Now switch to our copperlist.
   demo_state = StateFade;
   __asm("	move.l	$4.w,$4.w");
   wait_frames(demodata, 15 * 50);
-  memset(gfx, 0, PALETTESIZE * 2); // Set all target colours to black.
-  wait_frames(demodata, 16 * 4 + 50); // Wait for fading to be done.
-  demo_state = StateWait;
   BossWriteln(final_message);
   return 0;
 }

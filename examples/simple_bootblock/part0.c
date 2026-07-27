@@ -94,6 +94,14 @@ void fade_to(unsigned short *target) {
   }
 }
 
+
+void part_finalise(__reg("a0") volatile struct DemoData *demodata) {
+  memset(gfx, 0, 32 * 2); // Set all target colours to black.
+  wait_frames(demodata, 16 * 4 + 50); // Wait for fading to be done.
+  demo_state = StateWait;
+}
+
+
 void part_teardown(__reg("a0") volatile struct DemoData *demodata) {
   BossMemFree(gfx);
   BossMemFree(copperlist);
@@ -144,8 +152,6 @@ int main(__reg("a0") volatile struct DemoData *demodata) {
     }
   }
   wait_frames(demodata, 10 * 50);
-  memset(gfx, 0, 32 * 2); // Set all target colours to black.
-  wait_frames(demodata, 16 * 4 + 50); // Wait for fading to be done.
-  BossWriteln("\nC is leaving.\n");
+  BossWriteln("\nPart 0 is leaving.\n");
   return 0;
 }

@@ -11,6 +11,9 @@
 ;;; c20000-c4ffff (format "%x" (- #xc47fff #xc20000))"27fff"
 ;;; c50000-c7f000 (format "%x" (- #xc7f000 #xc50000))"2f000"
 
+;;; Offset in the part trampoline for the irq routine.
+IRQOFFSET:	equ	16
+
 	rsreset
 rsResident_framecounter:	rs.w	1
 rsResident_totalframecounter:	rs.l	1
@@ -30,6 +33,8 @@ _demodata:
 
 	section	LOWCODE,CODE
 	jmp	entrypoint(pc)
+	rts
+	rts
 	rts
 	rts
 	rts
@@ -93,7 +98,7 @@ regs$:	reg	d0-a6
 	tst.l	rsResident_current_part(a0)
 	beq	no_current$
 	move.l	rsResident_current_part(a0),a1 ; Get the current part memory pointer into A1.
-	jsr	12(a1)			       ; This should be the vertical blank.
+	jsr	IRQOFFSET(a1)		       ; This should be the vertical blank.
 no_current$:
 	jsr	_pt_PlayMusic
 	lea.l	_demodata,a0
