@@ -21,6 +21,8 @@ Links
  * https://amigasourcecodepreservation.gitlab.io/total-amiga-assembler/
  * https://github.com/Ozzyboshi/AmigaDemo_the_crows
  * http://www.powerprograms.nl/amiga/spr-layer.html
+ * https://tetracorp.github.io/
+ * https://github.com/alfishe/amiga-bootcamp/tree/main
 
 Tool Links
 ==========
@@ -29,6 +31,11 @@ Tool Links
  * http://xi6.com/projects/asmx/
  * https://github.com/asmotor/asmotor
  * https://github.com/arnaud-carre/ldos
+ * Bebbo Toolchain:
+   * https://github.com/bebbo/amiga-gcc (broken)
+   * https://franke.ms/amiga/amiga-gcc.wiki
+   * https://franke.ms/git/bebbo/amiga-gcc/README.md
+   * https://codeberg.org/bebbo/amiga-gcc
  * [DPaint.js](https://www.stef.be/dpaint "https://www.stef.be/dpaint")
 
 Graphics
@@ -40,6 +47,7 @@ Graphics
 Compression
 -----------
 
+ * https://github.com/emmanuel-marty/salvador
  * https://github.com/steve-chamberlin/fc8-compression
  * https://github.com/arnaud-carre/lz4-68k
  * http://aminet.net/package/util/pack/cranker
@@ -68,3 +76,13 @@ Detecting Hardware
  * http://aminet.net/package/util/moni/WhichAmiga
  * http://romanworkshop.blutu.pl/asm68/proc.htm
  * http://eab.abime.net/showthread.php?t=72300
+
+Trackloader/Hunkloader
+----------------------
+
+ * https://github.com/deplinenoise/trackloader/tree/master
+ * http://cyberpingui.free.fr/tuto_trackloader.htm
+ * https://github.com/keirf/Amiga-Stuff/blob/master/host_tools/hunk_loader.c
+ * https://github.com/keirf/amiga-stuff/blob/master/base/bootblock.S
+ * https://aminet.net/package/dev/asm/t-loader
+ * https://aminet.net/package/dev/src/trackldr1_43
