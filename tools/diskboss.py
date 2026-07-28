@@ -383,7 +383,7 @@ def master_disk(
         namehex = (ord(a.name[0]) << 24) | (ord(a.name[1]) << 16) | (ord(a.name[2]) << 8) | ord(a.name[3])
         print(
             f"  {a.name:<4} ${namehex:08X}"
-            f"{a.unpacked_size:>7} -> {a.packed_size:>7} bytes, "
+            f"{a.unpacked_size:>7} ${a.unpacked_size:06x} -> {a.packed_size:>7} ${a.packed_size:06x} bytes, "
             f" sectors {a.start_sector:>5} ..{a.start_sector + a.num_sectors - 1:>5}"
             f": {a.path:<40} "
         )
