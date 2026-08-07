@@ -3,7 +3,7 @@ version "0.1"
 purpose "Convert an image to the raw format."
 option "bitplane-number" B "only output that number of bitplanes" int default="8" optional
 option "header"     	 h "generate a header" flag off
-option "palette"    	 p "generate a platte" flag off
+option "palette"    	 p "generate a palette" flag off
 option "bitplanes"  	 b "generate bitplanes" flag off
 option "display"    	 D "display the image" flag off
 option "interleave" 	 I "turn off interleave the outputted bitplanes" flag on
