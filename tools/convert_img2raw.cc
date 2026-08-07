@@ -228,9 +228,6 @@ void display_bitplanes(SDL_Surface *orig, const BitplaneVector &bpls)
       0, W, H, 32, SDL_PIXELFORMAT_RGBA32);
   if (!canvas) throw std::runtime_error(SDL_GetError());
 
-  // Fill background (dark grey)
-  SDL_FillRect(canvas, nullptr, SDL_MapRGB(canvas->format, 40, 40, 40));
-
   // Layout positions (row-major in the 3×3 grid)
   //
   //   0 1 2
@@ -270,7 +267,7 @@ void display_bitplanes(SDL_Surface *orig, const BitplaneVector &bpls)
   }
 
   SDL_Window *win = SDL_CreateWindow(
-      "Original + Bitplanes (ESC to quit)",
+      "Original + Bitplanes (ESC or Q to quit)",
       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
       W, H, SDL_WINDOW_SHOWN);
   if (!win) throw std::runtime_error(SDL_GetError());
