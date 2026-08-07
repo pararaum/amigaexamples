@@ -4,6 +4,8 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#include <fstream>
+#include <sstream>
 #include <boost/format.hpp>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -15,10 +17,19 @@ typedef std::vector<std::vector<bool>> BitplaneVector;
 enum Return_Values_for_CLI {
   CLIRET_parsing_failed = 1,
   CLIRET_not_enough_files = 2,
+  CLIRET_io_error = 3,
   CLIRET_exception = 64
 };
 gengetopt_args_info args;
 
+
+/*! convert chunky to planar
+ *
+ * \param width number of bytes in a row
+ * \param height height of picture aka number of rows
+ * \param pixels pointer to pixels in chunky format
+ * \return eight bitplanes (vectors of bits)
+ */
 BitplaneVector convert_c2p(int width, int height, unsigned char *pixels) {
   int row, column;
   unsigned int val;
@@ -82,7 +93,7 @@ std::vector<std::vector<unsigned char>> bitplanes2bins(const BitplaneVector &bit
 }
 
 
-void handle_file(const char *fname) {
+void handle_file(std::ostream &outstr, const char *fname) {
   SDL_Surface *surf = IMG_Load(fname);
 
   if(!surf) {
@@ -115,11 +126,11 @@ void handle_file(const char *fname) {
       if(args.header_flag) {
 	HeaderWriter *headerwriter = NULL;
 	if((outformat == "bin") || (outformat == "raw")) {
-	  headerwriter = new HeaderWriterBin(fname, std::cout);
+	  headerwriter = new HeaderWriterBin(fname, outstr);
 	} else if(outformat == "asm") {
-	  headerwriter = new HeaderWriterASM(fname, std::cout);
+	  headerwriter = new HeaderWriterASM(fname, outstr);
 	} else if(outformat == "c") {
-	  headerwriter = new HeaderWriterC(fname, std::cout);
+	  headerwriter = new HeaderWriterC(fname, outstr);
 	} else {
 	  throw std::invalid_argument("header, unknown format: " + outformat);
 	}
@@ -129,11 +140,11 @@ void handle_file(const char *fname) {
       if(args.palette_flag) {
 	PaletteWriter *palettewriter = NULL;
 	if((outformat == "bin") || (outformat == "raw")) {
-	  palettewriter = new PaletteWriterBin(fname, std::cout, args.small_palette_flag);
+	  palettewriter = new PaletteWriterBin(fname, outstr, args.small_palette_flag);
 	} else if(outformat == "asm") {
-	  palettewriter = new PaletteWriterASM(fname, std::cout, args.small_palette_flag);
+	  palettewriter = new PaletteWriterASM(fname, outstr, args.small_palette_flag);
 	} else if(outformat == "c") {
-	  palettewriter = new PaletteWriterC(fname, std::cout, args.small_palette_flag);
+	  palettewriter = new PaletteWriterC(fname, outstr, args.small_palette_flag);
 	} else {
 	  throw std::invalid_argument("palette, unknown format: " + outformat);
 	}
@@ -144,11 +155,11 @@ void handle_file(const char *fname) {
 	OutputBitplanes *obfunctor;
 	std::vector<std::vector<unsigned char>> raws(bitplanes2bins(bplvec));
 	if((outformat == "bin") || (outformat == "raw")) {
-	  obfunctor = new OutputBitplanes(fname, std::cout);
+	  obfunctor = new OutputBitplanes(fname, outstr);
 	} else if(outformat == "c") {
-	  obfunctor = new OutputBitplanesC(fname, std::cout, args.bitplane_chip_flag);
+	  obfunctor = new OutputBitplanesC(fname, outstr, args.bitplane_chip_flag);
 	} else if(outformat == "asm") {
-	  obfunctor = new OutputBitplanesASM(fname, std::cout);
+	  obfunctor = new OutputBitplanesASM(fname, outstr);
 	} else {
 	  throw std::invalid_argument("unknown format: " + outformat);
 	}
@@ -168,12 +179,24 @@ int main(int argc, char **argv) {
     return CLIRET_not_enough_files;
   }
   try {
+    std::stringstream out; // Here we store the output temporarily.
     if(SDL_Init(0) != 0) {
       SDL_Log("Intitialisation failed: %s", SDL_GetError());
       throw std::runtime_error(SDL_GetError());
     }
-    handle_file(args.inputs[0]);
     atexit(SDL_Quit);
+    handle_file(out, args.inputs[0]);
+    out << std::flush;
+    if(args.output_given) {
+      std::ofstream ofile(args.output_arg);
+      if(!ofile) {
+	std::cerr << "Error opening file: " << args.output_arg << std::endl;
+	return CLIRET_io_error;
+      }
+      ofile << out.rdbuf();
+    } else {
+      std::cout << out.rdbuf();
+    }
   }
   catch(const std::exception &excp) {
     std::cerr << "Error: " << excp.what() << std::endl;
