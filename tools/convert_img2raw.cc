@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
       std::cout << out.rdbuf();
     }
     if (args.display_flag) {
-      // We have to reload as handle_file() culls unused bitplanes,
+      // We have to reconvert as handle_file() culls unused bitplanes,
       // therefore it is made sure that always all 8 planes are
       // available for the display.
       BitplaneVector full = convert_c2p(surf->w, surf->h,
