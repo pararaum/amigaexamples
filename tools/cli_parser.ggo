@@ -1,5 +1,5 @@
 package "convert image to raw"
-version "???"
+version "0.1"
 purpose "Convert an image to the raw format."
 option "bitplane-number" B "only output that number of bitplanes" int default="8" optional
 option "header"     	 h "generate a header" flag off
@@ -8,5 +8,6 @@ option "bitplanes"  	 b "generate bitplanes" flag off
 option "display"    	 D "display the image" flag off
 option "interleave" 	 I "turn off interleave the outputted bitplanes" flag on
 option "output-format"	 O "select the output format: bin or raw, c, asm" string default="asm" optional
+option "output"		 o "select an output file"
 option "small-palette"	 - "small palette is allowed" flag off
 option "bitplane-chip"	 - "put bitplane into chip memory" flag on

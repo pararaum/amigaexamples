@@ -174,7 +174,7 @@ public:
     out << "};\n";
   }
   virtual void output_header(void) {
-    out << "unsigned char " << (chip ? "__chip " : "/*__chip*/") << frobnicate_filename() << "[] = {\n";
+    out << "unsigned char " << (chip ? "__chip " : "/*__chip*/ ") << frobnicate_filename() << "[] = {\n";
   }
   virtual void output_row_header(void) {
     out << '\t';
