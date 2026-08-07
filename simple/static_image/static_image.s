@@ -1,8 +1,8 @@
 ;;; Display a static image which will be later on greater than the whole screen.
 
 	include "hardware/custom.i"
-	include	"iff.i"
-	include "own.i"
+	include	"t7d/iff.i"
+	include "t7d/own.i"
 
 	section	static_image,code
 

@@ -1,6 +1,6 @@
         INCLUDE "hardware/custom.i"
         INCLUDE "hardware/intbits.i"
-	include	"own.i"
+	include	"t7d/own.i"
 
 WIDTH = (1024+320)
 HEIGHT = (1024+256)
