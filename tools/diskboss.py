@@ -233,17 +233,28 @@ def parse_asset_file(path_: str) -> list[Asset]:
 def compress_with_salvador(src_path: str, salvador_bin: str = "salvador") -> bytes:
     """Compress src_path with salvador, return the packed bytes.
 
+    If the file ends in ".zx0" it is assumed that the file was alread
+    compressed and no further compression is attempted!
+
+    @param src_path: path to the file to be compressed
+    @param salvador_bin: name of the salvador binary
+
     """
     rebuild = False
     out_path = src_path + ".zx0"
     src_stats = os.stat(src_path)
-    try:
-        stats = os.stat(out_path)
-        #print(f"\tUsing file {out_path} with {stats.st_size} bytes.")
-    except FileNotFoundError:
-        rebuild = True
-    if not rebuild and stats.st_mtime < src_stats.st_mtime:
-        rebuild = True
+    if not src_path.endswith(".zx0") and not src_path.endswith(".ZX0"):
+        try:
+            stats = os.stat(out_path)
+            #print(f"\tUsing file {out_path} with {stats.st_size} bytes.")
+        except FileNotFoundError:
+            rebuild = True
+        if not rebuild and stats.st_mtime < src_stats.st_mtime:
+            rebuild = True
+    else:
+        # The source path already is compressed therefore the output
+        # path should be equal to the source path.
+        out_path = src_path
     if rebuild:
         # I do know that make can do this but it is very convenient to
         # have the functionality in this tool as well...
